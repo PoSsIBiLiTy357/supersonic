@@ -25,6 +25,8 @@
 #ifndef DATAWAREHOUSE_COMMON_EXCEPTION_COOWNED_POINTER_H_
 #define DATAWAREHOUSE_COMMON_EXCEPTION_COOWNED_POINTER_H_
 
+#include <atomic>
+
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"  // for CHECK macros
 
@@ -34,27 +36,36 @@ template<typename T>
 class CoownedPointer {
  public:
   // Creates a pointer to NULL.
-  explicit CoownedPointer() : value_(NULL), next_(NULL) {}
+  explicit CoownedPointer() {}
 
   // If the value is not NULL, creates a pointer that is a sole owner of the
   // value. Otherwise, creates a pointer to NULL.
   explicit CoownedPointer(T* value)
       : value_(value),
-        next_(value != NULL ? this : NULL) {}
+        control_(new Control(value)) { }
 
   // Makes this a copy of the other.
   // If other.get() == NULL, creates a pointer to NULL. Otherwise, creates a
   // pointer to the other's value, that will be a co-owner iff the other is
   // an owner (i.e. iff the value has not been released).
-  CoownedPointer(const CoownedPointer& other) : value_(other.value_) {
-    join(other);
+  CoownedPointer(const CoownedPointer& other)
+    : value_(other.value_)
+  {
+    if (other.control_) {
+      control_ = other.control_;
+      control_->count++;
+    }
   }
 
-  // Destroys the pointer. Deletes the value if we're an owner (i.e. if not
-  // released) and if we're the last owner alive.
-  ~CoownedPointer() {
-    if (depart()) delete value_;
+  CoownedPointer(CoownedPointer&& other)  
+      : value_(other.value_),
+        control_(other.control_)
+  {
+    other.value_ = nullptr;
+    other.control_ = nullptr;
   }
+
+  ~CoownedPointer() { delete leave(); }
 
   // Returns a pointer to the value, without transferring ownership.
   // Continues to return the value even after release(). If !this->is_owner(),
@@ -68,19 +79,37 @@ class CoownedPointer {
 
   // Makes this point to the other's object, and co-own it if it has not been
   // released.
-  CoownedPointer& operator=(const CoownedPointer& other) {
+  CoownedPointer& operator=(const CoownedPointer& other)
+  {
     if (&other != this) {
-      if (depart()) delete value_;
       value_ = other.value_;
-      join(other);
+      control_ = other.control_;
+      control_->count++;
     }
+
+    return *this;
+  }
+
+  CoownedPointer& operator=(CoownedPointer&& other)
+  {
+    if (&other != this) {
+      std::swap(value_, other.value_);
+      std::swap(control_, other.control_);
+    }
+
     return *this;
   }
 
   // Returns true if the referenced object is not NULL and has not yet been
   // released. If (!is_owner() && get() != NULL), then calling release() is
   // prohibited (as the object has already been released).
-  bool is_owner() const { return next_ != NULL; }
+  bool is_owner() const 
+  {
+    if (control_ == nullptr)
+      return false;
+
+    return control_.value.load() != nullptr;
+  }
 
   // If the referenced object is NULL, this method has no effect and returns
   // NULL. Otherwise, it returns the referenced object, passing its ownership
@@ -92,47 +121,46 @@ class CoownedPointer {
   //   * calling release() again, on this on any peers, is illegal (will cause
   //     crash).
   T* release() {
-    const CoownedPointer* p = next_;
-    if (p == NULL) {
-      CHECK(value_ == NULL) << "Release called on a released pointer.";
+    if (control_ == nullptr) {
+      CHECK(value_ == nullptr) << "Release called on a released pointer.";
     } else {
-      do {
-        const CoownedPointer* prev = p;
-        p = p->next_;
-        prev->next_ = NULL;
-      } while (p != NULL);
+      leave();
     }
+
     return value_;
   }
 
  private:
-  // If (other.is_owner()), joins the circle of co-owners. Otherwise, makes
-  // this a non-owner.
-  void join(const CoownedPointer& other) {
-    next_ = other.next_;
-    if (other.next_ != NULL) other.next_ = this;
-  }
-  // If (!is_owner()), i.e. NULL or released, returns false. Otherwise, if this
-  // is the sole owner, returns true. Otherwise, removes this from the
-  // co-owner's list and returns false.
-  // (Returning true indicates that the value should be deleted).
-  bool depart() {
-    if (next_ == NULL) return false;  // Released already, or the value is NULL.
-    if (next_ == this) return true;   // We're the last man standing.
-    const CoownedPointer* p = next_;
-    while (p->next_ != this) p = p->next_;
-    p->next_ = next_;
-    return false;
+  struct Control {
+    std::atomic<int> count;
+    std::atomic<T*> value;
+
+    Control(T* value)
+      : count(1),
+        value(value) {}
+  };
+
+  T* leave()
+  {
+    T* old;
+
+    if (control_ == nullptr)
+      return nullptr;
+
+    old = control_->value.exchange(nullptr);
+
+    if (control_->count.fetch_sub(1) == 1)
+      delete control_;
+
+    control_ = nullptr;
+    return old;
   }
 
+ private:
   // Pointer to the referenced object.
-  T* value_;
-
-  // Circular linked list.
-  // When value_ == NULL, next_ is always NULL.
-  // When value_ != NULL, next_ is set to NULL by release().
-  mutable CoownedPointer* next_;
-  // Copyable.
+  T* value_ = nullptr;
+  // Shared control block
+  Control* control_ = nullptr;
 };
 
 }  // namespace
