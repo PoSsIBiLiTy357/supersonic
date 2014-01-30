@@ -65,7 +65,17 @@ class CoownedPointer {
     other.control_ = nullptr;
   }
 
-  ~CoownedPointer() { delete leave(); }
+  ~CoownedPointer()
+  { 
+    if (control_ == nullptr)
+      return;
+
+    if (control_->count.fetch_sub(1) == 1) {
+      delete control_->value.load();
+      delete control_;
+    }
+
+  }
 
   // Returns a pointer to the value, without transferring ownership.
   // Continues to return the value even after release(). If !this->is_owner(),
@@ -140,20 +150,17 @@ class CoownedPointer {
         value(value) {}
   };
 
-  T* leave()
+  void leave()
   {
-    T* old;
-
     if (control_ == nullptr)
-      return nullptr;
+      return;
 
-    old = control_->value.exchange(nullptr);
+    control_->value.store(nullptr);
 
     if (control_->count.fetch_sub(1) == 1)
       delete control_;
 
     control_ = nullptr;
-    return old;
   }
 
  private:
