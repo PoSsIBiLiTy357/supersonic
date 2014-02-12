@@ -293,45 +293,7 @@ struct GreaterOrEqual {
   }
 };
 
-// The following functions are copied from util/hash/murmur.cc so that we could
-// use them inlined.
-static uint64 ShiftMix(uint64 val) {
-  return val ^ (val >> 47);
-}
-
-static inline uint64 LoadBytes(const char * const buf, int len) {
-  DCHECK_LT(len, 9);
-  uint64 val = 0;
-  --len;
-  do {
-    val = (val << 8) | buf[len];
-  } while (--len >= 0);
-  // (--len >= 0) is about 10 % faster in the small string ubenchmarks
-  // than (len--).
-  return val;
-}
-
-inline uint64 MurmurHash64(const char *buf, const size_t len) {
-  static const uint64 mul = 0xc6a4a7935bd1e995ULL;
-  // Let's remove the bytes not divisible by the sizeof(uint64).
-  // This allows the inner loop to process the data as 64 bit integers.
-  const int len_aligned = len & ~0x7;
-  const char * const end = buf + len_aligned;
-  uint64 hash = len * mul;
-  for (const char *p = buf; p != end; p += 8) {
-    const uint64 data = ShiftMix(LittleEndian::Load64(p) * mul) * mul;
-    hash ^= data;
-    hash *= mul;
-  }
-  if ((len & 0x7) != 0) {
-    const uint64 data = LoadBytes(end, len & 0x7);
-    hash ^= data;
-    hash *= mul;
-  }
-  hash = ShiftMix(hash) * mul;
-  hash = ShiftMix(hash);
-  return hash;
-}
+#include "hasher.h"
 
 struct Hash {
   template<typename T>
@@ -359,7 +321,7 @@ struct Hash {
     return v ? 23 : 34;
   }
   size_t operator()(const StringPiece& v) const {
-    return MurmurHash64(v.data(), v.size());
+    return CityHash64(v.data(), v.size());
   }
 };
 

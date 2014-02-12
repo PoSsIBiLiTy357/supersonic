@@ -440,6 +440,7 @@ sources_H = supersonic/utils/algorithm.h \
     supersonic/base/infrastructure/block.h \
     supersonic/base/infrastructure/copy_column.h \
     supersonic/base/infrastructure/double_buffered_block.h \
+    supersonic/base/infrastructure/hasher.h \
     supersonic/base/infrastructure/init.h \
     supersonic/base/infrastructure/operators.h \
     supersonic/base/infrastructure/projector.h \

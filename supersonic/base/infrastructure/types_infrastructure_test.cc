@@ -481,7 +481,7 @@ TEST_F(HasherTest, ShouldHashIntegers) {
 }
 
 inline size_t HashString(const StringPiece& s) {
-  return operators::MurmurHash64(s.data(), s.length());
+  return operators::CityHash64(s.data(), s.length());
 }
 
 TEST_F(HasherTest, ShouldHashStrings) {
