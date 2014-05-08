@@ -118,7 +118,7 @@ class CoownedPointer {
     if (control_ == nullptr)
       return false;
 
-    return control_.value.load() != nullptr;
+    return control_->value.load() != nullptr;
   }
 
   // If the referenced object is NULL, this method has no effect and returns
