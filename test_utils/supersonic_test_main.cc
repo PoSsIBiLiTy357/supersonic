@@ -25,7 +25,8 @@
 GTEST_API_ int main(int argc, char** argv) {
   std::cout << "Running main() from supersonic_test_main.cc\n";
 
-  supersonic::SupersonicInit(&argc, &argv);
+  // Make sure to parse gtest_* flags before parsing other flags.
   testing::InitGoogleTest(&argc, argv);
+  supersonic::SupersonicInit(&argc, &argv);
   return RUN_ALL_TESTS();
 }
