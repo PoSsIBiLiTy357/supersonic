@@ -1,4 +1,4 @@
-## Process this file with automake to produce Makefile.in
+# Process this file with automake to produce Makefile.in
 
 # Make sure that when we re-make ./configure, we get the macros we need
 ACLOCAL_AMFLAGS = -I m4
@@ -33,7 +33,6 @@ SUPERSONIC_LIB_LD_FLAGS =
 SUPERSONIC_LIB_LD_ADD = \
     libsupersonic.la \
     $(BOOST_LDFLAGS) \
-    $(BOOST_SYSTEM_LIB) \
     $(BOOST_TIMER_LIB) \
     $(GFLAGS_LIBS) \
     $(GLOG_LIBS) \
@@ -41,14 +40,24 @@ SUPERSONIC_LIB_LD_ADD = \
 
 SUPERSONIC_TESTS_FLAGS = $(COMPILER_FLAGS) $(TEST_FLAGS)
 SUPERSONIC_TESTS_LD_FLAGS = $(SUPERSONIC_LIB_LD_FLAGS)
-SUPERSONIC_TESTS_LD_ADD = $(SUPERSONIC_LIB_LD_ADD) libsupersonic_testutils.la libsupersonic_testutils_gunit.la libsupersonic_gmock.la libsupersonic_gmock_main.la
+SUPERSONIC_TESTS_LD_ADD = \
+	libsupersonic_testutils.la \
+	libsupersonic_testutils_gunit.la \
+	libsupersonic_gmock.la \
+	libsupersonic_gmock_main.la \
+	$(SUPERSONIC_LIB_LD_ADD)
 
 # Library
 lib_LTLIBRARIES = libsupersonic.la
 
 libsupersonic_la_CXXFLAGS = $(SUPERSONIC_TESTS_FLAGS)
 libsupersonic_la_LDFLAGS =
-libsupersonic_la_LIBADD =
+libsupersonic_la_LIBADD = \
+	$(GLOG_LIBS) \
+	$(PROTO_LIBS) \
+	$(GFLAGS_LIBS) \
+	$(BOOST_SYSTEM_LIB) \
+	$(BOOST_TIMER_LIB)
 
 # Testing utils
 noinst_LTLIBRARIES =
@@ -89,7 +98,10 @@ lib_LTLIBRARIES += libsupersonic_testutils_gunit.la
 
 libsupersonic_testutils_gunit_la_CXXFLAGS = $(COMPILER_FLAGS) $(TEST_FLAGS)
 libsupersonic_testutils_gunit_la_LDFLAGS =  $(SUPERSONIC_LIB_LD_FLAGS)
-libsupersonic_testutils_gunit_la_LIBADD =   $(SUPERSONIC_LIB_LD_ADD) libsupersonic_testutils.la libsupersonic_gmock.la
+libsupersonic_testutils_gunit_la_LIBADD = \
+	libsupersonic_testutils.la \
+	libsupersonic_gmock.la \
+	$(SUPERSONIC_LIB_LD_ADD)
 
 libsupersonic_testutils_gunit_ladir = $(includedir)
 nobase_libsupersonic_testutils_gunit_la_HEADERS = \
@@ -167,7 +179,10 @@ TESTS += test_base_memory
 # test regexp
 test_regexp_expressions_CPPFLAGS = $(SUPERSONIC_TESTS_FLAGS)
 test_regexp_expressions_LDFLAGS  = $(SUPERSONIC_TESTS_LD_FLAGS)
-test_regexp_expressions_LDADD    = $(SUPERSONIC_TESTS_LD_ADD) $(RE2_LIBS) libsupersonic_regexp.la
+test_regexp_expressions_LDADD    = \
+	libsupersonic_regexp.la \
+	$(SUPERSONIC_TESTS_LD_ADD) \
+	$(RE2_LIBS)
 test_regexp_expressions_SOURCES  = \
     supersonic/expression/core/regexp_bound_expressions_test.cc \
     supersonic/expression/core/regexp_expressions_test.cc
@@ -181,14 +196,18 @@ TESTS += $(REGEXP_TEST)
 ## benchmark
 test_benchmark_dot_CPPFLAGS = $(SUPERSONIC_TESTS_FLAGS)
 test_benchmark_dot_LDFLAGS  = $(SUPERSONIC_TESTS_LD_FLAGS)
-test_benchmark_dot_LDADD    = $(SUPERSONIC_TESTS_LD_ADD) libsupersonic_benchmark.la
+test_benchmark_dot_LDADD    = \
+	libsupersonic_benchmark.la \
+	$(SUPERSONIC_TESTS_LD_ADD)
 test_benchmark_dot_SOURCES  = \
     supersonic/benchmark/dot/dot_drawer_test.cc
 TESTS += test_benchmark_dot
 
 test_benchmark_infrastructure_CPPFLAGS = $(SUPERSONIC_TESTS_FLAGS)
 test_benchmark_infrastructure_LDFLAGS  = $(SUPERSONIC_TESTS_LD_FLAGS)
-test_benchmark_infrastructure_LDADD    = $(SUPERSONIC_TESTS_LD_ADD) libsupersonic_benchmark.la
+test_benchmark_infrastructure_LDADD    = \
+	libsupersonic_benchmark.la \
+	$(SUPERSONIC_TESTS_LD_ADD)
 test_benchmark_infrastructure_SOURCES  = \
     supersonic/benchmark/infrastructure/benchmark_listener_test.cc \
     supersonic/benchmark/infrastructure/benchmark_transformer_test.cc \
@@ -197,7 +216,9 @@ TESTS += test_benchmark_infrastructure
 
 test_benchmark_manager_CPPFLAGS = $(SUPERSONIC_TESTS_FLAGS)
 test_benchmark_manager_LDFLAGS  = $(SUPERSONIC_TESTS_LD_FLAGS)
-test_benchmark_manager_LDADD    = $(SUPERSONIC_TESTS_LD_ADD) libsupersonic_benchmark.la
+test_benchmark_manager_LDADD    = \
+	libsupersonic_benchmark.la \
+	$(SUPERSONIC_TESTS_LD_ADD)
 test_benchmark_manager_SOURCES  = \
     supersonic/benchmark/manager/benchmark_manager_test.cc
 TESTS += test_benchmark_manager
@@ -308,7 +329,12 @@ lib_LTLIBRARIES += libsupersonic_benchmark.la
 
 libsupersonic_benchmark_la_CXXFLAGS = $(COMPILER_FLAGS)
 libsupersonic_benchmark_la_LDFLAGS =
-libsupersonic_benchmark_la_LIBADD =
+libsupersonic_benchmark_la_LIBADD = \
+	libsupersonic.la \
+	$(BOOST_SYSTEM_LIB) \
+	$(BOOST_TIMER_LIB) \
+	$(GLOG_LIBS) \
+	$(PROTO_LIBS)
 
 libsupersonic_benchmark_ladir = $(includedir)
 nobase_libsupersonic_benchmark_la_HEADERS = \
@@ -340,7 +366,10 @@ BENCHMARK_EXAMPLES = operation_example
 ## simple operation example
 operation_example_CPPFLAGS = $(COMPILER_FLAGS)
 operation_example_LDFLAGS  = $(SUPERSONIC_LIB_LD_FLAGS)
-operation_example_LDADD    = $(SUPERSONIC_LIB_LD_ADD) libsupersonic_benchmark.la libsupersonic_testutils.la
+operation_example_LDADD    = \
+	libsupersonic_benchmark.la \
+	libsupersonic_testutils.la \
+	$(SUPERSONIC_LIB_LD_ADD)
 operation_example_SOURCES  = supersonic/benchmark/examples/operation_example.cc
 
 
@@ -689,7 +718,11 @@ lib_LTLIBRARIES += $(SUPERSONIC_REGEXP_LIB)
 
 libsupersonic_regexp_la_CXXFLAGS = $(COMPILER_FLAGS) $(RE2_FLAGS)
 libsupersonic_regexp_la_LDFLAGS =
-libsupersonic_regexp_la_LIBADD = $(RE2_LIBS)
+libsupersonic_regexp_la_LIBADD = \
+	$(RE2_LIBS) \
+	$(GLOG_LIBS) \
+	$(PROTO_LIBS) \
+	libsupersonic.la
 
 libsupersonic_regexp_ladir = $(includedir)
 nobase_libsupersonic_regexp_la_HEADERS = \
@@ -707,7 +740,12 @@ lib_LTLIBRARIES += libsupersonic_serialization.la
 
 libsupersonic_serialization_la_CXXFLAGS = $(COMPILER_FLAGS)
 libsupersonic_serialization_la_LDFLAGS =
-libsupersonic_serialization_la_LIBADD = $(RE2_LIBS) libsupersonic.la
+libsupersonic_serialization_la_LIBADD = \
+	libsupersonic.la \
+	$(SUPERSONIC_REGEXP_LIB) \
+	$(RE2_LIBS) \
+	$(GLOG_LIBS) \
+	$(PROTO_LIBS)
 
 libsupersonic_serialization_ladir = $(includedir)
 nobase_libsupersonic_serialization_la_HEADERS = \
