@@ -20,7 +20,8 @@ else
 RE2_LIBS =
 endif
 
-TEST_FLAGS = -I$(top_srcdir)/gmock/fused-src $(GMOCK_FLAGS)
+TEST_FLAGS = -I$(GTEST_ROOT)/include -I$(GMOCK_ROOT)/include
+TEST_LIBS = -L$(GTEST_ROOT) -L$(GMOCK_ROOT) -lgtest -lgtest_main -lgmock
 
 COMPILER_FLAGS = $(PTHREAD_CFLAGS) \
     $(AM_CXXFLAGS) \
@@ -43,8 +44,7 @@ SUPERSONIC_TESTS_LD_FLAGS = $(SUPERSONIC_LIB_LD_FLAGS)
 SUPERSONIC_TESTS_LD_ADD = \
 	libsupersonic_testutils.la \
 	libsupersonic_testutils_gunit.la \
-	libsupersonic_gmock.la \
-	libsupersonic_gmock_main.la \
+	$(TEST_LIBS) \
 	$(SUPERSONIC_LIB_LD_ADD)
 
 # Library
@@ -61,18 +61,6 @@ libsupersonic_la_LIBADD = \
 
 # Testing utils
 noinst_LTLIBRARIES =
-noinst_LTLIBRARIES += libsupersonic_gmock.la
-libsupersonic_gmock_la_CXXFLAGS = $(COMPILER_FLAGS) $(TEST_FLAGS)
-libsupersonic_gmock_la_SOURCES = gmock/fused-src/gmock-gtest-all.cc
-libsupersonic_gmock_ladir = $(includedir)
-libsupersonic_gmock_la_HEADERS = \
-    gmock/fused-src/gtest/gtest.h \
-    gmock/fused-src/gmock/gmock.h
-
-noinst_LTLIBRARIES += libsupersonic_gmock_main.la
-libsupersonic_gmock_main_la_CXXFLAGS = $(COMPILER_FLAGS) $(TEST_FLAGS)
-libsupersonic_gmock_main_la_SOURCES = test_utils/supersonic_test_main.cc
-
 lib_LTLIBRARIES += libsupersonic_testutils.la
 
 libsupersonic_testutils_la_CXXFLAGS = $(COMPILER_FLAGS)
@@ -100,7 +88,6 @@ libsupersonic_testutils_gunit_la_CXXFLAGS = $(COMPILER_FLAGS) $(TEST_FLAGS)
 libsupersonic_testutils_gunit_la_LDFLAGS =  $(SUPERSONIC_LIB_LD_FLAGS)
 libsupersonic_testutils_gunit_la_LIBADD = \
 	libsupersonic_testutils.la \
-	libsupersonic_gmock.la \
 	$(SUPERSONIC_LIB_LD_ADD)
 
 libsupersonic_testutils_gunit_ladir = $(includedir)
