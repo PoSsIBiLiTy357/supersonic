@@ -50,8 +50,6 @@ AM_CONDITIONAL(GCC, test "$GCC" = yes)   # let the Makefile know if we're gcc
 AX_CXX_COMPILE_STDCXX_11([noext], [mandatory])
 
 # Check for libraries.
-PKG_CHECK_MODULES(GLOG, libglog)
-PKG_CHECK_MODULES(GFLAGS, libgflags)
 PKG_CHECK_MODULES(PROTO, protobuf)
 
 # Check for boost.
@@ -62,12 +60,17 @@ AX_BOOST_TIMER
 # Checks for header files.
 AC_CHECK_HEADERS([limits.h stddef.h stdint.h stdlib.h string.h string \
 sys/stat.h sys/time.h])
-AC_CHECK_HEADERS([glog/logging.h], [],
-AC_MSG_ERROR([google-glog is required. See INSTALL file.]))
+
+AC_CHECK_HEADERS([gflags/gflags.h],[],[AC_MSG_ERROR(
+                [Please install google-gflags library])])
+AC_HAVE_LIBRARY([gflags],[],[AC_MSG_ERROR(
+                [Please install google-gflags library])])
+
+AC_HAVE_LIBRARY([glog],[],[AC_MSG_ERROR(
+                [Please install google-glog library])])
+
 AC_CHECK_HEADERS([google/protobuf/text_format.h], [],
 AC_MSG_ERROR([protobuf is required. See INSTALL file.]))
-AC_CHECK_HEADERS([gflags/gflags.h], [],
-AC_MSG_ERROR([gflags library is required. See INSTALL file.]))
 
 
 HAVE_RE2=

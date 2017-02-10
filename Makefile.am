@@ -20,6 +20,8 @@ else
 RE2_LIBS =
 endif
 
+GTEST_ROOT=googletest/googletest
+GMOCK_ROOT=googletest/googlemock
 TEST_FLAGS = -I$(GTEST_ROOT)/include -I$(GMOCK_ROOT)/include
 TEST_LIBS = -L$(GTEST_ROOT) -L$(GMOCK_ROOT) -lgtest -lgtest_main -lgmock
 
