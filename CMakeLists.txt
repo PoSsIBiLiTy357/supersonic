@@ -87,6 +87,7 @@ FUNCTION (proto_gen OUT_DIR PROTO_FILE)
 
     add_custom_command(
         PRE_BUILD
+        DEPENDS ${CMAKE_SOURCE_DIR}/${PROTO_FILE}
         OUTPUT ${PROTO_OUT_PATH}/${PROTO_NAME}.pb.cc ${PROTO_OUT_PATH}/${PROTO_NAME}.pb.h
         COMMAND ${CMAKE_COMMAND} -E make_directory ${PROTO_OUT_PATH}
         COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} "--cpp_out=${OUT_DIR}" --proto_path=${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/${PROTO_FILE}
@@ -243,14 +244,6 @@ add_library(supersonic
 )
 
 set(HEADERS_SUPERSONIC
-    ${EXCP_STACK_HPP}
-    ${PROTO_EXPR_HPP}
-    ${PROTO_TYPES_HPP}
-    ${PROTO_CURSOR_HPP}
-    ${PROTO_OP_HPP}
-    ${PROTO_SPEC_HPP}
-    ${PROTO_SS_HPP}
-
     supersonic/utils/algorithm.h
     supersonic/utils/arm_instruction_set_select.h
     supersonic/utils/basictypes.h
@@ -453,10 +446,10 @@ if(RE2_LIBRARY)
     )
 
     set(HEADERS_SUPERSONIC_RE2
-	    supersonic/expression/core/regexp_evaluators.h
-	    supersonic/expression/core/regexp_expressions.h
-	    supersonic/expression/core/regexp_bound_expressions.h
-	    supersonic/expression/core/regexp_bound_expressions_internal.h
+        supersonic/expression/core/regexp_evaluators.h
+        supersonic/expression/core/regexp_expressions.h
+        supersonic/expression/core/regexp_bound_expressions.h
+        supersonic/expression/core/regexp_bound_expressions_internal.h
     )
 
 
