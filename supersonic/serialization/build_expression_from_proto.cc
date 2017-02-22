@@ -24,8 +24,6 @@ namespace supersonic {using std::string; }
 #include <vector>
 using std::vector;
 
-#include "config.h"
-
 #include "supersonic/utils/integral_types.h"
 #include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"

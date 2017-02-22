@@ -79,35 +79,60 @@ set_target_properties(libgmock PROPERTIES
     "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
 )
 
+
+FUNCTION (proto_gen OUT_DIR PROTO_FILE)
+    get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
+    get_filename_component(PROTO_NAME ${PROTO_FILE} NAME_WE)
+    set(PROTO_OUT_PATH ${OUT_DIR}/${PROTO_DIR})
+
+    add_custom_command(
+        PRE_BUILD
+        OUTPUT ${PROTO_OUT_PATH}/${PROTO_NAME}.pb.cc ${PROTO_OUT_PATH}/${PROTO_NAME}.pb.h
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${PROTO_OUT_PATH}
+        COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} "--cpp_out=${OUT_DIR}" --proto_path=${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/${PROTO_FILE}
+    )
+
+    set_source_files_properties(${PROTO_OUT_PATH}/${PROTO_NAME}.pb.cc ${PROTO_OUT_PATH}/${PROTO_NAME}.pb.h
+        PROPERTIES GENERATED TRUE
+    )
+
+    install(FILES ${PROTO_OUT_PATH}/${PROTO_NAME}.pb.h
+        DESTINATION include/${PROTO_DIR}
+    )
+ENDFUNCTION()
+
+
+# Protobuf
+set(PROTO_OUT_PATH "${CMAKE_BINARY_DIR}/proto-codegen")
+proto_gen(${PROTO_OUT_PATH} supersonic/utils/exception/stack_trace.proto)
+proto_gen(${PROTO_OUT_PATH} supersonic/utils/proto/expressions.proto)
+proto_gen(${PROTO_OUT_PATH} supersonic/utils/proto/types.proto)
+proto_gen(${PROTO_OUT_PATH} supersonic/benchmark/proto/benchmark.proto)
+proto_gen(${PROTO_OUT_PATH} supersonic/cursor/proto/cursors.proto)
+proto_gen(${PROTO_OUT_PATH} supersonic/expression/proto/operators.proto)
+proto_gen(${PROTO_OUT_PATH} supersonic/proto/specification.proto)
+proto_gen(${PROTO_OUT_PATH} supersonic/proto/supersonic.proto)
+
+
+
 # I couldn't make it work with INTERFACE_INCLUDE_DIRECTORIES
 include_directories(
     "${source_dir}/googletest/include"
     "${source_dir}/googlemock/include"
-)
-
-# Protobuf
-protobuf_generate_cpp(
-    supersonic/utils/exception/stack_trace.pb.cc
-    supersonic/utils/proto/expressions.pb.cc
-    supersonic/utils/proto/types.pb.cc
-
-    supersonic/cursor/proto/cursors.pb.cc
-    supersonic/expression/proto/operators.pb.cc
-    supersonic/proto/specification.pb.cc
-    supersonic/proto/supersonic.pb.cc
+    "${PROTO_OUT_PATH}"
 )
 
 
 # Main supersonic library
 add_library(supersonic
-    supersonic/utils/exception/stack_trace.pb.cc
-    supersonic/utils/proto/expressions.pb.cc
-    supersonic/utils/proto/types.pb.cc
-    supersonic/benchmark/proto/benchmark.pb.cc
-    supersonic/cursor/proto/cursors.pb.cc
-    supersonic/expression/proto/operators.pb.cc
-    supersonic/proto/specification.pb.cc
-    supersonic/proto/supersonic.pb.cc
+    ${PROTO_OUT_PATH}/supersonic/utils/exception/stack_trace.pb.cc
+    ${PROTO_OUT_PATH}/supersonic/utils/proto/expressions.pb.cc
+    ${PROTO_OUT_PATH}/supersonic/utils/proto/types.pb.cc
+    ${PROTO_OUT_PATH}/supersonic/benchmark/proto/benchmark.pb.cc
+    ${PROTO_OUT_PATH}/supersonic/cursor/proto/cursors.pb.cc
+    ${PROTO_OUT_PATH}/supersonic/expression/proto/operators.pb.cc
+    ${PROTO_OUT_PATH}/supersonic/proto/specification.pb.cc
+    ${PROTO_OUT_PATH}/supersonic/proto/supersonic.pb.cc
 
     supersonic/utils/bits.cc
     supersonic/utils/demangle.cc
@@ -218,14 +243,13 @@ add_library(supersonic
 )
 
 set(HEADERS_SUPERSONIC
-    supersonic/utils/exception/stack_trace.pb.h
-    supersonic/utils/proto/expressions.pb.h
-    supersonic/utils/proto/types.pb.h
-    supersonic/benchmark/proto/benchmark.pb.h
-    supersonic/cursor/proto/cursors.pb.h
-    supersonic/expression/proto/operators.pb.h
-    supersonic/proto/specification.pb.h
-    supersonic/proto/supersonic.pb.h
+    ${EXCP_STACK_HPP}
+    ${PROTO_EXPR_HPP}
+    ${PROTO_TYPES_HPP}
+    ${PROTO_CURSOR_HPP}
+    ${PROTO_OP_HPP}
+    ${PROTO_SPEC_HPP}
+    ${PROTO_SS_HPP}
 
     supersonic/utils/algorithm.h
     supersonic/utils/arm_instruction_set_select.h
@@ -421,6 +445,8 @@ install(
 
 
 if(RE2_LIBRARY)
+    add_definitions(-DHAVE_RE2_RE2_H)
+
     add_library(supersonic_regexp
         supersonic/expression/core/regexp_bound_expressions.cc
         supersonic/expression/core/regexp_expressions.cc
