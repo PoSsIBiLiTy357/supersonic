@@ -35,8 +35,6 @@
 #ifndef DATAWAREHOUSE_COMMON_EXCEPTION_FAILUREOR_H_
 #define DATAWAREHOUSE_COMMON_EXCEPTION_FAILUREOR_H_
 
-#include "supersonic/supersonic-config.h"
-
 
 // When the below flag is switched on invoking getter methods on FailureOr<T>
 // objects will fail, if the user has not checked the status of the returned
