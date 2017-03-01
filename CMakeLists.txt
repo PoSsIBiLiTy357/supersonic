@@ -522,8 +522,8 @@ add_library(supersonic_testutils_gunit
     supersonic/testing/row.cc
     supersonic/testing/short_circuit_tester.cc
 )
-target_link_libraries(supersonic_testutils_gunit supersonic_testutils)
-add_dependencies(supersonic_testutils_gunit supersonic_testutils)
+target_link_libraries(supersonic_testutils_gunit supersonic_testutils libgtest libgmock)
+add_dependencies(supersonic_testutils_gunit supersonic_testutils libgtest libgmock)
 add_sanitizers(supersonic_testutils_gunit)
 
 INSTALL_HEADERS_WITH_DIRECTORY(HEADERS_SUPERSONIC_TESTUTILS)
