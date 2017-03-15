@@ -29,13 +29,14 @@ include_directories(
     ${CMAKE_BINARY_DIR}/googletest-src/googlemock
 )
 
+# Minimum instruction set needed
 set(INST_SET "-mmmx -msse -msse3 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -mpopcnt")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${INST_SET} -O3 -funsigned-char")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${INSET_SET} -O3 -funsigned-char")
+set(CMAKE_C_FLAGS "${INST_SET} -funsigned-char")
+set(CMAKE_CXX_FLAGS "${INST_SET} -funsigned-char")
 
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ${INST_SET} -g3 -Og -funsigned-char")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${INST_SET} -g3 -Og -funsigned-char")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Og")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Og")
 
 
 ExternalProject_Add(gtest
