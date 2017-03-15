@@ -163,7 +163,7 @@ class RowComparator {
   // comparison on every key-column of two given rows.
   bool Equal(int left_pos, int right_pos) const {
     for (int i = 0; i < comparators_.size(); i++) {
-      if (!PREDICT_TRUE(comparators_[i]->Equal(left_pos, right_pos)))
+      if (!comparators_[i]->Equal(left_pos, right_pos))
         return false;
     }
     return true;
