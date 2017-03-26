@@ -15,7 +15,10 @@
 
 #include "supersonic/testing/comparable_view.h"
 
-#include <math.h>
+#include <cmath>
+
+#include <cfloat>
+using std::isnan;
 
 #include <vector>
 using std::vector;

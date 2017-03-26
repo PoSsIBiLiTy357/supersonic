@@ -26,8 +26,8 @@
 #ifndef UTIL_MATH_MATHLIMITS_H__
 #define UTIL_MATH_MATHLIMITS_H__
 
-#include <math.h>
-#include <string.h>
+#include <cmath>
+#include <cstring>
 #include <cfloat>
 
 // ========================================================================= //
@@ -203,11 +203,11 @@ DECL_UNSIGNED_INT_LIMITS(unsigned long long int)
   static bool IsNegInf(const Type x) { return _fpclass(x) == _FPCLASS_NINF; }
 #else
 #define DECL_FP_LIMIT_FUNCS \
-  static bool IsFinite(const Type x) { return !isinf(x)  &&  !isnan(x); } \
-  static bool IsNaN(const Type x) { return isnan(x); } \
-  static bool IsInf(const Type x) { return isinf(x); } \
-  static bool IsPosInf(const Type x) { return isinf(x)  &&  x > 0; } \
-  static bool IsNegInf(const Type x) { return isinf(x)  &&  x < 0; }
+  static bool IsFinite(const Type x) { return !std::isinf(x)  &&  !std::isnan(x); } \
+  static bool IsNaN(const Type x) { return std::isnan(x); } \
+  static bool IsInf(const Type x) { return std::isinf(x); } \
+  static bool IsPosInf(const Type x) { return std::isinf(x)  &&  x > 0; } \
+  static bool IsNegInf(const Type x) { return std::isinf(x)  &&  x < 0; }
 #endif
 
 // We can't put floating-point constant values in the header here because

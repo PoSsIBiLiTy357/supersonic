@@ -16,12 +16,13 @@
 
 #include "supersonic/expression/vector/vector_primitives.h"
 
-#include <limits.h>
-#include <math.h>
+#include <climits>
+#include <cmath>
 #include <stdlib.h>
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"
 #include <memory>
+using std::isnan;
 
 #include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/infrastructure/bit_pointers.h"
