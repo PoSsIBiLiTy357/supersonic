@@ -10,7 +10,7 @@ set(CMAKE_MODULE_PATH
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 set(CMAKE_CXX_STANDARD 14)
 
-find_package(Boost 1.20.0 COMPONENTS system timer)
+find_package(Boost 1.20.0 REQUIRED COMPONENTS system timer)
 find_package(Threads REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(RE2)
