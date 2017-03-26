@@ -23,11 +23,7 @@ include(InstallHeaders)
 include(ExternalProject)
 include(CMakeOptions.txt)
 
-include_directories(
-    ${CMAKE_SOURCE_DIR}
-    ${CMAKE_BINARY_DIR}/googletest-src/googletest
-    ${CMAKE_BINARY_DIR}/googletest-src/googlemock
-)
+add_subdirectory(external/google-test)
 
 # Minimum instruction set needed
 set(INST_SET "-mmmx -msse -msse3 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -mpopcnt")
@@ -37,48 +33,6 @@ set(CMAKE_CXX_FLAGS "${INST_SET} -funsigned-char")
 
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Og")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Og")
-
-
-ExternalProject_Add(gtest
-    GIT_REPOSITORY "https://github.com/google/googletest"
-    GIT_TAG "master"
-    SOURCE_DIR "${CMAKE_BINARY_DIR}/googletest-src"
-    BINARY_DIR "${CMAKE_BINARY_DIR}/googletest-build"
-    INSTALL_COMMAND ""
-)
-
-# Get GTest source and binary directories from CMake project
-ExternalProject_Get_Property(gtest source_dir binary_dir)
-
-# Create a libgtest target to be used as a dependency by test programs
-add_library(libgtest IMPORTED STATIC GLOBAL)
-add_dependencies(libgtest gtest)
-
-# Set libgtest properties
-set_target_properties(libgtest PROPERTIES
-    "IMPORTED_LOCATION" "${binary_dir}/googlemock/gtest/libgtest.a"
-    "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
-)
-
-# Create a libgtest target to be used as a dependency by test programs
-add_library(libgtest_main IMPORTED STATIC GLOBAL)
-add_dependencies(libgtest_main gtest_main)
-
-# Set libgtest properties
-set_target_properties(libgtest_main PROPERTIES
-    "IMPORTED_LOCATION" "${binary_dir}/googlemock/gtest/libgtest_main.a"
-    "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
-)
-
-# Create a libgmock target to be used as a dependency by test programs
-add_library(libgmock IMPORTED STATIC GLOBAL)
-add_dependencies(libgmock gtest)
-
-# Set libgmock properties
-set_target_properties(libgmock PROPERTIES
-    "IMPORTED_LOCATION" "${binary_dir}/googlemock/libgmock.a"
-    "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
-)
 
 
 FUNCTION (proto_gen OUT_DIR PROTO_FILE)
@@ -115,15 +69,10 @@ proto_gen(${PROTO_OUT_PATH} supersonic/expression/proto/operators.proto)
 proto_gen(${PROTO_OUT_PATH} supersonic/proto/specification.proto)
 proto_gen(${PROTO_OUT_PATH} supersonic/proto/supersonic.proto)
 
-
-
-# I couldn't make it work with INTERFACE_INCLUDE_DIRECTORIES
 include_directories(
-    "${source_dir}/googletest/include"
-    "${source_dir}/googlemock/include"
-    "${PROTO_OUT_PATH}"
+    ${CMAKE_SOURCE_DIR}
+    ${PROTO_OUT_PATH}
 )
-
 
 # Main supersonic library
 add_library(supersonic
