@@ -27,7 +27,7 @@
 #ifndef SUPERSONIC_BASE_MEMORY_MEMORY_H_
 #define SUPERSONIC_BASE_MEMORY_MEMORY_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"

@@ -10,7 +10,7 @@
 #ifndef _BASE_STRINGPRINTF_H
 #define _BASE_STRINGPRINTF_H
 
-#include <stdarg.h>
+#include <cstdarg>
 #include <string>
 namespace supersonic {using std::string; }
 #include <vector>

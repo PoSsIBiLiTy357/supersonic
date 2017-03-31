@@ -15,7 +15,7 @@
 
 #include "supersonic/cursor/core/filter.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"

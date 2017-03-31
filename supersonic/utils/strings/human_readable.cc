@@ -2,9 +2,9 @@
 
 #include "supersonic/utils/strings/human_readable.h"
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"

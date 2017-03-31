@@ -6,10 +6,10 @@
 #ifndef STRINGS_NUMBERS_H_
 #define STRINGS_NUMBERS_H_
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
 #include <functional>
 #include <limits>
 #include "supersonic/utils/std_namespace.h"

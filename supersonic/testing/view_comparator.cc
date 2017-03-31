@@ -15,7 +15,7 @@
 
 #include "supersonic/testing/view_comparator.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/utils/exception/failureor.h"

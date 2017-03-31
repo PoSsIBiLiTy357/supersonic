@@ -15,7 +15,7 @@
 
 #include "supersonic/cursor/core/merge_union_all.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <memory>
 #include <queue>

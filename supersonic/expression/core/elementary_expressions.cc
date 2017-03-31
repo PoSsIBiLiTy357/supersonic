@@ -15,7 +15,7 @@
 
 #include "supersonic/expression/core/elementary_expressions.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <memory>
 #include <string>

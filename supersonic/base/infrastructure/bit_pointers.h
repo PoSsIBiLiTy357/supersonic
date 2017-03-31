@@ -39,7 +39,7 @@
 #ifndef SUPERSONIC_BASE_INFRASTRUCTURE_BIT_POINTERS_H_
 #define SUPERSONIC_BASE_INFRASTRUCTURE_BIT_POINTERS_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include "supersonic/utils/integral_types.h"
 #include <glog/logging.h>

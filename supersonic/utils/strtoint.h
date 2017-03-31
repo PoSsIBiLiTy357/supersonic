@@ -30,7 +30,7 @@
 #ifndef BASE_STRTOINT_H_
 #define BASE_STRTOINT_H_
 
-#include <stdlib.h> // For strtol* functions.
+#include <cstdlib> // For strtol* functions.
 #include <string>
 namespace supersonic {using std::string; }
 #include "supersonic/utils/integral_types.h"

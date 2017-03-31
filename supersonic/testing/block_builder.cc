@@ -15,7 +15,7 @@
 
 #include "supersonic/testing/block_builder.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <memory>
 

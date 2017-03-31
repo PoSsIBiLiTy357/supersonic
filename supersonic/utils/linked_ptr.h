@@ -46,7 +46,7 @@
 #ifndef UTIL_GTL_LINKED_PTR_H_
 #define UTIL_GTL_LINKED_PTR_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"  // for CHECK macros

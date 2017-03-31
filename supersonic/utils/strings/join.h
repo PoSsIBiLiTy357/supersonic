@@ -7,8 +7,8 @@
 #ifndef STRINGS_JOIN_H_
 #define STRINGS_JOIN_H_
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include <unordered_map>  // Not used in this file.
 #include <unordered_set>  // Not used in this file.

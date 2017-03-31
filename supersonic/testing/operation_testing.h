@@ -16,7 +16,7 @@
 #ifndef SUPERSONIC_TESTING_OPERATION_TESTING_H_
 #define SUPERSONIC_TESTING_OPERATION_TESTING_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <memory>
 #include <string>

@@ -10,7 +10,7 @@
 #ifndef BASE_MACROS_H_
 #define BASE_MACROS_H_
 
-#include <stddef.h>         // For size_t
+#include <cstddef>         // For size_t
 #include "supersonic/utils/port.h"
 
 // The swigged version of an abstract class must be concrete if any methods

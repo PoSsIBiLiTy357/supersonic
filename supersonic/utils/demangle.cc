@@ -7,7 +7,7 @@
 #  define HAS_CXA_DEMANGLE 0
 #endif
 
-#include <stdlib.h>
+#include <cstdlib>
 #if HAS_CXA_DEMANGLE
 #include <cxxabi.h>
 #endif

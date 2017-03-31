@@ -2,8 +2,8 @@
 
 #include "supersonic/utils/strings/serialize.h"
 
-#include <stddef.h>
-#include <stdlib.h>
+#include <cstddef>
+#include <cstdlib>
 #include <unordered_map>
 #include <string>
 namespace supersonic {using std::string; }

@@ -19,7 +19,7 @@
 #ifndef SUPERSONIC_CURSOR_INFRASTRUCTURE_ROW_COPIER_H_
 #define SUPERSONIC_CURSOR_INFRASTRUCTURE_ROW_COPIER_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <vector>
 using std::vector;

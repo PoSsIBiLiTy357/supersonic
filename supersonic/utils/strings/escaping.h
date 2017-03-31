@@ -14,7 +14,7 @@
 #ifndef STRINGS_ESCAPING_H_
 #define STRINGS_ESCAPING_H_
 
-#include <stddef.h>
+#include <cstddef>
 #include <string>
 namespace supersonic {using std::string; }
 #include <vector>

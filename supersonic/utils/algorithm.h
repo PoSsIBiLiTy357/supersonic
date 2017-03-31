@@ -22,7 +22,7 @@
 #ifndef UTIL_GTL_ALGORITHM_H_
 #define UTIL_GTL_ALGORITHM_H_
 
-#include <stddef.h>
+#include <cstddef>
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"
 #include <functional>

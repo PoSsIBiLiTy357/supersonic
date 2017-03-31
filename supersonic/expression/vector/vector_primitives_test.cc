@@ -18,10 +18,10 @@
 
 #include <climits>
 #include <cmath>
-#include <stdlib.h>
+#include <cstdlib>
 #include <algorithm>
-#include "supersonic/utils/std_namespace.h"
 #include <memory>
+#include "supersonic/utils/std_namespace.h"
 using std::isnan;
 
 #include "supersonic/base/infrastructure/bit_pointers.h"
@@ -88,14 +88,14 @@ template <> struct Normalize<bool> {
 
 template <> struct Normalize<double> {
   double operator()(double arg) const {
-    return  isnan(arg) ? 0.451 : arg;  // We want to have  nan == nan.
+    return  std::isnan(arg) ? 0.451 : arg;  // We want to have  nan == nan.
   };
   void NormalizeVector(double* data, index_t size) const {}
 };
 
 template <> struct Normalize<float> {
   float operator()(float arg) const {
-    return  isnan(arg) ? 0.451 : arg;  // We want to have  nan == nan.
+    return std::isnan(arg) ? 0.451 : arg;  // We want to have  nan == nan.
   };
   void NormalizeVector(float* data, index_t size) const {}
 };

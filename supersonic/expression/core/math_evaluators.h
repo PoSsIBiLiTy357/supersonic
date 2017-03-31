@@ -19,8 +19,8 @@
 #ifndef SUPERSONIC_EXPRESSION_CORE_MATH_EVALUATORS_H_
 #define SUPERSONIC_EXPRESSION_CORE_MATH_EVALUATORS_H_
 
-#include <math.h>
-#include <stdio.h>
+#include <cmath>
+#include <cstdio>
 
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"

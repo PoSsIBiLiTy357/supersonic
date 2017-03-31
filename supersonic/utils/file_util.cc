@@ -18,7 +18,7 @@
 #include "supersonic/utils/file_util.h"
 
 #include <sys/stat.h>
-#include <stdio.h>
+#include <cstdio>
 
 #include <vector>
 using std::vector;

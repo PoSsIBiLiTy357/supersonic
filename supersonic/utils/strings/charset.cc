@@ -2,7 +2,7 @@
 
 #include "supersonic/utils/strings/charset.h"
 
-#include <string.h>
+#include <cstring>
 #include "supersonic/utils/strings/stringpiece.h"
 
 namespace strings {

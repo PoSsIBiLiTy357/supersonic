@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <limits>
 #include "supersonic/utils/std_namespace.h"

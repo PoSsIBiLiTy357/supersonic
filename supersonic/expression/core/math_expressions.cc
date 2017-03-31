@@ -15,7 +15,7 @@
 
 #include "supersonic/expression/core/math_expressions.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "supersonic/expression/core/math_bound_expressions.h"
 #include "supersonic/expression/core/math_evaluators.h"  // IWYU pragma: keep

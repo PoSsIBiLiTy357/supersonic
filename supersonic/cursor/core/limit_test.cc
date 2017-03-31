@@ -15,7 +15,7 @@
 
 #include "supersonic/cursor/core/limit.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <memory>
 

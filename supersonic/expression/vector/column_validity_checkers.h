@@ -18,8 +18,8 @@
 #define SUPERSONIC_EXPRESSION_VECTOR_COLUMN_VALIDITY_CHECKERS_H_
 
 // For trunc, to check the integrity of a double argument.
-#include <math.h>
-#include <stddef.h>
+#include <cmath>
+#include <cstddef>
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"

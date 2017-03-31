@@ -18,7 +18,7 @@
 
 #include "supersonic/expression/core/date_bound_expressions.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <algorithm>
 #include <memory>

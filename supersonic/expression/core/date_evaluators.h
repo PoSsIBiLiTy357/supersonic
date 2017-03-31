@@ -20,7 +20,7 @@
 #ifndef SUPERSONIC_EXPRESSION_CORE_DATE_EVALUATORS_H_
 #define SUPERSONIC_EXPRESSION_CORE_DATE_EVALUATORS_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include "supersonic/utils/integral_types.h"
 #include "supersonic/base/infrastructure/bit_pointers.h"

@@ -20,7 +20,7 @@
 #ifndef SUPERSONIC_EXPRESSION_VECTOR_VECTOR_PRIMITIVES_H_
 #define SUPERSONIC_EXPRESSION_VECTOR_VECTOR_PRIMITIVES_H_
 
-#include <string.h>
+#include <cstring>
 #ifdef  __SSE2__
 #include <emmintrin.h>
 #include <xmmintrin.h>

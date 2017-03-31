@@ -7,7 +7,7 @@
 #ifndef STRINGS_SERIALIZE_H_
 #define STRINGS_SERIALIZE_H_
 
-#include <string.h>
+#include <cstring>
 #include <unordered_map>
 #include <string>
 namespace supersonic {using std::string; }

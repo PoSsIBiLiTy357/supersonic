@@ -56,7 +56,7 @@
 #ifndef SUPERSONIC_CURSOR_INFRASTRUCTURE_ROW_H_
 #define SUPERSONIC_CURSOR_INFRASTRUCTURE_ROW_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include "supersonic/utils/integral_types.h"
 #include "supersonic/base/infrastructure/bit_pointers.h"

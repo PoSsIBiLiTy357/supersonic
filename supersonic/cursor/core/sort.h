@@ -16,7 +16,7 @@
 #ifndef SUPERSONIC_CURSOR_CORE_SORT_H_
 #define SUPERSONIC_CURSOR_CORE_SORT_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/tuple_schema.h"

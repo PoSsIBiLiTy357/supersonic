@@ -15,7 +15,7 @@
 
 #include "supersonic/testing/comparable_tuple_schema.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <string>
 namespace supersonic {using std::string; }

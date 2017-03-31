@@ -17,7 +17,7 @@
 
 #include "supersonic/base/infrastructure/copy_column.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <string>
 namespace supersonic {using std::string; }

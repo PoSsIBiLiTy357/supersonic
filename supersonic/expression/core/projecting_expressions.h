@@ -19,7 +19,7 @@
 #ifndef SUPERSONIC_EXPRESSION_CORE_PROJECTING_EXPRESSIONS_H_
 #define SUPERSONIC_EXPRESSION_CORE_PROJECTING_EXPRESSIONS_H_
 
-#include <stddef.h>
+#include <cstddef>
 #include <string>
 namespace supersonic {using std::string; }
 #include <vector>

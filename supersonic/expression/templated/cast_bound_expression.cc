@@ -16,7 +16,7 @@
 
 #include "supersonic/expression/templated/cast_bound_expression.h"
 
-#include <stddef.h>
+#include <cstddef>
 #include <memory>
 #include <set>
 #include "supersonic/utils/std_namespace.h"

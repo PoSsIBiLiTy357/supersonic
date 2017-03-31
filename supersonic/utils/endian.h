@@ -25,7 +25,7 @@
 #ifndef UTIL_ENDIAN_ENDIAN_H_
 #define UTIL_ENDIAN_ENDIAN_H_
 
-#include <assert.h>
+#include <cassert>
 
 #include "supersonic/utils/casts.h"
 #include "supersonic/utils/int128.h"

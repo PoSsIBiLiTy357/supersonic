@@ -6,8 +6,8 @@
 
 #include "supersonic/utils/strings/strip.h"
 
-#include <assert.h>
-#include <string.h>
+#include <cassert>
+#include <cstring>
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"
 #include <string>

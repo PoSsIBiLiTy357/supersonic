@@ -15,7 +15,7 @@
 
 #include "supersonic/expression/infrastructure/terminal_expressions.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <memory>
 

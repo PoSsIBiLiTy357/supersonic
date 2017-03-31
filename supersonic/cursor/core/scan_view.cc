@@ -16,7 +16,7 @@
 
 #include "supersonic/cursor/core/scan_view.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <string>
 namespace supersonic {using std::string; }

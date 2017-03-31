@@ -18,7 +18,7 @@
 
 #include <sys/time.h>
 
-#include <string.h>
+#include <cstring>
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"  // For max.
 #include <string>

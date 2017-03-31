@@ -15,8 +15,8 @@
 
 #include "supersonic/serialization/build_expression_from_proto.h"
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
 #include <memory>
 #include <string>

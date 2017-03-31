@@ -24,7 +24,7 @@
 #ifndef SUPERSONIC_EXPRESSION_VECTOR_EXPRESSION_EVALUATORS_H_
 #define SUPERSONIC_EXPRESSION_VECTOR_EXPRESSION_EVALUATORS_H_
 
-#include <math.h>
+#include <cmath>
 #include <cstdio>
 #include <ctime>
 

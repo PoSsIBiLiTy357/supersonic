@@ -16,7 +16,7 @@
 #ifndef SUPERSONIC_TESTING_REPEATING_BLOCK_H_
 #define SUPERSONIC_TESTING_REPEATING_BLOCK_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <memory>
 

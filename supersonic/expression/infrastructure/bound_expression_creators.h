@@ -21,7 +21,7 @@
 #ifndef SUPERSONIC_EXPRESSION_INFRASTRUCTURE_BOUND_EXPRESSION_CREATORS_H_
 #define SUPERSONIC_EXPRESSION_INFRASTRUCTURE_BOUND_EXPRESSION_CREATORS_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/types.h"

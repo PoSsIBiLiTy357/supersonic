@@ -85,7 +85,7 @@
 
 #include "supersonic/cursor/core/sort.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"

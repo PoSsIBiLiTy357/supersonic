@@ -23,8 +23,8 @@
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 // This is exactly like mktime() except it is guaranteed to return -1 on
 // failure.  Some versions of glibc allow mktime() to return negative

@@ -16,8 +16,8 @@
 
 #include "supersonic/expression/core/string_bound_expressions.h"
 
-#include <stddef.h>
-#include <string.h>
+#include <cstddef>
+#include <cstring>
 
 #include <algorithm>
 #include <memory>

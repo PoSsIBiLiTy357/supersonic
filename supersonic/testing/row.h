@@ -32,7 +32,7 @@
 #ifndef SUPERSONIC_TESTING_ROW_H_
 #define SUPERSONIC_TESTING_ROW_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <iosfwd>
 #include <ostream>

@@ -16,7 +16,7 @@
 #ifndef SUPERSONIC_CURSOR_INFRASTRUCTURE_ROW_HASH_SET_H_
 #define SUPERSONIC_CURSOR_INFRASTRUCTURE_ROW_HASH_SET_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <memory>
 

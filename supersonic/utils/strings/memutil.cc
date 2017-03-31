@@ -4,7 +4,7 @@
 
 #include "supersonic/utils/strings/memutil.h"
 
-#include <stdlib.h>        // for malloc, NULL
+#include <cstdlib>        // for malloc, NULL
 
 #include "supersonic/utils/strings/ascii_ctype.h"  // for ascii_tolower
 

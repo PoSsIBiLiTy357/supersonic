@@ -4,7 +4,7 @@
 
 #include "supersonic/utils/strings/stringpiece.h"
 
-#include <string.h>
+#include <cstring>
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"
 #include <climits>

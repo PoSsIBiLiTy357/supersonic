@@ -18,7 +18,7 @@
 #ifndef SUPERSONIC_TESTING_COMPARABLE_CURSOR_H_
 #define SUPERSONIC_TESTING_COMPARABLE_CURSOR_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <iosfwd>
 #include <memory>

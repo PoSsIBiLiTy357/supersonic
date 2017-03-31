@@ -15,9 +15,9 @@
 
 #include "supersonic/cursor/core/column_aggregator.h"
 
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 
 #include <unordered_set>
 #include <map>

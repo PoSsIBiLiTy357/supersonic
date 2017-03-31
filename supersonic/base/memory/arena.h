@@ -18,8 +18,8 @@
 #ifndef SUPERSONIC_BASE_MEMORY_ARENA_H_
 #define SUPERSONIC_BASE_MEMORY_ARENA_H_
 
-#include <stddef.h>
-#include <string.h>
+#include <cstddef>
+#include <cstring>
 
 #include <memory>
 #include <new>

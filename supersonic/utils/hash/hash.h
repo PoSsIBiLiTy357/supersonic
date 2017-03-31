@@ -18,8 +18,8 @@
 #ifndef SUPERSONIC_OPENSOURCE_HASH_HASH_H_
 #define SUPERSONIC_OPENSOURCE_HASH_HASH_H_
 
-#include <stddef.h>
-#include <string.h>
+#include <cstddef>
+#include <cstring>
 
 #include <unordered_map>
 #include <string>

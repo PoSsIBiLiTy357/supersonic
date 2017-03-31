@@ -19,7 +19,7 @@
 #ifndef SUPERSONIC_BASE_INFRASTRUCTURE_TYPES_H_
 #define SUPERSONIC_BASE_INFRASTRUCTURE_TYPES_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <string>
 namespace supersonic {using std::string; }

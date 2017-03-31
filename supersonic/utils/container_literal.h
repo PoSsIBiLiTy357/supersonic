@@ -153,8 +153,8 @@
 #include <glibcxx_debug_traits.h>
 #endif
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <cstddef>
 #include <iterator>
 #include "supersonic/utils/std_namespace.h"

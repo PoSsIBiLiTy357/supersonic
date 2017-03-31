@@ -13,7 +13,7 @@
 #ifndef STRINGS_SPLIT_H_
 #define STRINGS_SPLIT_H_
 
-#include <stddef.h>
+#include <cstddef>
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"
 #include <unordered_map>

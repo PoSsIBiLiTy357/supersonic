@@ -2,10 +2,10 @@
 
 #include "supersonic/utils/strings/strcat.h"
 
-#include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdarg>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"

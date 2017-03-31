@@ -15,7 +15,7 @@
 
 #include "supersonic/cursor/infrastructure/row_hash_set.h"
 
-#include <string.h>
+#include <cstring>
 #include <cstddef>
 
 #include <algorithm>

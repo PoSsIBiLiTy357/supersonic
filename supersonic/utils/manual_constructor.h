@@ -43,7 +43,7 @@
 #ifndef UTIL_GTL_MANUAL_CONSTRUCTOR_H_
 #define UTIL_GTL_MANUAL_CONSTRUCTOR_H_
 
-#include <stddef.h>
+#include <cstddef>
 #include <new>
 
 #include "supersonic/utils/port.h"

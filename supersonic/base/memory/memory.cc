@@ -15,7 +15,7 @@
 
 #include "supersonic/base/memory/memory.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"

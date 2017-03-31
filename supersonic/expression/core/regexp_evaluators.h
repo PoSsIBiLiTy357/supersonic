@@ -20,7 +20,7 @@
 #ifndef SUPERSONIC_EXPRESSION_CORE_REGEXP_EVALUATORS_H_
 #define SUPERSONIC_EXPRESSION_CORE_REGEXP_EVALUATORS_H_
 
-#include <stddef.h>
+#include <cstddef>
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"
 #include <cstring>

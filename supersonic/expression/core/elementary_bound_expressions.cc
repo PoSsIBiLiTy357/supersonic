@@ -15,8 +15,8 @@
 
 #include "supersonic/expression/core/elementary_bound_expressions.h"
 
-#include <stddef.h>
-#include <string.h>
+#include <cstddef>
+#include <cstring>
 #include <algorithm>
 #include <memory>
 #include <set>

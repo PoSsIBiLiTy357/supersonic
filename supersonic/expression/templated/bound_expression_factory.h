@@ -21,7 +21,7 @@
 #ifndef SUPERSONIC_EXPRESSION_TEMPLATED_BOUND_EXPRESSION_FACTORY_H_
 #define SUPERSONIC_EXPRESSION_TEMPLATED_BOUND_EXPRESSION_FACTORY_H_
 
-#include <stddef.h>
+#include <cstddef>
 #include <memory>
 #include <string>
 namespace supersonic {using std::string; }

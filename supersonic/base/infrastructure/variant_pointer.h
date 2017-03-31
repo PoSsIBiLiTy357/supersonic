@@ -18,7 +18,7 @@
 #ifndef SUPERSONIC_BASE_INFRASTRUCTURE_VARIANT_POINTER_H_
 #define SUPERSONIC_BASE_INFRASTRUCTURE_VARIANT_POINTER_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include "supersonic/utils/integral_types.h"
 #include "supersonic/base/infrastructure/types.h"

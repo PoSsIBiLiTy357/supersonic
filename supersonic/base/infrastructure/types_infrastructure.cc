@@ -15,7 +15,7 @@
 
 #include "supersonic/base/infrastructure/types_infrastructure.h"
 
-#include <time.h>
+#include <ctime>
 
 #include <cmath>
 #include <limits>

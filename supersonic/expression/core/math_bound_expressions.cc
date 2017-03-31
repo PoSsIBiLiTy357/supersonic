@@ -18,8 +18,8 @@
 
 #include "supersonic/expression/core/math_bound_expressions.h"
 
-#include <math.h>
-#include <stddef.h>
+#include <cmath>
+#include <cstddef>
 #include <memory>
 using std::unique_ptr;
 

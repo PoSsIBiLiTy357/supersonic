@@ -22,7 +22,7 @@
 #include <boost/timer/timer.hpp>
 
 
-#include <time.h>
+#include <ctime>
 
 #include "supersonic/utils/integral_types.h"
 #include "supersonic/utils/macros.h"

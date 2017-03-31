@@ -7,11 +7,11 @@
 
 #include "supersonic/utils/strings/util.h"
 
-#include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>           // for FastTimeToBuffer()
+#include <cassert>
+#include <cstdarg>
+#include <cstdio>
+#include <cstring>
+#include <ctime>           // for FastTimeToBuffer()
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"
 #include <string>

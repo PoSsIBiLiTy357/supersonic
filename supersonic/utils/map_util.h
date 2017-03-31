@@ -62,7 +62,7 @@
 #ifndef UTIL_GTL_MAP_UTIL_H_
 #define UTIL_GTL_MAP_UTIL_H_
 
-#include <stddef.h>
+#include <cstddef>
 #include <iterator>
 #include "supersonic/utils/std_namespace.h"
 #include <string>

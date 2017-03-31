@@ -17,7 +17,7 @@
 
 #include "supersonic/cursor/core/generate.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/exception/failureor.h"

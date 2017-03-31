@@ -23,7 +23,7 @@
 #ifndef SUPERSONIC_EXPRESSION_VECTOR_BINARY_COLUMN_COMPUTERS_H_
 #define SUPERSONIC_EXPRESSION_VECTOR_BINARY_COLUMN_COMPUTERS_H_
 
-#include <stddef.h>
+#include <cstddef>
 #include <string>
 namespace supersonic {using std::string; }
 

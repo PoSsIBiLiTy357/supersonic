@@ -23,7 +23,7 @@
 #ifndef SUPERSONIC_EXPRESSION_VECTOR_VECTOR_LOGIC_H_
 #define SUPERSONIC_EXPRESSION_VECTOR_VECTOR_LOGIC_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include "supersonic/base/infrastructure/bit_pointers.h"
 

@@ -17,7 +17,7 @@
 #ifndef SUPERSONIC_CURSOR_INFRASTRUCTURE_BASIC_CURSOR_H_
 #define SUPERSONIC_CURSOR_INFRASTRUCTURE_BASIC_CURSOR_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <memory>
 #include <string>

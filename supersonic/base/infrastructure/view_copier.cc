@@ -17,7 +17,7 @@
 
 #include "supersonic/base/infrastructure/view_copier.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"

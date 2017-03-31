@@ -29,8 +29,8 @@
 #ifndef SUPERSONIC_BASE_INFRASTRUCTURE_AGGREGATION_OPERATORS_H_
 #define SUPERSONIC_BASE_INFRASTRUCTURE_AGGREGATION_OPERATORS_H_
 
-#include <stddef.h>
-#include <string.h>
+#include <cstddef>
+#include <cstring>
 
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"

@@ -15,7 +15,7 @@
 
 #include "supersonic/cursor/core/aggregator.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <memory>
 #include <string>

@@ -4,9 +4,9 @@
 
 #include "supersonic/utils/strings/split.h"
 
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <cstdlib>
+#include <cstring>
 #include <iterator>
 #include "supersonic/utils/std_namespace.h"
 #include <limits>

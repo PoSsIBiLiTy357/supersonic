@@ -16,7 +16,7 @@
 
 #include "supersonic/base/infrastructure/bit_pointers.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"

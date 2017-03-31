@@ -58,7 +58,7 @@
 // empty string will be returned. If too many arguments are supplied, unused
 // arguments will be ignored.
 
-#include <string.h>
+#include <cstring>
 #include <string>
 namespace supersonic {using std::string; }
 

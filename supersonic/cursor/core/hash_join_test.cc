@@ -16,7 +16,7 @@
 
 #include "supersonic/cursor/core/hash_join.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <memory>
 

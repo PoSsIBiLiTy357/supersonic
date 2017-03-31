@@ -10,9 +10,9 @@
 #ifndef BASE_CASTS_H_
 #define BASE_CASTS_H_
 
-#include <assert.h>         // for use with down_cast<>
-#include <string.h>         // for memcpy
-#include <limits.h>         // for enumeration casts and tests
+#include <cassert>         // for use with down_cast<>
+#include <cstring>         // for memcpy
+#include <climits>         // for enumeration casts and tests
 
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/template_util.h"

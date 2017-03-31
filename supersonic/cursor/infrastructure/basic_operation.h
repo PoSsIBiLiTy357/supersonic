@@ -17,7 +17,7 @@
 #ifndef SUPERSONIC_CURSOR_INFRASTRUCTURE_BASIC_OPERATION_H_
 #define SUPERSONIC_CURSOR_INFRASTRUCTURE_BASIC_OPERATION_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <string>
 namespace supersonic {using std::string; }

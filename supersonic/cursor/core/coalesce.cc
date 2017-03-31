@@ -15,7 +15,7 @@
 
 #include "supersonic/cursor/core/coalesce.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <memory>
 #include <vector>

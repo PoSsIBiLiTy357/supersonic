@@ -16,7 +16,7 @@
 
 #include "supersonic/expression/core/comparison_bound_expressions.h"
 
-#include <stddef.h>
+#include <cstddef>
 #include "supersonic/utils/std_namespace.h"
 #include <algorithm>
 #include <memory>

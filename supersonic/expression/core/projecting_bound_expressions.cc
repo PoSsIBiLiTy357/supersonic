@@ -15,7 +15,7 @@
 
 #include "supersonic/expression/core/projecting_bound_expressions.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <algorithm>
 #include <memory>

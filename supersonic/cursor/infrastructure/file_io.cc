@@ -31,7 +31,7 @@
 #include "supersonic/cursor/infrastructure/file_io.h"
 #include "supersonic/cursor/infrastructure/file_io-internal.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"

@@ -4,7 +4,7 @@
 // See strtoint.h for details on how to use this component.
 //
 
-#include <errno.h>
+#include <cerrno>
 #include "supersonic/utils/port.h"
 #include "supersonic/utils/strtoint.h"
 

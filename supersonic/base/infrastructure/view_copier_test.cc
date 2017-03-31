@@ -15,7 +15,7 @@
 
 #include "supersonic/base/infrastructure/view_copier.h"
 
-#include <stddef.h>
+#include <cstddef>
 #include <memory>
 using std::make_unique;
 using std::unique_ptr;

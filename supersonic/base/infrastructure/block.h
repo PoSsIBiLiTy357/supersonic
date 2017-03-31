@@ -22,7 +22,7 @@
 #ifndef SUPERSONIC_BASE_INFRASTRUCTURE_BLOCK_H_
 #define SUPERSONIC_BASE_INFRASTRUCTURE_BLOCK_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <string>
 #include <memory>

@@ -18,7 +18,7 @@
 #ifndef SUPERSONIC_CURSOR_INFRASTRUCTURE_ORDERING_H_
 #define SUPERSONIC_CURSOR_INFRASTRUCTURE_ORDERING_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"

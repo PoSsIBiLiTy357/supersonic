@@ -20,7 +20,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <sys/stat.h>
 
 #include <glog/logging.h>

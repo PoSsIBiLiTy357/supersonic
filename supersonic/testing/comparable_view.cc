@@ -16,11 +16,9 @@
 #include "supersonic/testing/comparable_view.h"
 
 #include <cmath>
-
 #include <cfloat>
-using std::isnan;
-
 #include <vector>
+using std::isnan;
 using std::vector;
 
 #include "supersonic/base/infrastructure/tuple_schema.h"
@@ -96,10 +94,10 @@ testing::AssertionResult ComparableView::operator==(
         // We want NaN values for doubles to compare to true in testing
         // (while we still want the standard NaN =/= NaN in production code).
         if (my_column.type_info().type() == DOUBLE &&
-            isnan(*value.as<DOUBLE>()) && isnan(*value.as<DOUBLE>()))
+            std::isnan(*value.as<DOUBLE>()) && std::isnan(*value.as<DOUBLE>()))
           continue;
         if (my_column.type_info().type() == FLOAT &&
-            isnan(*value.as<FLOAT>()) && isnan(*value.as<FLOAT>()))
+            std::isnan(*value.as<FLOAT>()) && std::isnan(*value.as<FLOAT>()))
           continue;
         return testing::AssertionFailure()
             << "value mismatch in row " << row_id << ", column " << c;

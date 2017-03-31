@@ -10,7 +10,7 @@
 #ifndef STRINGS_CASE_H_
 #define STRINGS_CASE_H_
 
-#include <string.h>
+#include <cstring>
 #include <strings.h>
 #include <functional>
 #include <string>
