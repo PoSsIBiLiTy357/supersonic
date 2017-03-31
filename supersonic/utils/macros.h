@@ -97,7 +97,7 @@
 // http://gcc.gnu.org/PR51213 in gcc-4.7 / Crosstool v16.
 // TODO(user): Remove "&& !defined(__clang_)" when =delete is
 // gcc-4.7 before =delete is allowed, go back to the C++98 definition.
-#if LANG_CXX11 && !defined(__clang__)
+#if LANG_CXX11
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&) = delete;      \
   void operator=(const TypeName&) = delete
