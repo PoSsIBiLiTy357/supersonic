@@ -22,7 +22,6 @@
 #include <string>
 namespace supersonic {using std::string; }
 
-#include "supersonic/utils/scoped_ptr.h"
 
 #include "supersonic/expression/templated/abstract_bound_expressions.h"
 #include "supersonic/expression/infrastructure/basic_expressions.h"

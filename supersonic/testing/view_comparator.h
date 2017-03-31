@@ -22,7 +22,7 @@
 // Does take into account whether columns contain nulls.
 //
 // Example usage:
-//    scoped_ptr<Block> block(
+//    std::unique_ptr<Block> block(
 //      BlockBuilder<STRING, INT32>()
 //      .AddRow("first", 12)
 //      .AddRow("second", __)

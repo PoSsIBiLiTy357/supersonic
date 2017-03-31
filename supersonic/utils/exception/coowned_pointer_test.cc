@@ -163,7 +163,7 @@ TEST(CoownedPointer, ReleaseReassignedUnreleases) {
 TEST(CoownedPointer, ReleaseWorks) {
   bool alive;
   {
-    scoped_ptr<Target> released;
+    unique_ptr<Target> released;
     {
       CoownedPointer<Target> p(new Target(&alive));
       EXPECT_TRUE(p.is_owner());
@@ -179,7 +179,7 @@ TEST(CoownedPointer, ReleaseWorks) {
 TEST(CoownedPointer, ReleaseAfterMultipleCopiesWorks) {
   bool alive;
   {
-    scoped_ptr<Target> released;
+    unique_ptr<Target> released;
     {
       CoownedPointer<Target> p1(new Target(&alive));
       CoownedPointer<Target> p2(p1);
@@ -214,7 +214,7 @@ TEST(CoownedPointer, ReleaseAfterMultipleCopiesWorks) {
 TEST(CoownedPointer, ReleaseMixedWithAssignmentWorks) {
   bool alive;
   {
-    scoped_ptr<Target> released;
+    unique_ptr<Target> released;
     {
       CoownedPointer<Target> p1(new Target(&alive));
       CoownedPointer<Target> p2;

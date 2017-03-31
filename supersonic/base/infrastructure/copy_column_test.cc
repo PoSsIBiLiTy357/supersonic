@@ -16,13 +16,15 @@
 #include "supersonic/base/infrastructure/copy_column.h"
 
 #include <stddef.h>
+#include <memory>
 #include <string>
 namespace supersonic {using std::string; }
+using std::make_unique;
+using std::unique_ptr;
 
 #include "supersonic/utils/integral_types.h"
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/base/infrastructure/bit_pointers.h"
 #include "supersonic/base/infrastructure/block.h"
@@ -65,9 +67,9 @@ class CopyColumnTest : public testing::Test {
   }
 
   TupleSchema schema_;
-  scoped_ptr<Block> block_;
-  scoped_ptr<View> input_;
-  scoped_ptr<View> output_;
+  unique_ptr<Block> block_;
+  unique_ptr<View> input_;
+  unique_ptr<View> output_;
 
  private:
   void CreateColumnPair(DataType type,
@@ -81,16 +83,16 @@ class CopyColumnTest : public testing::Test {
     schema_.add_attribute(input_schema.attribute(0));
     schema_.add_attribute(output_schema.attribute(0));
 
-    block_.reset(new Block(schema_, HeapBufferAllocator::Get()));
+    block_ = make_unique<Block>(schema_, HeapBufferAllocator::Get());
     block_->Reallocate(Cursor::kDefaultRowCount);
 
-    input_.reset(new View(input_schema));
+    input_ = make_unique<View>(input_schema);
     input_->mutable_column(0)->Reset(block_->column(0).data(),
                                      block_->column(0).is_null());
     input_->set_row_count(Cursor::kDefaultRowCount);
 
     // A view over the output column.
-    output_.reset(new View(output_schema));
+    output_ = make_unique<View>(output_schema);
     output_->mutable_column(0)->ResetFrom(block_->column(1));
     output_->set_row_count(Cursor::kDefaultRowCount);
   }
@@ -170,7 +172,7 @@ TEST_F(CopyColumnTest,
        InputSelectorTest) {
   SetUpColumnPair(INT64, NOT_NULLABLE, NOT_NULLABLE);
   const rowcount_t num_row_ids = block_->row_capacity() / 5;
-  scoped_ptr<rowid_t[]> row_ids(new rowid_t[num_row_ids]);
+  auto row_ids = make_unique<rowid_t[]>(num_row_ids);
   for (rowid_t i = 0; i < num_row_ids; ++i) {
     row_ids[i] = i * 5;
   }

@@ -17,16 +17,16 @@
 
 #include <memory>
 #include <string>
-namespace supersonic {using std::string; }
 #include <utility>
-#include "supersonic/utils/std_namespace.h"
 #include <vector>
+#include "supersonic/utils/std_namespace.h"
+namespace supersonic {using std::string; }
+using std::make_unique;
 using std::vector;
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/template_util.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
@@ -545,9 +545,9 @@ int ProjectedAttributePosition(
 void HashJoinCursor::SetUpFinalResultProjector(
     JoinType join_type,
     const BoundMultiSourceProjector& result_projector) {
-  final_result_projector_.reset(new BoundMultiSourceProjector(
+  final_result_projector_ = make_unique<BoundMultiSourceProjector>(
       util::gtl::Container(&lhs_result_.schema(), &rhs_builder_->schema()).
-      As<vector<const TupleSchema*> >()));
+      As<vector<const TupleSchema*> >());
   const TupleSchema& result_schema = result_projector.result_schema();
   // Iterate over result schema attributes.
   for (int i = 0; i < result_schema.attribute_count(); i++) {
@@ -595,8 +595,8 @@ FailureOrVoid HashIndexOnMaterializedCursor<key_uniqueness>::Init() {
         ERROR_MEMORY_EXCEEDED,
         "Cannot allocate memory to store index lookup results"));
   }
-  result_cursor_query_ids_.reset(
-      new rowid_t[result_cursor_block_.row_capacity()]);
+  result_cursor_query_ids_ = make_unique<rowid_t[]>(
+      result_cursor_block_.row_capacity());
   return Success();
 }
 

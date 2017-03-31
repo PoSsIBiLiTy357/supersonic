@@ -20,8 +20,9 @@
 
 #include <math.h>
 #include <stddef.h>
+#include <memory>
+using std::unique_ptr;
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -95,8 +96,8 @@ FailureOrOwned<BoundExpression> BoundLogNulling(BoundExpression* base_ptr,
                                                 BoundExpression* argument_ptr,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> base(base_ptr);
-  scoped_ptr<BoundExpression> argument(argument_ptr);
+  unique_ptr<BoundExpression> base(base_ptr);
+  unique_ptr<BoundExpression> argument(argument_ptr);
   FailureOrOwned<BoundExpression> ln_argument =
       BoundLnNulling(argument.release(), allocator, max_row_count);
   PROPAGATE_ON_FAILURE(ln_argument);
@@ -111,8 +112,8 @@ FailureOrOwned<BoundExpression> BoundLogQuiet(BoundExpression* base_ptr,
                                               BoundExpression* argument_ptr,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> base(base_ptr);
-  scoped_ptr<BoundExpression> argument(argument_ptr);
+  unique_ptr<BoundExpression> base(base_ptr);
+  unique_ptr<BoundExpression> argument(argument_ptr);
   FailureOrOwned<BoundExpression> ln_argument =
       BoundLnQuiet(argument.release(), allocator, max_row_count);
   PROPAGATE_ON_FAILURE(ln_argument);
@@ -285,7 +286,7 @@ FailureOrOwned<BoundExpression> BoundAtanh(BoundExpression* argument,
 FailureOrOwned<BoundExpression> BoundToDegrees(BoundExpression* argument,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> argument_ptr(argument);
+  unique_ptr<BoundExpression> argument_ptr(argument);
   FailureOrOwned<BoundExpression> scale =
       BoundConstDouble(180. / M_PI, allocator, max_row_count);
   PROPAGATE_ON_FAILURE(scale);
@@ -298,7 +299,7 @@ FailureOrOwned<BoundExpression> BoundToDegrees(BoundExpression* argument,
 FailureOrOwned<BoundExpression> BoundToRadians(BoundExpression* argument,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> argument_ptr(argument);
+  unique_ptr<BoundExpression> argument_ptr(argument);
   FailureOrOwned<BoundExpression> scale =
       BoundConstDouble(M_PI / 180., allocator, max_row_count);
   PROPAGATE_ON_FAILURE(scale);
@@ -343,8 +344,8 @@ FailureOrOwned<BoundExpression> BoundRoundWithPrecision(
     BoundExpression* precision_ptr,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> argument(argument_ptr);
-  scoped_ptr<BoundExpression> precision(precision_ptr);
+  unique_ptr<BoundExpression> argument(argument_ptr);
+  unique_ptr<BoundExpression> precision(precision_ptr);
   // We expect the precision to be an integer.
   PROPAGATE_ON_FAILURE(CheckAttributeCount("ROUND_WITH_PRECISION",
                                            precision->result_schema(), 1));
@@ -473,7 +474,7 @@ UnaryExpressionFactory* CreateAbsFactory(DataType type) {
 FailureOrOwned<BoundExpression> BoundAbs(BoundExpression* argument,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> argument_ptr(argument);
+  unique_ptr<BoundExpression> argument_ptr(argument);
   PROPAGATE_ON_FAILURE(CheckAttributeCount("ABS",
                                            argument_ptr->result_schema(),
                                            1));

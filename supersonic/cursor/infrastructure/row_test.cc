@@ -20,7 +20,6 @@
 #include <string>
 namespace supersonic {using std::string; }
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/testing/block_builder.h"
 #include "supersonic/testing/comparators.h"
 #include "gtest/gtest.h"

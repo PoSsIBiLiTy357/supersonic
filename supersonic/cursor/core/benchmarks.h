@@ -24,7 +24,6 @@ namespace supersonic {using std::string; }
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/timer.h"
 #include "supersonic/utils/walltime.h"
 #include "supersonic/base/exception/result.h"

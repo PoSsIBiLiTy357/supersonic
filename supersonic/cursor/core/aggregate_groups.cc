@@ -15,20 +15,18 @@
 
 #include <stddef.h>
 #include <algorithm>
-#include "supersonic/utils/std_namespace.h"
 #include <list>
-#include "supersonic/utils/std_namespace.h"
 #include <memory>
 #include <set>
-#include "supersonic/utils/std_namespace.h"
 #include <vector>
+#include "supersonic/utils/std_namespace.h"
 using std::vector;
+using std::make_unique;
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/port.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
@@ -456,11 +454,11 @@ class GroupAggregateOperation : public BasicOperation {
     BufferAllocator* original_allocator = buffer_allocator();
     std::unique_ptr<BufferAllocator> allocator;
     if (options_->enforce_quota()) {
-      allocator.reset(new GuaranteeMemory(options_->memory_quota(),
-                                          original_allocator));
+      allocator = make_unique<GuaranteeMemory>(options_->memory_quota(),
+          original_allocator);
     } else {
-      allocator.reset(new MemoryLimit(
-          options_->memory_quota(), false, original_allocator));
+      allocator = make_unique<MemoryLimit>(options_->memory_quota(), false,
+          original_allocator);
     }
     FailureOrOwned<Aggregator> aggregator = Aggregator::Create(
         *aggregation_specification_, child_cursor->schema(),
@@ -683,7 +681,7 @@ class HybridGroupSetup {
                            "aggregation needs input column.")));
         }
         if (InsertIfNotPresent(&distinct_columns_set, elem.input())) {
-          column_group_projectors_.push_back(
+          column_group_projectors_.emplace_back(
               ProjectNamedAttributeAs(elem.input(),
                                       pregroup_column_name));
           pregroup_group_by_columns_.add(
@@ -726,7 +724,7 @@ class HybridGroupSetup {
     }
     if (!nondistinct_columns_set.empty() || count_star_present_ ||
         column_group_projectors_.empty()) {
-      column_group_projectors_.push_back(nondistinct_columns.Clone());
+      column_group_projectors_.emplace_back(nondistinct_columns.Clone());
     }
     initialized_ = true;
     return Success();

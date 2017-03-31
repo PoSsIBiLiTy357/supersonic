@@ -19,6 +19,7 @@
 #include "supersonic/benchmark/dot/dot_drawer.h"
 
 #include <memory>
+using std::make_unique;
 
 #include "supersonic/benchmark/proto/benchmark.pb.h"
 #include "supersonic/benchmark/infrastructure/cursor_statistics.h"
@@ -360,7 +361,7 @@ void FileOutputWriter::WriteDOT(const string& dot) {
   if (file_name_.size() == 0) {
         LOG(FATAL) << "Empty file name provided!";
       }
-      out_file_closer_.reset(new FileCloser(File::OpenOrDie(file_name_, "w")));
+      out_file_closer_ = make_unique<FileCloser>(File::OpenOrDie(file_name_, "w"));
   CHECK_GT((*out_file_closer_)->Write(dot.c_str(), dot.size()), 0)
       << "Error writing to file: " << file_name_;
   CHECK(out_file_closer_->Close())

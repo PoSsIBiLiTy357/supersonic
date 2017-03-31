@@ -16,12 +16,13 @@
 
 #include "supersonic/expression/core/projecting_expressions.h"
 
+#include <memory>
 #include <string>
-namespace supersonic {using std::string; }
 #include <vector>
+namespace supersonic {using std::string; }
+using std::unique_ptr;
 using std::vector;
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
 #include "supersonic/expression/base/expression.h"
@@ -50,7 +51,7 @@ class InputAttributeProjectionExpression : public Expression {
   }
 
  private:
-  scoped_ptr<const SingleSourceProjector> projector_;
+  unique_ptr<const SingleSourceProjector> projector_;
   DISALLOW_COPY_AND_ASSIGN(InputAttributeProjectionExpression);
 };
 
@@ -103,8 +104,8 @@ class ProjectionExpression : public Expression {
   }
 
  private:
-  scoped_ptr<const ExpressionList> arguments_;
-  scoped_ptr<const MultiSourceProjector> projector_;
+  unique_ptr<const ExpressionList> arguments_;
+  unique_ptr<const MultiSourceProjector> projector_;
   DISALLOW_COPY_AND_ASSIGN(ProjectionExpression);
 };
 

@@ -13,11 +13,13 @@
 // limitations under the License.
 //
 
+#include <memory>
+using std::unique_ptr;
+
 #include "supersonic/expression/core/projecting_expressions.h"
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/infrastructure/bit_pointers.h"
 #include "supersonic/base/infrastructure/block.h"
 #include "supersonic/base/infrastructure/tuple_schema.h"
@@ -69,12 +71,12 @@ class ProjectingExpressionTest : public testing::Test {
         .Build();
   }
 
-  scoped_ptr<Block> block_;
+  unique_ptr<Block> block_;
 };
 
 TEST_F(ProjectingExpressionTest, AttributeAtSelects) {
   for (int i = 0; i < input().column_count(); ++i) {
-    scoped_ptr<BoundExpressionTree> attribute(
+    unique_ptr<BoundExpressionTree> attribute(
         DefaultBind(input().schema(), 100, AttributeAt(i)));
     const View& result = DefaultEvaluate(attribute.get(), input());
     EXPECT_EQ(1, result.schema().attribute_count());
@@ -84,7 +86,7 @@ TEST_F(ProjectingExpressionTest, AttributeAtSelects) {
 
 TEST_F(ProjectingExpressionTest, NamedAttributeSelects) {
   for (int i = 0; i < input().column_count(); ++i) {
-    scoped_ptr<BoundExpressionTree> attribute(
+    unique_ptr<BoundExpressionTree> attribute(
         DefaultBind(input().schema(), 100, NamedAttribute(name(i))));
     const View& result = DefaultEvaluate(attribute.get(), input());
     EXPECT_EQ(1, result.schema().attribute_count());
@@ -97,9 +99,9 @@ TEST_F(ProjectingExpressionTest, SingleColumnInputAttributeProjection) {
   for (int i = 0; i < input().column_count(); ++i) {
     projected_columns.clear();
     projected_columns.push_back(name(i));
-    scoped_ptr<const SingleSourceProjector> projector(
+    unique_ptr<const SingleSourceProjector> projector(
         ProjectNamedAttributes(projected_columns));
-    scoped_ptr<BoundExpressionTree> projected(DefaultBind(
+    unique_ptr<BoundExpressionTree> projected(DefaultBind(
         input().schema(),
         100,
         InputAttributeProjection(projector.release())));
@@ -113,9 +115,9 @@ TEST_F(ProjectingExpressionTest, TwoColumnInputAttributeProjection) {
   vector<string> projected_columns;
   projected_columns.push_back(name(3));
   projected_columns.push_back(name(1));
-  scoped_ptr<const SingleSourceProjector> projector(
+  unique_ptr<const SingleSourceProjector> projector(
       ProjectNamedAttributes(projected_columns));
-  scoped_ptr<BoundExpressionTree> projected(DefaultBind(
+  unique_ptr<BoundExpressionTree> projected(DefaultBind(
       input().schema(),
       100,
       InputAttributeProjection(projector.release())));
@@ -129,9 +131,9 @@ TEST_F(ProjectingExpressionTest, TwoColumnInputProjectionShortCircuit) {
   vector<string> projected_columns;
   projected_columns.push_back(name(2));
   projected_columns.push_back(name(0));
-  scoped_ptr<const SingleSourceProjector> projector(
+  unique_ptr<const SingleSourceProjector> projector(
       ProjectNamedAttributes(projected_columns));
-  scoped_ptr<BoundExpression> projected(DefaultDoBind(
+  unique_ptr<BoundExpression> projected(DefaultDoBind(
       input().schema(),
       100,
       InputAttributeProjection(projector.release())));
@@ -154,7 +156,7 @@ TEST_F(ProjectingExpressionTest, TwoColumnInputProjectionShortCircuit) {
 }
 
 TEST_F(ProjectingExpressionTest, Flat) {
-  scoped_ptr<BoundExpressionTree> projected(DefaultBind(
+  unique_ptr<BoundExpressionTree> projected(DefaultBind(
       input().schema(),
       100,
       Flat((new ExpressionList())->add(AttributeAt(0))->add(AttributeAt(3)))));
@@ -165,14 +167,14 @@ TEST_F(ProjectingExpressionTest, Flat) {
 }
 
 TEST_F(ProjectingExpressionTest, FlattenEmptyList) {
-  scoped_ptr<BoundExpressionTree> projected(DefaultBind(
+  unique_ptr<BoundExpressionTree> projected(DefaultBind(
       input().schema(), 100, Flat(new ExpressionList())));
   const View& result = DefaultEvaluate(projected.get(), input());
   EXPECT_EQ(0, result.schema().attribute_count());
 }
 
 TEST_F(ProjectingExpressionTest, Alias) {
-  scoped_ptr<BoundExpressionTree> aliased(DefaultBind(
+  unique_ptr<BoundExpressionTree> aliased(DefaultBind(
       input().schema(),
       100,
       Alias("Some alias", AttributeAt(0))));
@@ -183,9 +185,9 @@ TEST_F(ProjectingExpressionTest, Alias) {
 }
 
 TEST_F(ProjectingExpressionTest, AliasFailsOnTooManyColumns) {
-  scoped_ptr<const Expression> two_columns(
+  unique_ptr<const Expression> two_columns(
       Flat((new ExpressionList())->add(AttributeAt(0))->add(AttributeAt(1))));
-  scoped_ptr<const Expression> alias(
+  unique_ptr<const Expression> alias(
       Alias(string("Some other alias"), two_columns.release()));
   FailureOrOwned<BoundExpressionTree> bound_alias =
       alias->Bind(input().schema(), HeapBufferAllocator::Get(), 100);
@@ -193,8 +195,8 @@ TEST_F(ProjectingExpressionTest, AliasFailsOnTooManyColumns) {
 }
 
 TEST_F(ProjectingExpressionTest, AliasFailsOnNoColumns) {
-  scoped_ptr<const Expression> no_columns(Flat((new ExpressionList())));
-  scoped_ptr<const Expression> alias(
+  unique_ptr<const Expression> no_columns(Flat((new ExpressionList())));
+  unique_ptr<const Expression> alias(
       Alias(string("Yet another alias"), no_columns.release()));
   FailureOrOwned<BoundExpressionTree> bound_alias =
       alias->Bind(input().schema(), HeapBufferAllocator::Get(), 100);

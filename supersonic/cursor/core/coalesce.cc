@@ -24,7 +24,6 @@ using std::vector;
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -58,7 +57,7 @@ class CoalesceCursor : public BasicCursor {
     for (int i = 0; i < children.size(); ++i) {
       Cursor* child = children[i];
       DCHECK(child);
-      inputs_.push_back(new CursorIterator(child));
+      inputs_.emplace_back(new CursorIterator(child));
     }
   }
 

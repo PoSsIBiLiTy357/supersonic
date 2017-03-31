@@ -13,10 +13,12 @@
 // limitations under the License.
 //
 
+#include <memory>
+using std::unique_ptr;
+
 #include "supersonic/base/infrastructure/block.h"
 
 #include "supersonic/utils/integral_types.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/infrastructure/copy_column.h"
 #include "supersonic/base/infrastructure/view_copier.h"
 #include "supersonic/testing/block_builder.h"
@@ -55,7 +57,7 @@ TEST_F(BlockTest, CreatedBlockShouldBeEmptyAndValid) {
 }
 
 TEST_F(BlockTest, SuccessfulReallocShouldPreserveContent) {
-  scoped_ptr<Block> test(test_block());
+  unique_ptr<Block> test(test_block());
   Block block(test->schema(), HeapBufferAllocator::Get());
   ASSERT_TRUE(block.Reallocate(2));
   ASSERT_EQ(test->row_capacity(), Copy(test->view(), &block));
@@ -69,7 +71,7 @@ TEST_F(BlockTest, SuccessfulReallocShouldPreserveContent) {
 }
 
 TEST_F(BlockTest, SuccessfulReallocShouldPreserveContentWithNulls) {
-  scoped_ptr<Block> test(BlockBuilder<STRING, INT32>()
+  unique_ptr<Block> test(BlockBuilder<STRING, INT32>()
                          .AddRow("foo", 7)
                          .AddRow("bar", 10)
                          .AddRow(__,    __)
@@ -87,7 +89,7 @@ TEST_F(BlockTest, SuccessfulReallocShouldPreserveContentWithNulls) {
 }
 
 TEST_F(BlockTest, UnsuccessfulReallocShouldAccountToNoOp) {
-  scoped_ptr<Block> test(test_block());
+  unique_ptr<Block> test(test_block());
   MemoryLimit limit(3 * (sizeof(StringPiece) +
                          sizeof(int32) + 9 /* for string arena */));
   Block block(test->schema(), &limit);
@@ -101,7 +103,7 @@ TEST_F(BlockTest, UnsuccessfulReallocShouldAccountToNoOp) {
 }
 
 TEST_F(BlockTest, BlockViewShouldPointToBlocksData) {
-  scoped_ptr<Block> test(test_block());
+  unique_ptr<Block> test(test_block());
   for (int i = 0; i < test->schema().attribute_count(); ++i) {
     EXPECT_EQ(test->mutable_column(i)->mutable_data(),
               test->column(i).data().raw());
@@ -119,7 +121,7 @@ TEST_F(BlockTest, BlockViewShouldPointToBlocksData) {
 }
 
 TEST_F(BlockTest, OffsetsShouldCalculateCorrectly) {
-  scoped_ptr<Block> test(test_block());
+  unique_ptr<Block> test(test_block());
   EXPECT_EQ(2,
             static_cast<const StringPiece*>(
                 test->mutable_column(0)->mutable_data_plus_offset(2)) -
@@ -150,7 +152,7 @@ class ViewTest : public testing::Test {
   const View& test_view() const { return test_block_->view(); }
 
  private:
-  scoped_ptr<Block> test_block_;
+  unique_ptr<Block> test_block_;
 };
 
 TEST_F(ViewTest, ResetWorks) {

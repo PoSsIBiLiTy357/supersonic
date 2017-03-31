@@ -18,7 +18,6 @@
 
 #include <memory>
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/exception/result.h"
 #include "supersonic/cursor/infrastructure/basic_operation.h"
 #include "supersonic/proto/supersonic.pb.h"

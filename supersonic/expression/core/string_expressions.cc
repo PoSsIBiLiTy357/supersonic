@@ -16,10 +16,11 @@
 
 #include "supersonic/expression/core/string_expressions.h"
 
+#include <memory>
 #include <string>
 namespace supersonic {using std::string; }
+using std::unique_ptr;
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
 #include "supersonic/base/exception/result.h"
@@ -59,7 +60,7 @@ class ConcatExpression : public Expression {
     return StrCat("CONCAT(", args_.get()->ToString(verbose), ")");
   }
 
-  const scoped_ptr<const ExpressionList> args_;
+  const unique_ptr<const ExpressionList> args_;
 };
 
 }  // namespace

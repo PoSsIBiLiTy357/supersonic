@@ -51,7 +51,7 @@ class BenchmarkTreeNode {
 
   // Adds child to the list of children nodes. Takes ownership of that child.
   void AddChild(BenchmarkTreeNode* child) {
-    children_.push_back(child);
+    children_.emplace_back(child);
   }
 
   const CursorStatistics& GetStats() const {

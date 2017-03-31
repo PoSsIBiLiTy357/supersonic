@@ -176,7 +176,7 @@ BenchmarkResult* BenchmarkTreeBuilder::CreateTree(Cursor* cursor) {
                      /* parallel descendant? */ false));
 
   // Take ownership of the root entry.
-  entries_.push_back(root_entry.release());
+  entries_.emplace_back(root_entry.release());
 
   // Set a flag to note that the object has already been used.
   tree_created_ = true;
@@ -227,7 +227,7 @@ void BenchmarkTreeBuilder::RecoverHistory(Transformer* transformer,
   // and populate the output_history vector.
   for (entry_ptr_iterator ptr_to_entry = history->begin();
        ptr_to_entry != history->end(); ++ptr_to_entry) {
-    entries_.push_back(ptr_to_entry->release());
+    entries_.emplace_back(ptr_to_entry->release());
     output_history->push_back(entries_.back().get());
   }
 }

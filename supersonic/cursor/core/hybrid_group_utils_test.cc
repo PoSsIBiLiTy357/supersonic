@@ -50,9 +50,9 @@ TEST(HybridGroupTransformTest, HybridGroupTransformExampleTest) {
           .BuildCursor());
 
   util::gtl::PointerVector<const SingleSourceProjector> column_groups;
-  column_groups.push_back(ProjectNamedAttributeAs("col1", "a"));
-  column_groups.push_back(ProjectNamedAttributeAs("col2", "b"));
-  column_groups.push_back(ProjectNamedAttributes(
+  column_groups.emplace_back(ProjectNamedAttributeAs("col1", "a"));
+  column_groups.emplace_back(ProjectNamedAttributeAs("col2", "b"));
+  column_groups.emplace_back(ProjectNamedAttributes(
       util::gtl::Container("col3", "col1").As<vector<string> >()));
 
   std::unique_ptr<Cursor> transformed(SucceedOrDie(
@@ -87,7 +87,7 @@ TEST(HybridGroupTransformTest, HybridGroupTransformOneGroup) {
                                               .BuildCursor());
 
   util::gtl::PointerVector<const SingleSourceProjector> column_groups;
-  column_groups.push_back(ProjectNamedAttribute("col1"));
+  column_groups.emplace_back(ProjectNamedAttribute("col1"));
 
   std::unique_ptr<Cursor> transformed(SucceedOrDie(
       BoundHybridGroupTransform(ProjectNamedAttribute("col0"), column_groups,
@@ -126,9 +126,9 @@ TEST(HybridGroupTransformTest, HybridGroupTransformThreeGroups) {
           .BuildCursor());
 
   util::gtl::PointerVector<const SingleSourceProjector> column_groups;
-  column_groups.push_back(ProjectNamedAttribute("col1"));
-  column_groups.push_back(ProjectNamedAttribute("col2"));
-  column_groups.push_back(ProjectNamedAttribute("col3"));
+  column_groups.emplace_back(ProjectNamedAttribute("col1"));
+  column_groups.emplace_back(ProjectNamedAttribute("col2"));
+  column_groups.emplace_back(ProjectNamedAttribute("col3"));
 
   std::unique_ptr<Cursor> transformed(SucceedOrDie(
       BoundHybridGroupTransform(ProjectNamedAttribute("col0"), column_groups,

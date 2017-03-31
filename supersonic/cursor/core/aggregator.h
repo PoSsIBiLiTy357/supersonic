@@ -23,7 +23,6 @@
 using std::vector;
 
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/block.h"
 #include "supersonic/base/infrastructure/tuple_schema.h"

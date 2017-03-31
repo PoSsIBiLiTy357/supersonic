@@ -20,7 +20,6 @@
 namespace supersonic {using std::string; }
 
 #include "supersonic/utils/casts.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"

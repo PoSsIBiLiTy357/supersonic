@@ -14,9 +14,10 @@
 //
 
 #include <algorithm>
-#include "supersonic/utils/std_namespace.h"
 #include <memory>
 #include <vector>
+#include "supersonic/utils/std_namespace.h"
+using std::make_unique;
 using std::vector;
 
 #include "supersonic/utils/integral_types.h"
@@ -24,7 +25,6 @@ using std::vector;
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/port.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -303,7 +303,7 @@ bool AggregateClustersKeySet::GetIndexTable(const View& query,
       if (!copier_.Copy(reader, source, writer, &sink))
         return false;
       if (last_added_.get() == NULL) {
-        last_added_.reset(new Row(&indexed_block_.view(), row_id));
+        last_added_ = make_unique<Row>(&indexed_block_.view(), row_id);
       } else {
         ++last_added_->row_id;
       }

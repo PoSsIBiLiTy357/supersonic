@@ -47,7 +47,6 @@
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/paranoid.h"
 #include "supersonic/utils/port.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/types.h"
 #include "supersonic/base/memory/memory.h"
@@ -359,7 +358,7 @@ class bit_array {
   }
 
  private:
-  scoped_ptr<Buffer> data_buffer_;
+  std::unique_ptr<Buffer> data_buffer_;
 
   DISALLOW_COPY_AND_ASSIGN(bit_array);
 };
@@ -384,7 +383,7 @@ class boolean_array {
   }
 
  private:
-  scoped_ptr<Buffer> data_buffer_;
+  std::unique_ptr<Buffer> data_buffer_;
 
   DISALLOW_COPY_AND_ASSIGN(boolean_array);
 };
@@ -576,7 +575,7 @@ class BoolView {
   }
 
  private:
-  scoped_ptr<bool_ptr[]> columns_;
+  std::unique_ptr<bool_ptr[]> columns_;
   int column_count_;
   rowcount_t row_count_;
 };
@@ -619,7 +618,7 @@ class BoolBlock {
  private:
   BufferAllocator* allocator_;
   int column_count_;
-  scoped_ptr<bool_array[]> columns_;
+  std::unique_ptr<bool_array[]> columns_;
   BoolView view_;
 
   DISALLOW_COPY_AND_ASSIGN(BoolBlock);

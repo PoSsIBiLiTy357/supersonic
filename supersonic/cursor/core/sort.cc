@@ -101,7 +101,6 @@ using std::vector;
 #include "supersonic/utils/integral_types.h"
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -357,7 +356,7 @@ class BasicMerger : public Merger {
     // TODO(user): Don't just ignore the util::Status object!
     // We didn't opensource util::task::Status.
     temp_file->get()->Seek(0);
-    file_buffers_.push_back(temp_file.release());
+    file_buffers_.emplace_back(temp_file.release());
     return Success();
   }
 

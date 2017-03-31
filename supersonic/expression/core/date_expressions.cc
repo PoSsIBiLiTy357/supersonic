@@ -16,10 +16,11 @@
 
 #include "supersonic/expression/core/date_expressions.h"
 
+#include <memory>
 #include <string>
 namespace supersonic {using std::string; }
+using std::unique_ptr;
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/walltime.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -99,12 +100,12 @@ class MakeDatetimeExpression : public Expression {
         ", ", second_->ToString(verbose), ")");
   }
 
-  const scoped_ptr<const Expression> year_;
-  const scoped_ptr<const Expression> month_;
-  const scoped_ptr<const Expression> day_;
-  const scoped_ptr<const Expression> hour_;
-  const scoped_ptr<const Expression> minute_;
-  const scoped_ptr<const Expression> second_;
+  const unique_ptr<const Expression> year_;
+  const unique_ptr<const Expression> month_;
+  const unique_ptr<const Expression> day_;
+  const unique_ptr<const Expression> hour_;
+  const unique_ptr<const Expression> minute_;
+  const unique_ptr<const Expression> second_;
 };
 
 }  // namespace

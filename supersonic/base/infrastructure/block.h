@@ -25,13 +25,13 @@
 #include <stddef.h>
 
 #include <string>
+#include <memory>
 namespace supersonic {using std::string; }
 
 #include "supersonic/utils/integral_types.h"
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/infrastructure/bit_pointers.h"
 #include "supersonic/base/infrastructure/tuple_schema.h"
 #include "supersonic/base/infrastructure/types.h"
@@ -274,11 +274,11 @@ class OwnedColumn {
   // constant.
   Column* column_;
   // Holds data.
-  scoped_ptr<Buffer> data_buffer_;
+  std::unique_ptr<Buffer> data_buffer_;
   // Holds info about NULLs in column. Can be NULL for non-null columns.
   bool_array is_null_array_;
   // Holds variable length data. Null for other columns.
-  scoped_ptr<Arena> arena_;
+  std::unique_ptr<Arena> arena_;
 
   DISALLOW_COPY_AND_ASSIGN(OwnedColumn);
 };
@@ -396,7 +396,7 @@ class View {
   View& operator=(const View& other);
 
   const TupleSchema schema_;
-  scoped_ptr<Column[]> columns_;
+  std::unique_ptr<Column[]> columns_;
   rowcount_t row_count_;
   // Views are copyable.
 };
@@ -483,7 +483,7 @@ class Block {
   }
 
   BufferAllocator* const allocator_;
-  scoped_ptr<OwnedColumn[]> columns_;
+  std::unique_ptr<OwnedColumn[]> columns_;
   View view_;  // Full view on the entire block.
   DISALLOW_COPY_AND_ASSIGN(Block);
 };

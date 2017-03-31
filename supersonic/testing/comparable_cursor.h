@@ -25,7 +25,6 @@
 #include <ostream>
 
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/cursor/base/cursor.h"
 #include "supersonic/cursor/infrastructure/iterators.h"
 #include "supersonic/testing/streamable.h"

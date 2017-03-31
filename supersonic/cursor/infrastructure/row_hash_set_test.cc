@@ -15,14 +15,14 @@
 
 #include "supersonic/cursor/infrastructure/row_hash_set.h"
 
-#include <unordered_set>
 #include <limits>
-#include "supersonic/utils/std_namespace.h"
 #include <memory>
+#include <unordered_set>
 #include <vector>
+#include "supersonic/utils/std_namespace.h"
+using std::make_unique;
 using std::vector;
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/infrastructure/bit_pointers.h"
@@ -50,12 +50,12 @@ class RowHashSetTest : public testing::Test {
     row_hash_set_block_schema_.add_attribute(
         Attribute("c2", STRING, NULLABLE));
 
-    row_hash_set_.reset(new RowHashSet(row_hash_set_block_schema_,
-                                       HeapBufferAllocator::Get()));
-    row_multi_set_.reset(new RowHashMultiSet(row_hash_set_block_schema_,
-                                             HeapBufferAllocator::Get()));
-    row_hash_set_result_.reset(new FindResult(10000));
-    row_multi_set_result_.reset(new FindMultiResult(10000));
+    row_hash_set_ = make_unique<RowHashSet>(row_hash_set_block_schema_,
+        HeapBufferAllocator::Get());
+    row_multi_set_ = make_unique<RowHashMultiSet>(row_hash_set_block_schema_,
+        HeapBufferAllocator::Get());
+    row_hash_set_result_ = make_unique<FindResult>(10000);
+    row_multi_set_result_ = make_unique<FindMultiResult>(10000);
 
     query_1_.reset(
         BlockBuilder<INT64, STRING>()

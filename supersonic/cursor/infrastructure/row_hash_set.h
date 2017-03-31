@@ -22,7 +22,6 @@
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/infrastructure/bit_pointers.h"
 #include "supersonic/base/infrastructure/types.h"
 

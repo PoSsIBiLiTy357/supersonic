@@ -16,11 +16,13 @@
 #include "supersonic/expression/core/elementary_expressions.h"
 
 #include <stddef.h>
+
+#include <memory>
 #include <string>
 namespace supersonic {using std::string; }
+using std::unique_ptr;
 
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
@@ -156,7 +158,7 @@ class CaseExpression : public Expression {
   }
 
  private:
-  scoped_ptr<const ExpressionList> const arguments_;
+  unique_ptr<const ExpressionList> const arguments_;
   DISALLOW_COPY_AND_ASSIGN(CaseExpression);
 };
 

@@ -19,7 +19,6 @@
 #include "supersonic/utils/std_namespace.h"
 #include <memory>
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"

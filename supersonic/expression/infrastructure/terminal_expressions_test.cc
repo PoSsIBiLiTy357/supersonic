@@ -20,7 +20,6 @@
 #include <memory>
 
 #include "supersonic/utils/integral_types.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/infrastructure/bit_pointers.h"
 #include "supersonic/base/infrastructure/block.h"
 #include "supersonic/base/infrastructure/tuple_schema.h"

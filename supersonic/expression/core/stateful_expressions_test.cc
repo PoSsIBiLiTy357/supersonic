@@ -19,7 +19,6 @@
 #include <string>
 namespace supersonic {using std::string; }
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/block.h"

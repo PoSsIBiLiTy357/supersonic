@@ -43,7 +43,6 @@ using std::vector;
 namespace supersonic { using google::protobuf::Mutex; }
 namespace supersonic { using google::protobuf::MutexLock; }
 namespace supersonic { using google::protobuf::MutexLockMaybe; }
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/strings/stringpiece.h"
 
 namespace supersonic {
@@ -647,7 +646,7 @@ class MemoryStatisticsCollectingBufferAllocator : public BufferAllocator {
   virtual void FreeInternal(Buffer* buffer);
 
   BufferAllocator* delegate_;
-  scoped_ptr<MemoryStatisticsCollectorInterface>
+  std::unique_ptr<MemoryStatisticsCollectorInterface>
       memory_stats_collector_;
 };
 
@@ -719,7 +718,7 @@ class OwningThreadSafeBufferAllocator
   virtual ~OwningThreadSafeBufferAllocator() {}
 
  private:
-  scoped_ptr<DelegateAllocatorType> delegate_owned_;
+  std::unique_ptr<DelegateAllocatorType> delegate_owned_;
 };
 
 class ThreadSafeMemoryLimit

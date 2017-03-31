@@ -17,7 +17,6 @@
 
 #include <memory>
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/infrastructure/block.h"
 #include "supersonic/cursor/base/cursor_transformer.h"
 #include "supersonic/cursor/core/scan_view.h"

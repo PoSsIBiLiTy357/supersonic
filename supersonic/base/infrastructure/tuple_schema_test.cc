@@ -1,7 +1,6 @@
 #include "supersonic/base/infrastructure/tuple_schema.h"
 
 #include "supersonic/utils/integral_types.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/infrastructure/projector.h"
 #include "supersonic/proto/supersonic.pb.h"
@@ -20,7 +19,7 @@ TEST(TupleSchemaTest, BigSchema) {
   }
   util::gtl::PointerVector<const BoundSingleSourceProjector> projectors;
   for (int i = 0; i < schema.attribute_count(); ++i) {
-    scoped_ptr<const SingleSourceProjector> projector(CHECK_NOTNULL(
+    unique_ptr<const SingleSourceProjector> projector(CHECK_NOTNULL(
         ProjectAttributeAt(i)));
     projectors.push_back(common::SucceedOrDie(
         projector->Bind(schema)));

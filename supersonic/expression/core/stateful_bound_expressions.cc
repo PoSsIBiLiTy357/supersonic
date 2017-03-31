@@ -19,11 +19,11 @@
 #include <memory>
 #include <string>
 namespace supersonic {using std::string; }
+using std::unique_ptr;
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/template_util.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
@@ -802,7 +802,7 @@ struct BoundSmudgeIfResolver {
 FailureOrOwned<BoundExpression> BoundChanged(BoundExpression* argument_ptr,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> argument(argument_ptr);
+  unique_ptr<BoundExpression> argument(argument_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       GetExpressionName(argument.get()), argument->result_schema(), 1));
   if (GetExpressionNullability(argument.get()) == NULLABLE) {
@@ -824,7 +824,7 @@ FailureOrOwned<BoundExpression> BoundChanged(BoundExpression* argument_ptr,
 FailureOrOwned<BoundExpression> BoundRunningSum(BoundExpression* argument_ptr,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> argument(argument_ptr);
+  unique_ptr<BoundExpression> argument(argument_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       GetExpressionName(argument.get()), argument->result_schema(), 1));
   const TypeInfo& type_info = GetTypeInfo(GetExpressionType(argument.get()));
@@ -846,7 +846,7 @@ FailureOrOwned<BoundExpression> BoundRunningSum(BoundExpression* argument_ptr,
 FailureOrOwned<BoundExpression> BoundSmudge(BoundExpression* argument_ptr,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> argument(argument_ptr);
+  unique_ptr<BoundExpression> argument(argument_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       GetExpressionName(argument.get()), argument->result_schema(), 1));
   BoundRunningAggregationFactory<LAST> factory(
@@ -863,8 +863,8 @@ FailureOrOwned<BoundExpression> BoundRunningMinWithFlush(
     BoundExpression* input_ptr,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> flush(flush_ptr);
-  scoped_ptr<BoundExpression> input(input_ptr);
+  unique_ptr<BoundExpression> flush(flush_ptr);
+  unique_ptr<BoundExpression> input(input_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       GetExpressionName(flush.get()), flush->result_schema(), 1));
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
@@ -906,8 +906,8 @@ FailureOrOwned<BoundExpression> BoundSmudgeIf(
     BoundExpression* condition_raw,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> argument(argument_raw);
-  scoped_ptr<BoundExpression> condition(condition_raw);
+  unique_ptr<BoundExpression> argument(argument_raw);
+  unique_ptr<BoundExpression> condition(condition_raw);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       GetExpressionName(condition.get()),
       condition->result_schema(),

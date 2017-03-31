@@ -13,9 +13,12 @@
 // limitations under the License.
 //
 
+#include <memory>
+using std::make_unique;
+using std::unique_ptr;
+
 #include "supersonic/base/infrastructure/projector.h"
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/proto/supersonic.pb.h"
@@ -36,7 +39,7 @@ class ProjectorTest : public testing::Test {
     schema_pointers_.push_back(&schema_0_);
     schema_pointers_.push_back(&schema_1_);
 
-    bmsp_.reset(new BoundMultiSourceProjector(schema_pointers_));
+    bmsp_ = make_unique<BoundMultiSourceProjector>(schema_pointers_);
     // schema0 is mapped 1-1.
     EXPECT_TRUE(bmsp_->Add(0, 0));
     EXPECT_TRUE(bmsp_->Add(0, 1));
@@ -47,7 +50,7 @@ class ProjectorTest : public testing::Test {
 
   TupleSchema schema_0_, schema_1_;
   vector<const TupleSchema*> schema_pointers_;
-  scoped_ptr<BoundMultiSourceProjector> bmsp_;
+  unique_ptr<BoundMultiSourceProjector> bmsp_;
   pair<PositionIterator, PositionIterator> positions_;
 };
 
@@ -68,9 +71,9 @@ TEST_F(ProjectorTest,
 
 TEST_F(ProjectorTest,
        AllAttributesProjector) {
-  scoped_ptr<const SingleSourceProjector> all_attributes_projector(
+  unique_ptr<const SingleSourceProjector> all_attributes_projector(
       ProjectAllAttributes());
-  scoped_ptr<const BoundSingleSourceProjector> bssp(
+  unique_ptr<const BoundSingleSourceProjector> bssp(
       SucceedOrDie(all_attributes_projector->Bind(schema_0_)));
   EXPECT_TRUE(schema_0_.EqualByType(bssp->result_schema()));
 
@@ -87,9 +90,9 @@ TEST_F(ProjectorTest,
 
 TEST_F(ProjectorTest,
        AttributesAtPositionsProjector) {
-  scoped_ptr<const SingleSourceProjector> position_projector(
+  unique_ptr<const SingleSourceProjector> position_projector(
       ProjectAttributesAt(util::gtl::Container(1)));
-  scoped_ptr<const BoundSingleSourceProjector> bssp(
+  unique_ptr<const BoundSingleSourceProjector> bssp(
       SucceedOrDie(position_projector->Bind(schema_0_)));
 
   TupleSchema result_schema;
@@ -104,14 +107,14 @@ TEST_F(ProjectorTest,
   cmsp.add(0, ProjectAllAttributes());
   cmsp.add(1, ProjectAttributeAt(0));
   cmsp.add(1, ProjectAttributeAtAs(0, "schema 1 attribute 0 copy"));
-  scoped_ptr<const BoundMultiSourceProjector> bmsp_copy_(
+  unique_ptr<const BoundMultiSourceProjector> bmsp_copy_(
       SucceedOrDie(cmsp.Bind(schema_pointers_)));
   EXPECT_TRUE(bmsp_->result_schema().EqualByType(bmsp_copy_->result_schema()));
 }
 
 TEST_F(ProjectorTest,
        PositionedAttributeProjectorDescription) {
-  scoped_ptr<const SingleSourceProjector> projector(
+  unique_ptr<const SingleSourceProjector> projector(
       ProjectAttributeAt(12345678));
   EXPECT_EQ("AttributeAt(12345678)", projector->ToString(true));
 }

@@ -16,14 +16,15 @@
 
 #include "supersonic/expression/core/elementary_bound_expressions.h"
 
+#include <memory>
 #include <set>
-#include "supersonic/utils/std_namespace.h"
 #include <string>
-namespace supersonic {using std::string; }
 #include <vector>
+#include "supersonic/utils/std_namespace.h"
+namespace supersonic {using std::string; }
 using std::vector;
+using std::unique_ptr;
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/exception/result.h"
 #include "supersonic/expression/base/expression.h"
 #include "supersonic/expression/core/projecting_bound_expressions.h"
@@ -151,7 +152,7 @@ TEST(ElementaryBoundExpressionsTest, BoundCaseCollectReferredAttributeNames) {
   schema.add_attribute(Attribute("value2", STRING, NULLABLE));
   schema.add_attribute(Attribute("not_reffered", DOUBLE, NULLABLE));
 
-  scoped_ptr<BoundExpressionList> list(new BoundExpressionList());
+  unique_ptr<BoundExpressionList> list(new BoundExpressionList());
   list->add(SucceedOrDie(BoundNamedAttribute(schema, "condition")));
   list->add(SucceedOrDie(BoundNamedAttribute(schema, "default")));
   list->add(SucceedOrDie(BoundNamedAttribute(schema, "compare1")));

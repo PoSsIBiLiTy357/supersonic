@@ -68,7 +68,7 @@ class CursorToOperation : public BasicOperation {
     SplitterInterface* splitter = new BufferedSplitter(
         child, HeapBufferAllocator::Get(), max_row_count);
     for (int i = 0; i < copies_count; ++i) {
-      cursors_.push_back(splitter->AddReader());
+      cursors_.emplace_back(splitter->AddReader());
     }
   }
   virtual FailureOrOwned<Cursor> CreateCursor() const {
@@ -347,7 +347,7 @@ TEST_P(BufferedSplitterTest, AlternatingCallTest) {
           max_row_counts[j]);
       util::gtl::PointerVector<CursorIterator> iterators;
       for (size_t l = 0; l < readers[k]; ++l) {
-        iterators.push_back(new CursorIterator(splitter->AddReader()));
+        iterators.emplace_back(new CursorIterator(splitter->AddReader()));
       }
       for (size_t l = 0; l < GetParam(); ++l) {
         for (size_t m = 0; m < readers[k]; ++m) {

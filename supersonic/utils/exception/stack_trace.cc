@@ -15,7 +15,6 @@
 
 #include "supersonic/utils/exception/stack_trace.h"
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"
 
 namespace common {

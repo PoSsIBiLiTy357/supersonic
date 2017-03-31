@@ -20,12 +20,13 @@
 
 #include "supersonic/expression/core/projecting_bound_expressions.h"
 
+#include <memory>
 #include <set>
-#include "supersonic/utils/std_namespace.h"
 #include <string>
+#include "supersonic/utils/std_namespace.h"
 namespace supersonic {using std::string; }
+using std::unique_ptr;
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/infrastructure/block.h"
 #include "supersonic/base/infrastructure/projector.h"
 #include "supersonic/base/infrastructure/tuple_schema.h"
@@ -70,7 +71,7 @@ class ProjectingBoundExpressionsTest : public ::testing::Test {
         .Build();
   }
 
-  scoped_ptr<Block> block_;
+  unique_ptr<Block> block_;
 };
 
 // TODO(onufry): add some framework to reuse code.
@@ -127,7 +128,7 @@ TEST_F(ProjectingBoundExpressionsTest, BoundAlias) {
 TEST_F(ProjectingBoundExpressionsTest,
        ProjectionExpressionCollectReferredAttributeNames) {
   vector<const TupleSchema*> schemas;
-  scoped_ptr<BoundExpressionList> expression_list(new BoundExpressionList());
+  unique_ptr<BoundExpressionList> expression_list(new BoundExpressionList());
   expression_list->add(SucceedOrDie(BoundNamedAttribute(schema(), "col0")));
   schemas.push_back(&expression_list->get(0)->result_schema());
   expression_list->add(SucceedOrDie(BoundNamedAttribute(schema(), "col1")));
@@ -137,7 +138,7 @@ TEST_F(ProjectingBoundExpressionsTest,
   expression_list->add(SucceedOrDie(BoundNamedAttribute(schema(), "col3")));
   schemas.push_back(&expression_list->get(3)->result_schema());
 
-  scoped_ptr<BoundMultiSourceProjector> projector(
+  unique_ptr<BoundMultiSourceProjector> projector(
       new BoundMultiSourceProjector(schemas));
   projector->Add(3, 0);
   projector->Add(0, 0);
@@ -155,7 +156,7 @@ TEST_F(ProjectingBoundExpressionsTest,
 
 TEST_F(ProjectingBoundExpressionsTest,
        ProjectionExpressionPartialCollectReferredAttributeNames) {
-  scoped_ptr<BoundExpressionList> source_list_1(new BoundExpressionList());
+  unique_ptr<BoundExpressionList> source_list_1(new BoundExpressionList());
   source_list_1->add(SucceedOrDie(BoundNamedAttribute(schema(), "col0")));
   source_list_1->add(SucceedOrDie(BoundNamedAttribute(schema(), "col1")));
   FailureOrOwned<BoundExpression> source_1(
@@ -163,7 +164,7 @@ TEST_F(ProjectingBoundExpressionsTest,
   ASSERT_TRUE(source_1.is_success())
       << source_1.exception().PrintStackTrace();
 
-  scoped_ptr<BoundExpressionList> source_list_2(new BoundExpressionList());
+  unique_ptr<BoundExpressionList> source_list_2(new BoundExpressionList());
   source_list_2->add(SucceedOrDie(BoundNamedAttribute(schema(), "col2")));
   source_list_2->add(SucceedOrDie(BoundNamedAttribute(schema(), "col3")));
   FailureOrOwned<BoundExpression> source_2(
@@ -171,14 +172,14 @@ TEST_F(ProjectingBoundExpressionsTest,
   ASSERT_TRUE(source_2.is_success())
       << source_2.exception().PrintStackTrace();
 
-  scoped_ptr<BoundExpressionList> expression_list(new BoundExpressionList());
+  unique_ptr<BoundExpressionList> expression_list(new BoundExpressionList());
   vector<const TupleSchema*> schemas;
   schemas.push_back(&source_1->result_schema());
   expression_list->add(source_1.release());
   schemas.push_back(&source_2->result_schema());
   expression_list->add(source_2.release());
 
-  scoped_ptr<BoundMultiSourceProjector> projector(
+  unique_ptr<BoundMultiSourceProjector> projector(
       new BoundMultiSourceProjector(schemas));
   projector->Add(0, 1);
   projector->Add(1, 0);

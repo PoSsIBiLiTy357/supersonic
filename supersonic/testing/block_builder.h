@@ -17,7 +17,7 @@
 // Used also as a building block for CursorBuilder class.
 //
 // Example usage:
-//    scoped_ptr<Block> block(
+//    std::unique_ptr<Block> block(
 //      BlockBuilder<STRING, INT32>()
 //      .AddRow("first", 12)
 //      .AddRow("second", __)

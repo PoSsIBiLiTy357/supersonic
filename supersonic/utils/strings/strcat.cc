@@ -9,7 +9,6 @@
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/strings/ascii_ctype.h"
 #include "supersonic/utils/strings/escaping.h"
 #include "supersonic/utils/stl_util.h"

@@ -23,7 +23,6 @@
 #include <string>
 namespace supersonic {using std::string; }
 
-#include "supersonic/utils/scoped_ptr.h"
 
 #include "supersonic/utils/macros.h"
 #include "supersonic/proto/specification.pb.h"

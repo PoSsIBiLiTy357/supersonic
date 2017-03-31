@@ -16,13 +16,14 @@
 
 #include "supersonic/expression/core/regexp_bound_expressions.h"
 
+#include <memory>
 #include <string>
 namespace supersonic {using std::string; }
+using std::unique_ptr;
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -98,7 +99,7 @@ class BoundRegexpExpression : public BoundUnaryExpression {
     return Success(*my_view());
   }
 
-  scoped_ptr<const RE2> pattern_;
+  unique_ptr<const RE2> pattern_;
 
   DISALLOW_COPY_AND_ASSIGN(BoundRegexpExpression);
 };
@@ -146,7 +147,7 @@ class BoundRegexpExtractExpression : public BoundUnaryExpression {
     return Success(*my_view());
   }
 
-  scoped_ptr<const RE2> pattern_;
+  unique_ptr<const RE2> pattern_;
 
   DISALLOW_COPY_AND_ASSIGN(BoundRegexpExtractExpression);
 };
@@ -216,7 +217,7 @@ class BoundRegexpReplaceExpression : public BoundBinaryExpression {
     return Success(*my_view());
   }
 
-  scoped_ptr<const RE2> pattern_;
+  unique_ptr<const RE2> pattern_;
 
   DISALLOW_COPY_AND_ASSIGN(BoundRegexpReplaceExpression);
 };
@@ -230,7 +231,7 @@ FailureOrOwned<BoundExpression> BoundGeneralRegexp(BoundExpression* child_ptr,
                                                    const StringPiece& pattern,
                                                    BufferAllocator* allocator,
                                                    rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> child(child_ptr);
+  unique_ptr<BoundExpression> child(child_ptr);
   string name = UnaryExpressionTraits<operation_type>::FormatDescription(
       child->result_schema().attribute(0).name());
 
@@ -241,7 +242,7 @@ FailureOrOwned<BoundExpression> BoundGeneralRegexp(BoundExpression* child_ptr,
         StrCat("Invalid input type (", GetTypeInfo(input_type).name(),
                "), STRING expected in ", name)));
   }
-  scoped_ptr<const RE2> pattern_(new RE2(pattern.ToString()));
+  unique_ptr<const RE2> pattern_(new RE2(pattern.ToString()));
   if (!pattern_->ok()) {
     string message = StrCat("Malformed regexp: ", pattern, ", parse error: ",
                             pattern_->error());
@@ -290,14 +291,14 @@ FailureOrOwned<BoundExpression> BoundRegexpExtract(
     const StringPiece& pattern,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> child(child_ptr);
+  unique_ptr<BoundExpression> child(child_ptr);
   string name =
       UnaryExpressionTraits<OPERATOR_REGEXP_EXTRACT>::FormatDescription(
           GetExpressionName(child.get()));
 
   FailureOrVoid input_check = CheckExpressionType(STRING, child.get());
   PROPAGATE_ON_FAILURE(input_check);
-  scoped_ptr<const RE2> pattern_(new RE2(pattern.ToString()));
+  unique_ptr<const RE2> pattern_(new RE2(pattern.ToString()));
   if (!pattern_->ok()) {
     string message = StrCat("Malformed regexp: ", pattern, ", parse error: ",
                             pattern_->error(), " in ", name);
@@ -316,8 +317,8 @@ FailureOrOwned<BoundExpression> BoundRegexpReplace(
     BoundExpression* substitute_ptr,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> haystack(haystack_ptr);
-  scoped_ptr<BoundExpression> substitute(substitute_ptr);
+  unique_ptr<BoundExpression> haystack(haystack_ptr);
+  unique_ptr<BoundExpression> substitute(substitute_ptr);
   string name =
       BinaryExpressionTraits<OPERATOR_REGEXP_REPLACE>::FormatDescription(
           GetExpressionName(haystack_ptr), GetExpressionName(substitute_ptr));
@@ -326,7 +327,7 @@ FailureOrOwned<BoundExpression> BoundRegexpReplace(
   PROPAGATE_ON_FAILURE(haystack_check);
   FailureOrVoid sub_check = CheckExpressionType(STRING, substitute.get());
   PROPAGATE_ON_FAILURE(sub_check);
-  scoped_ptr<const RE2> pattern_(new RE2(pattern.ToString()));
+  unique_ptr<const RE2> pattern_(new RE2(pattern.ToString()));
   if (!pattern_->ok()) {
     string message = StrCat("Malformed regexp: ", pattern, ", parse error: ",
                             pattern_->error(), " in ", name);

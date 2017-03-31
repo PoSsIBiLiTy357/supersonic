@@ -16,21 +16,21 @@
 #include "supersonic/expression/core/projecting_bound_expressions.h"
 
 #include <stdint.h>
+
 #include <algorithm>
-#include "supersonic/utils/std_namespace.h"
+#include <memory>
 #include <set>
-#include "supersonic/utils/std_namespace.h"
 #include <string>
-namespace supersonic {using std::string; }
-#include <utility>
-#include "supersonic/utils/std_namespace.h"
 #include <vector>
+#include "supersonic/utils/std_namespace.h"
+namespace supersonic {using std::string; }
+using std::make_unique;
+using std::unique_ptr;
 using std::vector;
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -94,7 +94,7 @@ class BoundInputProjectionExpression : public BoundExpression {
   }
 
  private:
-  scoped_ptr<const BoundSingleSourceProjector> projector_;
+  unique_ptr<const BoundSingleSourceProjector> projector_;
   DISALLOW_COPY_AND_ASSIGN(BoundInputProjectionExpression);
 };
 
@@ -123,8 +123,8 @@ class BoundProjectionExpression : public BoundExpression {
           for (int i = 0; i < arguments->size(); ++i) {
             // For each input expression we allocate a BoolView that will hold
             // its skip vectors.
-            local_skip_vector_list_[i].reset(new BoolView(
-                arguments->get(i)->result_schema().attribute_count()));
+            local_skip_vector_list_[i] = make_unique<BoolView>(
+                arguments->get(i)->result_schema().attribute_count());
           }
         }
 
@@ -270,8 +270,8 @@ class BoundProjectionExpression : public BoundExpression {
     return result;
   }
 
-  scoped_ptr<const BoundMultiSourceProjector> projector_;
-  scoped_ptr<BoundExpressionList> arguments_;
+  unique_ptr<const BoundMultiSourceProjector> projector_;
+  unique_ptr<BoundExpressionList> arguments_;
   vector<const View*> argument_results_;
   util::gtl::PointerVector<BoolView> local_skip_vector_list_;
   BoolBlock local_skip_vector_storage_;
@@ -284,14 +284,14 @@ class BoundProjectionExpression : public BoundExpression {
 
 FailureOrOwned<BoundExpression> BoundAttributeAt(const TupleSchema& schema,
                                                  size_t position) {
-  scoped_ptr<const SingleSourceProjector> projector(
+  unique_ptr<const SingleSourceProjector> projector(
       ProjectAttributeAt(position));
   return BoundInputAttributeProjection(schema, *(projector.get()));
 }
 
 FailureOrOwned<BoundExpression> BoundNamedAttribute(const TupleSchema& schema,
                                                     const string& name) {
-  scoped_ptr<const SingleSourceProjector> projector(
+  unique_ptr<const SingleSourceProjector> projector(
       ProjectNamedAttribute(name));
   return BoundInputAttributeProjection(schema, *(projector.get()));
 }
@@ -316,13 +316,13 @@ FailureOrOwned<BoundExpression> BoundProjection(
 FailureOrOwned<BoundExpression> BoundRenameCompoundExpression(
     const vector<string>& names,
     BoundExpressionList* expressions) {
-  scoped_ptr<BoundExpressionList> expressions_ptr(expressions);
+  unique_ptr<BoundExpressionList> expressions_ptr(expressions);
 
   vector<const TupleSchema*> schemas;
   for (int i = 0; i < expressions_ptr->size(); ++i) {
     schemas.push_back(&expressions_ptr->get(i)->result_schema());
   }
-  scoped_ptr<BoundMultiSourceProjector> projector(
+  unique_ptr<BoundMultiSourceProjector> projector(
       new BoundMultiSourceProjector(schemas));
   int name_pos = 0;
   for (int i = 0; i < schemas.size(); ++i) {
@@ -335,13 +335,13 @@ FailureOrOwned<BoundExpression> BoundRenameCompoundExpression(
 
 FailureOrOwned<BoundExpression> BoundCompoundExpression(
     BoundExpressionList* expressions) {
-  scoped_ptr<BoundExpressionList> expressions_ptr(expressions);
+  unique_ptr<BoundExpressionList> expressions_ptr(expressions);
 
   vector<const TupleSchema*> schemas;
   for (int i = 0; i < expressions_ptr->size(); ++i) {
     schemas.push_back(&expressions_ptr->get(i)->result_schema());
   }
-  scoped_ptr<BoundMultiSourceProjector> projector(
+  unique_ptr<BoundMultiSourceProjector> projector(
       new BoundMultiSourceProjector(schemas));
   for (int i = 0; i < schemas.size(); ++i) {
     for (int j = 0; j < schemas[i]->attribute_count(); j++) {

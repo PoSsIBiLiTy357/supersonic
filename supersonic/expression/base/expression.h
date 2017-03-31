@@ -26,7 +26,6 @@ namespace supersonic {using std::string; }
 using std::vector;
 
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/bit_pointers.h"
 #include "supersonic/base/infrastructure/block.h"
@@ -129,7 +128,7 @@ class BoundExpressionTree {
 
  private:
   // The encapsulated BoundExpression.
-  scoped_ptr<BoundExpression> root_;
+  std::unique_ptr<BoundExpression> root_;
   // Pre-allocated skip vectors for evaluation (one for each output column).
   BoolBlock skip_vector_storage_;
 

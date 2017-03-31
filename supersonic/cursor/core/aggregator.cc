@@ -20,10 +20,10 @@
 #include <memory>
 #include <string>
 namespace supersonic {using std::string; }
+using std::make_unique;
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
@@ -163,7 +163,7 @@ FailureOrVoid Aggregator::Init(
     input_position_vector.push_back(input_position);
   }
 
-  data_.reset(new Block(schema_, allocator));
+  data_ = make_unique<Block>(schema_, allocator);
   if (!data_->Reallocate(result_initial_row_capacity)) {
     THROW(new Exception(
         ERROR_MEMORY_EXCEEDED,

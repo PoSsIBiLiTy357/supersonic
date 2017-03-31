@@ -17,8 +17,10 @@
 
 #include <cstddef>
 #include <limits>
-#include "supersonic/utils/std_namespace.h"
 #include <memory>
+#include "supersonic/utils/std_namespace.h"
+using std::make_unique;
+
 
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -309,14 +311,14 @@ class InputWrapperOperation : public BasicOperation {
     PROPAGATE_ON_FAILURE(child);
     std::unique_ptr<Cursor> cursor(child.release());
     if (barrier_probability_ > 0) {
-      cursor.reset(new BarrierInjector(random_, barrier_probability_,
-                                       cursor.release()));
+      cursor = make_unique<BarrierInjector>(random_, barrier_probability_,
+                                       cursor.release());
     }
     if (interruption_counter_ != NULL) {
-      cursor.reset(new InterruptionCounter(interruption_counter_,
-                                           cursor.release()));
+      cursor = make_unique<InterruptionCounter>(interruption_counter_,
+          cursor.release());
     }
-    cursor.reset(new DeepCopyingCursor(cursor.release(), buffer_allocator()));
+    cursor = make_unique<DeepCopyingCursor>(cursor.release(), buffer_allocator());
     return Success(new ViewLimiter(capped_max_row_count_, cursor.release()));
   }
 

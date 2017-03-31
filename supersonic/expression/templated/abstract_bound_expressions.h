@@ -28,7 +28,6 @@ namespace supersonic {using std::string; }
 #include <vector>
 using std::vector;
 
-#include "supersonic/utils/scoped_ptr.h"
 
 #include "supersonic/base/infrastructure/bit_pointers.h"
 #include "supersonic/expression/infrastructure/basic_bound_expression.h"

@@ -21,7 +21,7 @@
 //
 // Saves data from two views to a file:
 // fp = File::OpenOrDie("file_name", "w");
-// scoped_ptr<Sink> sink(FileOutput(fp, TAKE_OWNERSHIP));
+// std::unique_ptr<Sink> sink(FileOutput(fp, TAKE_OWNERSHIP));
 //
 // if (sink->Write(view1).is_failure()) {
 //   Handle error...

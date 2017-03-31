@@ -13,9 +13,11 @@
 // limitations under the License.
 //
 
+#include <memory>
+using std::unique_ptr;
+
 #include "supersonic/base/exception/result.h"
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/proto/supersonic.pb.h"
 #include "gtest/gtest.h"
 
@@ -51,12 +53,12 @@ TEST_F(ResultTest, FailureOrOwnedWorksOnSuccess) {
   EXPECT_EQ(5, *result.get());
   EXPECT_EQ(5, *result);
   EXPECT_EQ(result, result_content);
-  scoped_ptr<int> not_result_content(new int(5));
+  unique_ptr<int> not_result_content(new int(5));
   EXPECT_NE(result, not_result_content.get());
 }
 
 TEST_F(ResultTest, FailureOrOwnedReleasesResult) {
-  scoped_ptr<int> value(SucceedOrDie(FailureOrOwned<int>(Success(new int(7)))));
+  unique_ptr<int> value(SucceedOrDie(FailureOrOwned<int>(Success(new int(7)))));
   EXPECT_EQ(7, *value);
 }
 
@@ -77,7 +79,7 @@ TEST_F(ResultTest, ResultWorksOnFailure) {
 template<typename ResultType> void TestThatResultReleasesException() {
   ResultType result = Failure(new Exception(ERROR_GENERAL_IO_ERROR, ""));
   ASSERT_TRUE(result.is_failure());
-  scoped_ptr<Exception> exception(result.release_exception());
+  unique_ptr<Exception> exception(result.release_exception());
   EXPECT_TRUE(result.is_failure());  // Release doesn't clear the exception.
   EXPECT_EQ(ERROR_GENERAL_IO_ERROR, exception->return_code());
 }

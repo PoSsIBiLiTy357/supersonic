@@ -7,16 +7,17 @@
 #include <string.h>
 
 #include <limits>
+#include <memory>
 #include "supersonic/utils/std_namespace.h"
 #include <string>
-namespace supersonic {using std::string; }
 #include <vector>
+namespace supersonic {using std::string; }
 using std::vector;
+using std::unique_ptr;
 
 #include "supersonic/utils/integral_types.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/port.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/strings/join.h"
 #include "supersonic/utils/strings/stringpiece.h"
 #include "supersonic/utils/utf/utf.h"  // for runetochar
@@ -235,7 +236,7 @@ int UnescapeCEscapeString(const string& src, string* dest,
 }
 
 string UnescapeCEscapeString(const string& src) {
-  scoped_ptr<char[]> unescaped(new char[src.size() + 1]);
+  auto unescaped = std::make_unique<char[]>(src.size());
   int len = UnescapeCEscapeSequences(src.c_str(), unescaped.get(), NULL);
   return string(unescaped.get(), len);
 }

@@ -23,7 +23,6 @@
 namespace supersonic {using std::string; }
 
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/utils/timer.h"
 #include "supersonic/utils/exception/failureor.h"
@@ -142,7 +141,7 @@ class SpyCursorSimpleTransformer
   virtual Cursor* Transform(Cursor* cursor) {
     string id;
     cursor->AppendDebugDescription(&id);
-    run_history_->push_back(new CursorOwnershipRevoker(cursor));
+    run_history_->emplace_back(new CursorOwnershipRevoker(cursor));
     return new SpyCursor(id, listener_, cursor);
   }
  private:

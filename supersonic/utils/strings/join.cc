@@ -1,10 +1,12 @@
 // Copyright 2008 and onwards Google Inc.  All rights reserved.
 
+#include <memory>
+using std::make_unique;
+
 #include "supersonic/utils/strings/join.h"
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/strings/ascii_ctype.h"
 #include "supersonic/utils/strings/escaping.h"
 
@@ -44,7 +46,7 @@ void JoinCSVLineWithDelimiter(const vector<string>& cols, char delimiter,
       // Double the original size, for escaping, plus two bytes for
       // the bracketing double-quotes, and one byte for the closing \0.
       int size = 2 * cols[i].size() + 3;
-      scoped_ptr<char[]> buf(new char[size]);
+      auto buf = std::make_unique<char[]>(size);
 
       // Leave space at beginning and end for bracketing double-quotes.
       int escaped_size = strings::EscapeStrForCSV(cols[i].c_str(),

@@ -18,20 +18,20 @@
 
 #include <stddef.h>
 #include <string.h>
+
 #include <algorithm>
-#include "supersonic/utils/std_namespace.h"
 #include <memory>
 #include <set>
-#include "supersonic/utils/std_namespace.h"
 #include <string>
-namespace supersonic {using std::string; }
 #include <vector>
+#include "supersonic/utils/std_namespace.h"
+namespace supersonic {using std::string; }
+using std::unique_ptr;
 using std::vector;
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
@@ -151,7 +151,7 @@ class BoundConcatExpression : public BasicBoundExpression {
   }
 
  private:
-  const scoped_ptr<BoundExpressionList> arguments_;
+  const unique_ptr<BoundExpressionList> arguments_;
 
   DISALLOW_COPY_AND_ASSIGN(BoundConcatExpression);
 };
@@ -207,9 +207,9 @@ FailureOrOwned<BoundExpression> BoundContainsCI(BoundExpression* haystack,
 FailureOrOwned<BoundExpression> BoundConcat(BoundExpressionList* args,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count) {
-  scoped_ptr<BoundExpressionList> arglist(args);
+  unique_ptr<BoundExpressionList> arglist(args);
   // We will need a place to hold expressions after converting to strings.
-  scoped_ptr<BoundExpressionList> stringified_args(new BoundExpressionList());
+  unique_ptr<BoundExpressionList> stringified_args(new BoundExpressionList());
   for (int i = 0; i < arglist.get()->size(); ++i) {
   string name = StringPrintf("The %dth element on the concat list", i);
     BoundExpression* child = arglist.get()->get(i);

@@ -25,7 +25,6 @@
 namespace supersonic {using std::string; }
 
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 
 namespace supersonic {
 

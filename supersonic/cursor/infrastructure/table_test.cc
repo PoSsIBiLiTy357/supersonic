@@ -17,7 +17,6 @@
 
 #include <memory>
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/memory/memory.h"
 #include "supersonic/cursor/base/cursor.h"

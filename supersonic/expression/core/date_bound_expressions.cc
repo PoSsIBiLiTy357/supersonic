@@ -19,20 +19,21 @@
 #include "supersonic/expression/core/date_bound_expressions.h"
 
 #include <stddef.h>
+
 #include <algorithm>
-#include "supersonic/utils/std_namespace.h"
+#include <memory>
 #include <set>
-#include "supersonic/utils/std_namespace.h"
 #include <string>
-namespace supersonic {using std::string; }
 #include <vector>
+#include "supersonic/utils/std_namespace.h"
+namespace supersonic {using std::string; }
 using std::vector;
+using std::unique_ptr;
 
 #include "supersonic/utils/integral_types.h"
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -163,12 +164,12 @@ class BoundMakeDatetimeExpression : public BasicBoundExpression {
     return NULL;
   }
 
-  scoped_ptr<BoundExpression> year_;
-  scoped_ptr<BoundExpression> month_;
-  scoped_ptr<BoundExpression> day_;
-  scoped_ptr<BoundExpression> hour_;
-  scoped_ptr<BoundExpression> minute_;
-  scoped_ptr<BoundExpression> second_;
+  unique_ptr<BoundExpression> year_;
+  unique_ptr<BoundExpression> month_;
+  unique_ptr<BoundExpression> day_;
+  unique_ptr<BoundExpression> hour_;
+  unique_ptr<BoundExpression> minute_;
+  unique_ptr<BoundExpression> second_;
 
   DISALLOW_COPY_AND_ASSIGN(BoundMakeDatetimeExpression);
 };

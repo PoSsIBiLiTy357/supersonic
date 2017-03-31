@@ -30,7 +30,6 @@
 #include "supersonic/benchmark/dot/dot_drawer.h"
 
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 
 namespace supersonic {
 

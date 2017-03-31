@@ -27,7 +27,6 @@ using std::vector;
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/result.h"
 #include "supersonic/cursor/base/operation.h"
@@ -255,7 +254,7 @@ class AbstractTestDataBuilder {
 // TestDataBuilder that allows to create operations and cursors that return
 // predefined output, and may return exceptions.
 // Example usage:
-//    scoped_ptr<Operation> test_data(
+//    std::unique_ptr<Operation> test_data(
 //      TestDataBuilder<STRING, INT32>()
 //      .AddRow("first", 12)
 //      .AddRow("second", __)

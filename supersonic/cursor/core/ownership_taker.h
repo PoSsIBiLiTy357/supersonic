@@ -26,7 +26,6 @@ namespace supersonic {using std::string; }
 #include "supersonic/utils/std_namespace.h"
 
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 
 #include "supersonic/base/exception/exception_macros.h"
 #include "supersonic/cursor/base/cursor.h"

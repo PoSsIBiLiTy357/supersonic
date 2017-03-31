@@ -24,7 +24,6 @@
 #include <memory>
 using std::isnan;
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/infrastructure/bit_pointers.h"
 #include "supersonic/base/memory/memory.h"
 #include "gtest/gtest.h"

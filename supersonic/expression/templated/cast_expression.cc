@@ -20,7 +20,6 @@
 namespace supersonic {using std::string; }
 
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/types.h"

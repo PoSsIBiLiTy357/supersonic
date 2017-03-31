@@ -80,7 +80,7 @@ Cursor* BufferedSplitter::AddReader() {
   BufferedSplitReaderCursor* reader = new BufferedSplitReaderCursor(
       splitter, readers_.size());
   readers_.push_back(reader);
-  views_.push_back(new View(schema()));
+  views_.emplace_back(new View(schema()));
   block_read_.push_back(storages_.end());
   next_row_position_.push_back(0);
   return reader;
@@ -94,7 +94,7 @@ bool BufferedSplitter::IsDone(size_t position) const {
 FailureOrVoid BufferedSplitter::AllocateNewBlock() {
   VLOG(2) << "Allocating a new block. Previously we have "
       << owned_storages_.size() << " blocks";
-  owned_storages_.push_back(
+  owned_storages_.emplace_back(
       new Block(input_.schema(), buffer_allocator_));
   // Current implementation supports changing this following block size to
   // any number, should a better candidate be found.

@@ -16,13 +16,15 @@
 
 #include "supersonic/expression/core/comparison_expressions.h"
 
+#include <memory>
 #include <string>
-namespace supersonic {using std::string; }
 #include <vector>
+namespace supersonic {using std::string; }
+using std::unique_ptr;
+using std::make_unique;
 using std::vector;
 
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -76,8 +78,8 @@ class InExpressionSetExpression : public Expression {
                   ")");
   }
 
-  const scoped_ptr<const Expression> needle_expression_;
-  const scoped_ptr<const ExpressionList> haystack_arguments_;
+  const unique_ptr<const Expression> needle_expression_;
+  const unique_ptr<const ExpressionList> haystack_arguments_;
 };
 }  // namespace
 

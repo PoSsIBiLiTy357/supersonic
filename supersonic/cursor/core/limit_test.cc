@@ -19,7 +19,6 @@
 
 #include <memory>
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/block.h"

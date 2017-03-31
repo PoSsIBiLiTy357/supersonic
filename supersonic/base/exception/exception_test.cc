@@ -16,11 +16,12 @@
 #include "supersonic/base/exception/exception.h"
 
 #include <vector>
+#include <memory>
 using std::vector;
+using std::unique_ptr;
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/utils/exception/stack_trace.pb.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -101,7 +102,7 @@ TEST_F(ExceptionTest, Serialization) {
       "    context: \"bar_context\" "
       "  }"
       "}", &serial));
-  scoped_ptr<Exception> deserialized(Exception::Deserialize(serial));
+  unique_ptr<Exception> deserialized(Exception::Deserialize(serial));
   EXPECT_EQ("foo", deserialized->message());
   EXPECT_EQ(2, deserialized->stack_trace().element_size());
   SerializedException reserialized;

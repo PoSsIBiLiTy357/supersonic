@@ -13,6 +13,9 @@
 // limitations under the License.
 //
 
+#include <memory>
+using std::make_unique;
+
 #include "supersonic/base/infrastructure/block.h"
 
 namespace supersonic {
@@ -41,7 +44,7 @@ void OwnedColumn::Init(BufferAllocator* allocator, Column* column) {
   if (column_->type_info().is_variable_length()) {
     // NOTE: the Arena constructor makes it OK for the initial arena
     // buffer to be zero, so that creation of the arena never fails.
-    arena_.reset(new Arena(allocator, 0, kMaxArenaBufferSize));
+    arena_ = make_unique<Arena>(allocator, 0, kMaxArenaBufferSize);
   }
   // NOTE: per BufferAllocator contract, request for zero bytes must succeed.
   data_buffer_.reset(allocator->Allocate(0));

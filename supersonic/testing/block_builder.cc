@@ -19,7 +19,6 @@
 
 #include <memory>
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/infrastructure/bit_pointers.h"
 #include "supersonic/base/infrastructure/block.h"
 #include "supersonic/base/infrastructure/copy_column.h"

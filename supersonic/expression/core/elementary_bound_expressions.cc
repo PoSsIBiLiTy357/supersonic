@@ -18,16 +18,16 @@
 #include <stddef.h>
 #include <string.h>
 #include <algorithm>
-#include "supersonic/utils/std_namespace.h"
+#include <memory>
 #include <set>
-#include "supersonic/utils/std_namespace.h"
 #include <string>
+#include "supersonic/utils/std_namespace.h"
 namespace supersonic {using std::string; }
+using std::unique_ptr;
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
@@ -781,7 +781,7 @@ class BoundCaseExpression : public BasicBoundExpression {
 
   FixedArray<const CppOutputType*> data_pointers_;
 
-  scoped_ptr<BoundExpressionList> arguments_;
+  unique_ptr<BoundExpressionList> arguments_;
 
   // Marks the rows which we do not have to caluclate any more.
   bool_ptr written() { return local_skip_vector_storage_.view().column(0); }
@@ -793,7 +793,7 @@ class BoundCaseExpression : public BasicBoundExpression {
   bool_ptr then_skip() { return local_skip_vector_storage_.view().column(3); }
   bool_ptr temp() { return local_skip_vector_storage_.view().column(4); }
   // From which input should the output be copied? A buffer of size_t elements.
-  scoped_ptr<Buffer> source_;
+  unique_ptr<Buffer> source_;
   inline size_t* source() { return reinterpret_cast<size_t*>(source_->data()); }
   BoolBlock local_skip_vector_storage_;
   // Local storage for passing the skip_vectors to the children.
@@ -1087,9 +1087,9 @@ FailureOrOwned<BoundExpression> BoundIfInternal(
     BoundExpression* otherwise,
     BufferAllocator* const allocator,
     rowcount_t row_capacity) {
-  scoped_ptr<BoundExpression> condition_ptr(condition);
-  scoped_ptr<BoundExpression> then_ptr(then);
-  scoped_ptr<BoundExpression> otherwise_ptr(otherwise);
+  unique_ptr<BoundExpression> condition_ptr(condition);
+  unique_ptr<BoundExpression> then_ptr(then);
+  unique_ptr<BoundExpression> otherwise_ptr(otherwise);
 
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       "IF", condition->result_schema(), 1));
@@ -1257,8 +1257,8 @@ FailureOrOwned<BoundExpression> BoundIfNull(BoundExpression* expression_ptr,
                                             BoundExpression* substitute_ptr,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> expression(expression_ptr);
-  scoped_ptr<BoundExpression> substitute(substitute_ptr);
+  unique_ptr<BoundExpression> expression(expression_ptr);
+  unique_ptr<BoundExpression> substitute(substitute_ptr);
 
   // We have to convert both inputs to a common type.
   FailureOr<DataType> common_type =
@@ -1297,7 +1297,7 @@ FailureOrOwned<BoundExpression> BoundIfNull(BoundExpression* expression_ptr,
 FailureOrOwned<BoundExpression> BoundCase(BoundExpressionList* bound_arguments,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count) {
-  scoped_ptr<BoundExpressionList> args_ptr(bound_arguments);
+  unique_ptr<BoundExpressionList> args_ptr(bound_arguments);
 
   if (args_ptr->size() < 2) {
     THROW(new Exception(
@@ -1337,7 +1337,7 @@ FailureOrOwned<BoundExpression> BoundCase(BoundExpressionList* bound_arguments,
 
   // After we have calculated common test_type and output_type, do another pass
   // and create new BoundExpressionList.
-  scoped_ptr<BoundExpressionList> new_list(new BoundExpressionList());
+  unique_ptr<BoundExpressionList> new_list(new BoundExpressionList());
   for (size_t i = 0; i < args_ptr->size(); ++i) {
     DataType wanted_type = i % 2 == 0 ? test_type : output_type;
     FailureOrOwned<BoundExpression> cast_result =
@@ -1348,7 +1348,7 @@ FailureOrOwned<BoundExpression> BoundCase(BoundExpressionList* bound_arguments,
   }
 
   CaseExpressionResolver resolver(allocator, new_list.release());
-  scoped_ptr<BasicBoundExpression> case_expression(
+  unique_ptr<BasicBoundExpression> case_expression(
       TypeSpecialization<BasicBoundExpression*, CaseExpressionResolver>(
           test_type, resolver));
   return InitBasicExpression(max_row_count, case_expression.release(),
@@ -1417,8 +1417,8 @@ FailureOrOwned<BoundExpression> BoundIsNull(BoundExpression* arg,
                                             rowcount_t max_row_count) {
   PROPAGATE_ON_FAILURE(CheckAttributeCount("ISNULL", arg->result_schema(), 1));
   if (!arg->result_schema().attribute(0).is_nullable()) {
-    scoped_ptr<BoundExpression> arg_deleter(arg);
-    scoped_ptr<const Expression> const_bool(ConstBool(false));
+    unique_ptr<BoundExpression> arg_deleter(arg);
+    unique_ptr<const Expression> const_bool(ConstBool(false));
     return const_bool->DoBind(arg->result_schema(),
                               allocator, max_row_count);
   } else {
@@ -1474,8 +1474,8 @@ FailureOrOwned<BoundExpression> CreateShiftExpression(
     BoundExpression* right_ptr,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> left(left_ptr);
-  scoped_ptr<BoundExpression> right(right_ptr);
+  unique_ptr<BoundExpression> left(left_ptr);
+  unique_ptr<BoundExpression> right(right_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       BinaryExpressionTraits<op>::name(), left->result_schema(), 1));
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
@@ -1490,7 +1490,7 @@ FailureOrOwned<BoundExpression> CreateShiftExpression(
 FailureOrOwned<BoundExpression> BoundBitwiseNot(BoundExpression* argument_ptr,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> argument(argument_ptr);
+  unique_ptr<BoundExpression> argument(argument_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       UnaryExpressionTraits<OPERATOR_BITWISE_NOT>::name(),
       argument->result_schema(),

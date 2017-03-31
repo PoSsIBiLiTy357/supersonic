@@ -47,7 +47,7 @@ class SpyCursorBenchmarkTransformer
     cursor->AppendDebugDescription(&id);
     std::unique_ptr<BenchmarkListener> listener(CreateBenchmarkListener());
     BenchmarkListener* ptr_to_listener = listener.get();
-    run_history_->push_back(
+    run_history_->emplace_back(
         new CursorWithBenchmarkListener(cursor, listener.release()));
     return BoundSpy(id, ptr_to_listener, cursor);
   }

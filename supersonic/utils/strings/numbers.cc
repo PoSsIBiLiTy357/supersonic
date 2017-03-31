@@ -14,16 +14,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <memory>
 #include <limits>
 #include "supersonic/utils/std_namespace.h"
 #include <string>
+using std::make_unique;
 namespace supersonic {using std::string; }
 
 #include "supersonic/utils/int128.h"
 #include "supersonic/utils/integral_types.h"
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/utils/strtoint.h"
 #include "supersonic/utils/strings/ascii_ctype.h"
@@ -79,7 +80,7 @@ static inline bool EatADouble(const char** text, int* len, bool allow_question,
     retval = strtod(pos, &end_nonconst);
   } else {
     // not '\0'-terminated & no obvious terminator found. must copy.
-    scoped_ptr<char[]> buf(new char[rem + 1]);
+    auto buf = make_unique<char[]>(rem + 1);
     memcpy(buf.get(), pos, rem);
     buf[rem] = '\0';
     retval = strtod(buf.get(), &end_nonconst);

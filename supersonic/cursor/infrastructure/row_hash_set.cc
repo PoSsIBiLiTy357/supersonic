@@ -16,13 +16,15 @@
 #include "supersonic/cursor/infrastructure/row_hash_set.h"
 
 #include <string.h>
-#include <algorithm>
-#include "supersonic/utils/std_namespace.h"
 #include <cstddef>
+
+#include <algorithm>
 #include <memory>
 #include <string>
-namespace supersonic {using std::string; }
 #include <vector>
+#include "supersonic/utils/std_namespace.h"
+namespace supersonic {using std::string; }
+using std::make_unique;
 using std::vector;
 
 #include "supersonic/utils/integral_types.h"
@@ -30,7 +32,6 @@ using std::vector;
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/port.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/infrastructure/bit_pointers.h"
@@ -359,9 +360,9 @@ RowHashSetImpl::RowHashSetImpl(
   // in a non-negative integer, used to index the indirection tables.
   // To make sure that the newly created instance adheres to the implicit
   // invariants, we need to pre-allocate and fill certain dummy values.
-  last_row_id_.reset(new int[1]);
+  last_row_id_ = make_unique<int[]>(1);
   last_row_id_[0] = -1;
-  prev_row_id_.reset(new int[1]);
+  prev_row_id_ = make_unique<int[]>(1);
 }
 
 bool RowHashSetImpl::ReserveRowCapacity(rowcount_t row_count) {
@@ -380,11 +381,11 @@ bool RowHashSetImpl::ReserveRowCapacity(rowcount_t row_count) {
       last_row_id_size_ *= 2;
     }
   }
-  last_row_id_.reset(new int[last_row_id_size_]);
+  last_row_id_ = make_unique<int[]>(last_row_id_size_);
   std::fill(last_row_id_.get(), last_row_id_.get() + last_row_id_size_, -1);
   hash_mask_ = last_row_id_size_ - 1;
 
-  prev_row_id_.reset(new int[last_row_id_size_]);
+  prev_row_id_ = make_unique<int[]>(last_row_id_size_);
 
   // Rebuild the linked lists that depend on hash_index (which changed, as
   // it depends on hash_mask_, that changed).

@@ -15,12 +15,14 @@
 
 #include "supersonic/base/infrastructure/projector.h"
 
+#include <memory>
 #include <set>
 #include "supersonic/utils/std_namespace.h"
 #include <string>
+using std::unique_ptr;
+using std::make_unique;
 namespace supersonic {using std::string; }
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -104,8 +106,7 @@ FailureOrOwned<const BoundSingleSourceProjector> NamedAttributeProjector::Bind(
         StringPrintf("No attribute '%s' in the schema:\n '%s'", name_.c_str(),
             source_schema.GetHumanReadableSpecification().c_str())));
   } else {
-    scoped_ptr<BoundSingleSourceProjector> projector(
-        new BoundSingleSourceProjector(source_schema));
+    auto projector = make_unique<BoundSingleSourceProjector>(source_schema);
     CHECK(projector->Add(source_position));
     return Success(projector.release());
   }
@@ -142,8 +143,7 @@ class RenamingProjector : public SingleSourceProjector {
               intermediate_schema.GetHumanReadableSpecification().c_str())));
     }
     // Create a new projector, and copy all attributes, replacing the names.
-    scoped_ptr<BoundSingleSourceProjector> result_projector(
-        new BoundSingleSourceProjector(input_schema));
+    auto result_projector = make_unique<BoundSingleSourceProjector>(input_schema);
     for (int i = 0; i < intermediate_schema.attribute_count(); ++i) {
       CHECK(result_projector->AddAs(bound->source_attribute_position(i),
                                     aliases_[i]));
@@ -160,7 +160,7 @@ class RenamingProjector : public SingleSourceProjector {
 
  private:
   const vector<string> aliases_;
-  const scoped_ptr<const SingleSourceProjector> source_;
+  const unique_ptr<const SingleSourceProjector> source_;
 };
 
 string RenamingProjector::ToString(bool verbose) const {
@@ -189,7 +189,7 @@ class PositionedAttributeProjector : public SingleSourceProjector {
                        source_schema.attribute_count(),
                        source_position_)));
     }
-    scoped_ptr<BoundSingleSourceProjector> projector(
+    unique_ptr<BoundSingleSourceProjector> projector(
         new BoundSingleSourceProjector(source_schema));
     CHECK(projector->Add(source_position_));
     return Success(projector.release());
@@ -247,7 +247,7 @@ class AllAttributesProjector : public SingleSourceProjector {
 FailureOrOwned<const BoundSingleSourceProjector>
 CompoundSingleSourceProjector::Bind(
     const TupleSchema& source_schema) const {
-  scoped_ptr<BoundSingleSourceProjector> projector(
+  unique_ptr<BoundSingleSourceProjector> projector(
       new BoundSingleSourceProjector(source_schema));
   for (int i = 0; i < projectors_.size(); ++i) {
     FailureOrOwned<const BoundSingleSourceProjector> component =
@@ -306,7 +306,7 @@ const SingleSourceProjector* ProjectAttributeAt(const int position) {
 }
 
 const SingleSourceProjector* ProjectAttributesAt(const vector<int>& positions) {
-  scoped_ptr<CompoundSingleSourceProjector> projector(
+  unique_ptr<CompoundSingleSourceProjector> projector(
       new CompoundSingleSourceProjector);
   for (int i = 0; i < positions.size(); ++i) {
     projector->add(ProjectAttributeAt(positions[i]));
@@ -334,7 +334,7 @@ const SingleSourceProjector* ProjectAllAttributes(const StringPiece& prefix) {
 FailureOrOwned<const BoundMultiSourceProjector>
 CompoundMultiSourceProjector::Bind(
     const vector<const TupleSchema*>& source_schemas) const {
-  scoped_ptr<BoundMultiSourceProjector> projector(
+  unique_ptr<BoundMultiSourceProjector> projector(
       new BoundMultiSourceProjector(source_schemas));
   for (int i = 0; i < projectors_.size(); ++i) {
     FailureOrOwned<const BoundSingleSourceProjector> component =
@@ -373,13 +373,13 @@ string CompoundMultiSourceProjector::ToString(bool verbose) const {
 pair<BoundMultiSourceProjector*, BoundSingleSourceProjector*> DecomposeNth(
     int source_index,
     const BoundMultiSourceProjector& projector) {
-  scoped_ptr<BoundSingleSourceProjector> new_nth(
+  unique_ptr<BoundSingleSourceProjector> new_nth(
       new BoundSingleSourceProjector(projector.source_schema(source_index)));
   vector<const TupleSchema*> schemas;
   for (int i = 0; i < projector.source_count(); ++i) {
     schemas.push_back(&projector.source_schema(i));
   }
-  scoped_ptr<BoundMultiSourceProjector> new_projector(
+  unique_ptr<BoundMultiSourceProjector> new_projector(
       new BoundMultiSourceProjector(schemas));
 
   std::map<int, int> uniqualizer;

@@ -45,19 +45,19 @@ class View;
 //
 // View view(...);
 // Permutation permutation(view.row_count());
-// scoped_ptr<SortOrder> sort_order(...);
+// std::unique_ptr<SortOrder> sort_order(...);
 // FailureOrOwned<BoundSortOder> sort_order_result =
 //     sort_order->Bind(view.schema());
 // if (sort_order_result.failure()) {
 // .. handle
 // } else {
-//   scoped_ptr<BoundSortOrder> bound_sort_order(sort_order_result->get());
+//   std::unique_ptr<BoundSortOrder> bound_sort_order(sort_order_result->get());
 //
 //   SortPermutation(*bound_sort_order, view, &permutation);
 //
-//   scoped_ptr<Cursor> cursor1(CreateCursorOverViewWithSelection(
+//   std::unique_ptr<Cursor> cursor1(CreateCursorOverViewWithSelection(
 //       view, view.row_count(), permutation.permutation(), ...);
-//   scoped_ptr<Cursor> cursor2(CreateCursorOverViewWithSelection(
+//   std::unique_ptr<Cursor> cursor2(CreateCursorOverViewWithSelection(
 //       view, view.row_count(), permutation.permutation(), ...);
 //
 //   Now, use the two cursors.

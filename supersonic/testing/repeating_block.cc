@@ -23,7 +23,6 @@ namespace supersonic {using std::string; }
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/infrastructure/copy_column.h"
 #include "supersonic/base/infrastructure/types.h"

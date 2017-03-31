@@ -21,7 +21,6 @@
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
 #include "supersonic/base/infrastructure/bit_pointers.h"
@@ -171,7 +170,7 @@ FailureOrOwned<Cursor> HybridGroupTransformCursor::Create(
         SelectColumnGroup(group_by_columns, column_group_projectors, schemas,
                           selected_group));
     PROPAGATE_ON_FAILURE(bound_projector);
-    transformation_projectors->push_back(bound_projector.release());
+    transformation_projectors->emplace_back(bound_projector.release());
   }
   // Build the actual cursor.
   return Success(new HybridGroupTransformCursor(

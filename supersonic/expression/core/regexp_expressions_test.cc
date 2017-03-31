@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+//
+
+#include <memory>
+using std::unique_ptr;
 
 #include "supersonic/expression/core/regexp_expressions.h"
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/infrastructure/block.h"
 #include "supersonic/base/infrastructure/types.h"
 #include "supersonic/cursor/infrastructure/value_ref.h"
@@ -177,12 +180,12 @@ TEST(StringExpressionTest, RegexpExtract) {
 // in the arena. If this test should fail, we need to rewrite the strings
 // returned by RE2::PartialMatch into the arena.
 TEST(StringExpressionTest, RegexpExtractDoesNotRewrite) {
-  scoped_ptr<Block> block(BlockBuilder<STRING>().AddRow("SuperSonic").Build());
+  unique_ptr<Block> block(BlockBuilder<STRING>().AddRow("SuperSonic").Build());
   const Expression* child = AttributeAt(0);
-  scoped_ptr<BoundExpressionTree> extract(DefaultBind(
+  unique_ptr<BoundExpressionTree> extract(DefaultBind(
       block->view().schema(), 100, RegexpExtract(child, "u(\\w+)i")));
   const View& result_view = DefaultEvaluate(extract.get(), block->view());
-  scoped_ptr<Block> expected(BlockBuilder<STRING>().AddRow("perSon").Build());
+  unique_ptr<Block> expected(BlockBuilder<STRING>().AddRow("perSon").Build());
   EXPECT_VIEWS_EQUAL(expected->view(), result_view);
   const char* input = block->view().column(0).typed_data<STRING>()->data();
   const char* result = result_view.column(0).typed_data<STRING>()->data();

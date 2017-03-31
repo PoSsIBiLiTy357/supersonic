@@ -13,9 +13,11 @@
 // limitations under the License.
 //
 
+#include <memory>
+using std::unique_ptr;
+
 #include "supersonic/expression/core/string_expressions.h"
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/infrastructure/block.h"
 #include "supersonic/base/infrastructure/tuple_schema.h"
 #include "supersonic/cursor/infrastructure/value_ref.h"
@@ -329,12 +331,12 @@ TEST(StringExpressionTest, Concat) {
 }
 
 TEST(StringExpressionTest, ConcatSchema) {
-  scoped_ptr<Block> block(BlockBuilder<STRING, STRING>()
+  unique_ptr<Block> block(BlockBuilder<STRING, STRING>()
                           .AddRow("SuperSonic", __)
                           .Build());
   ExpressionList* expr_list = new ExpressionList();
   expr_list->add(AttributeAt(0))->add(AttributeAt(1));
-  scoped_ptr<BoundExpressionTree>
+  unique_ptr<BoundExpressionTree>
       concat(DefaultBind(block->view().schema(), 100, Concat(expr_list)));
   EXPECT_TUPLE_SCHEMAS_EQUAL(
       concat->result_schema(),
@@ -342,12 +344,12 @@ TEST(StringExpressionTest, ConcatSchema) {
 }
 
 TEST(StringExpressionTest, ConcatSchemaWithNull) {
-  scoped_ptr<Block> block(BlockBuilder<STRING>()
+  unique_ptr<Block> block(BlockBuilder<STRING>()
                           .AddRow("SuperSonic")
                           .Build());
   ExpressionList* expr_list = new ExpressionList();
   expr_list->add(AttributeAt(0));
-  scoped_ptr<BoundExpressionTree>
+  unique_ptr<BoundExpressionTree>
       concat(DefaultBind(block->view().schema(), 100, Concat(expr_list)));
   EXPECT_TUPLE_SCHEMAS_EQUAL(
       concat->result_schema(),
@@ -355,7 +357,7 @@ TEST(StringExpressionTest, ConcatSchemaWithNull) {
 }
 
 TEST(StringExpressionTest, ConcatWithNullFields) {
-  scoped_ptr<Block> block(BlockBuilder<STRING, STRING, STRING>()
+  unique_ptr<Block> block(BlockBuilder<STRING, STRING, STRING>()
                           .AddRow("Super", __, "Sonic")
                           .AddRow("Everest", __, "Carpathian")
                           .AddRow(__, "Everest", "Carpathian")
@@ -363,10 +365,10 @@ TEST(StringExpressionTest, ConcatWithNullFields) {
                           .Build());
   ExpressionList* expr_list = new ExpressionList();
   expr_list->add(AttributeAt(0))->add(AttributeAt(1))->add(AttributeAt(2));
-  scoped_ptr<BoundExpressionTree> concat(
+  unique_ptr<BoundExpressionTree> concat(
       DefaultBind(block->view().schema(), 100, Concat(expr_list)));
   const View& result = DefaultEvaluate(concat.get(), block->view());
-  scoped_ptr<Block> expected(BlockBuilder<STRING>()
+  unique_ptr<Block> expected(BlockBuilder<STRING>()
                              .AddRow(__)
                              .AddRow(__)
                              .AddRow(__)
@@ -377,34 +379,34 @@ TEST(StringExpressionTest, ConcatWithNullFields) {
 
 
 TEST(StringExpressionTest, ConcatTenInputs) {
-  scoped_ptr<Block> block(BlockBuilder<STRING, STRING, STRING, STRING, STRING,
+  unique_ptr<Block> block(BlockBuilder<STRING, STRING, STRING, STRING, STRING,
                           STRING, STRING, STRING, STRING, STRING>()
                           .AddRow("S", "u", "p", "e", "r",
                                   "S", "o", "n", "i", "c")
                           .Build());
   ExpressionList* expr_list = new ExpressionList();
   for (int i = 0; i < 10; ++i) expr_list->add(AttributeAt(i));
-  scoped_ptr<BoundExpressionTree> concat(
+  unique_ptr<BoundExpressionTree> concat(
       DefaultBind(block->view().schema(), 100, Concat(expr_list)));
   const View& result = DefaultEvaluate(concat.get(), block->view());
-  scoped_ptr<Block> expected(BlockBuilder<STRING>()
+  unique_ptr<Block> expected(BlockBuilder<STRING>()
                              .AddRow("SuperSonic")
                              .Build());
   EXPECT_VIEWS_EQUAL(expected->view(), result);
 }
 
 TEST(StringExpressionTest, ConcatNumbers) {
-  scoped_ptr<Block> block(BlockBuilder<STRING, INT32>()
+  unique_ptr<Block> block(BlockBuilder<STRING, INT32>()
                           .AddRow("Super", 123)
                           .AddRow("Sonic", 124)
                           .AddRow("", -12)
                           .Build());
   ExpressionList* expr_list = new ExpressionList();
   expr_list->add(AttributeAt(0))->add(AttributeAt(1));
-  scoped_ptr<BoundExpressionTree> concat(
+  unique_ptr<BoundExpressionTree> concat(
       DefaultBind(block->view().schema(), 100, Concat(expr_list)));
   const View& result = DefaultEvaluate(concat.get(), block->view());
-  scoped_ptr<Block> expected(BlockBuilder<STRING>()
+  unique_ptr<Block> expected(BlockBuilder<STRING>()
                              .AddRow("Super123")
                              .AddRow("Sonic124")
                              .AddRow("-12")

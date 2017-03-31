@@ -16,9 +16,10 @@
 #include "supersonic/expression/base/expression.h"
 
 #include <algorithm>
+#include <memory>
 #include "supersonic/utils/std_namespace.h"
+using std::make_unique;
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -48,8 +49,7 @@ FailureOrOwned<BoundExpressionTree>
     CreateBoundExpressionTree(BoundExpression* expression,
                               BufferAllocator* allocator,
                               rowcount_t max_row_count) {
-  scoped_ptr<BoundExpressionTree> expression_tree(
-      new BoundExpressionTree(expression, allocator));
+  auto expression_tree = make_unique<BoundExpressionTree>(expression, allocator);
   PROPAGATE_ON_FAILURE(expression_tree->Init(allocator, max_row_count));
   return Success(expression_tree.release());
 }
@@ -99,7 +99,8 @@ FailureOrOwned<BoundExpressionList> ExpressionList::DoBind(
     const TupleSchema& input_schema,
     BufferAllocator* allocator,
     rowcount_t max_row_count) const {
-  scoped_ptr<BoundExpressionList> bound_list(new BoundExpressionList());
+  auto bound_list = make_unique<BoundExpressionList>();
+
   for (int i = 0; i < expressions_.size(); ++i) {
     FailureOrOwned<BoundExpression> result =
         expressions_[i]->DoBind(input_schema, allocator, max_row_count);

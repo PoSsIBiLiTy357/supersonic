@@ -16,8 +16,10 @@
 #include "supersonic/base/infrastructure/view_copier.h"
 
 #include <stddef.h>
+#include <memory>
+using std::make_unique;
+using std::unique_ptr;
 
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/infrastructure/block.h"
 #include "supersonic/base/infrastructure/projector.h"
 #include "supersonic/base/infrastructure/tuple_schema.h"
@@ -48,22 +50,21 @@ class ViewCopierTest : public testing::Test {
     output_schema.add_attribute(Attribute("c1", INT64, NULLABLE));
     output_schema.add_attribute(Attribute("c2", STRING, NULLABLE));
     output_schema.add_attribute(Attribute("c3", STRING, NOT_NULLABLE));
-    output_.reset(new Block(output_schema, HeapBufferAllocator::Get()));
+    output_ = make_unique<Block>(output_schema, HeapBufferAllocator::Get());
     output_->Reallocate(4);
 
-    single_source_projector_.reset(
-        new BoundSingleSourceProjector(input_->schema()));
+    single_source_projector_ = make_unique<BoundSingleSourceProjector>(
+        input_->schema());
     single_source_projector_->Add(0);
     single_source_projector_->Add(2);
 
-    projected_output_.reset(
-        new Block(single_source_projector_->result_schema(),
-                  HeapBufferAllocator::Get()));
+    projected_output_ = make_unique<Block>(
+        single_source_projector_->result_schema(), HeapBufferAllocator::Get());
     projected_output_->Reallocate(4);
   }
 
-  scoped_ptr<Block> input_, output_, projected_output_;
-  scoped_ptr<BoundSingleSourceProjector> single_source_projector_;
+  unique_ptr<Block> input_, output_, projected_output_;
+  unique_ptr<BoundSingleSourceProjector> single_source_projector_;
 };
 
 TEST_F(ViewCopierTest,

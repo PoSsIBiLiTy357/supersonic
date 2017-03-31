@@ -29,7 +29,6 @@ using std::vector;
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -196,7 +195,7 @@ MergeUnionAllCursor::MergeUnionAllCursor(const BoundSortOrder* sort_order,
       priority_queue_(RowComparatorPointer(&row_comparator_)) {
   for (int i = 0; i < inputs.size(); i++) {
     CursorRowIterator* input = new CursorRowIterator(inputs[i]);
-    inputs_.push_back(input);
+    inputs_.emplace_back(input);
     pending_inputs_.push(input);
   }
 }

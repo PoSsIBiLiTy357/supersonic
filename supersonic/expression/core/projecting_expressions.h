@@ -26,7 +26,6 @@ namespace supersonic {using std::string; }
 using std::vector;
 
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/projector.h"
 #include "supersonic/base/infrastructure/types.h"
@@ -129,8 +128,8 @@ class CompoundExpression : public Expression {
   }
 
  private:
-  scoped_ptr<ExpressionList> arguments_;
-  scoped_ptr<CompoundMultiSourceProjector> projector_;
+  std::unique_ptr<ExpressionList> arguments_;
+  std::unique_ptr<CompoundMultiSourceProjector> projector_;
 
   DISALLOW_COPY_AND_ASSIGN(CompoundExpression);
 };

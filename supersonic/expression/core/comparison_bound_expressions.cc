@@ -17,20 +17,20 @@
 #include "supersonic/expression/core/comparison_bound_expressions.h"
 
 #include <stddef.h>
+#include "supersonic/utils/std_namespace.h"
 #include <algorithm>
-#include "supersonic/utils/std_namespace.h"
-#include <unordered_set>
+#include <memory>
 #include <set>
-#include "supersonic/utils/std_namespace.h"
 #include <string>
-namespace supersonic {using std::string; }
+#include <unordered_set>
 #include <vector>
+namespace supersonic {using std::string; }
+using std::unique_ptr;
 using std::vector;
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -373,8 +373,8 @@ class BoundInSetExpression : public BasicBoundExpression {
         "", result_schema().GetHumanReadableSpecification());
     return Success();
   }
-  scoped_ptr<BoundExpression> needle_expression_;
-  scoped_ptr<BoundExpressionList> haystack_arguments_;
+  unique_ptr<BoundExpression> needle_expression_;
+  unique_ptr<BoundExpressionList> haystack_arguments_;
   // Marks which rows has at least one null in one of its expressions.
   bool_ptr has_null() { return local_skip_vector_storage_.view().column(0); }
   // Stores the skip vector copy for set expressions' DoEvaluate.
@@ -589,8 +589,8 @@ FailureOrOwned<BoundExpression> GenerateComparison(BufferAllocator* allocator,
                                                    BoundExpression* left_ptr,
                                                    BoundExpression* right_ptr,
                                                    OperatorId operator_id) {
-  scoped_ptr<BoundExpression> left(left_ptr);
-  scoped_ptr<BoundExpression> right(right_ptr);
+  unique_ptr<BoundExpression> left(left_ptr);
+  unique_ptr<BoundExpression> right(right_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount("Comparison",
                                            left.get()->result_schema(),
                                            1));
@@ -644,8 +644,8 @@ FailureOrOwned<BoundExpression> BoundInSetDataTypeAware(
     BoundExpressionList* input_haystack_arguments,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> needle_expression(input_needle_expression);
-  scoped_ptr<BoundExpressionList> haystack_arguments(input_haystack_arguments);
+  unique_ptr<BoundExpression> needle_expression(input_needle_expression);
+  unique_ptr<BoundExpressionList> haystack_arguments(input_haystack_arguments);
   for (int i = 0; i < haystack_arguments->size(); ++i) {
     string name = StringPrintf("The %dth element on the in list", i);
     BoundExpression* child = haystack_arguments->get(i);
@@ -662,12 +662,12 @@ FailureOrOwned<BoundExpression> BoundInSetDataTypeAware(
   typedef typename TypeTraits<data_type>::cpp_type cpp_type;
   typedef typename TypeTraits<data_type>::hold_type hold_type;
   vector<hold_type> haystack_constants;
-  scoped_ptr<BoundExpressionList> haystack_non_constant_expressions(
+  unique_ptr<BoundExpressionList> haystack_non_constant_expressions(
       new BoundExpressionList());
   bool contains_null_constant = false;
   for (int i = 0; i < haystack_arguments->size(); ++i) {
     if (haystack_arguments->get(i)->is_constant()) {
-      scoped_ptr<BoundExpression> scoped_arguments_element(
+      unique_ptr<BoundExpression> scoped_arguments_element(
           haystack_arguments->release(i));
       bool is_null;
       FailureOr<hold_type> value = GetConstantBoundExpressionValue<data_type>(
@@ -761,8 +761,8 @@ FailureOrOwned<BoundExpression> BoundInSet(
     BoundExpressionList* input_haystack_arguments,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  scoped_ptr<BoundExpression> needle_expression(input_needle_expression);
-  scoped_ptr<BoundExpressionList> haystack_arguments(input_haystack_arguments);
+  unique_ptr<BoundExpression> needle_expression(input_needle_expression);
+  unique_ptr<BoundExpressionList> haystack_arguments(input_haystack_arguments);
   PROPAGATE_ON_FAILURE(CheckAttributeCount("Needle Bound Expression",
                                            needle_expression->result_schema(),
                                            1));
@@ -794,7 +794,7 @@ FailureOrOwned<BoundExpression> BoundInSet(
       true);  // Disallow down-casting
   PROPAGATE_ON_FAILURE(converted);
   needle_expression.reset(converted.release());
-  scoped_ptr<BoundExpressionList> converted_arguments(
+  unique_ptr<BoundExpressionList> converted_arguments(
       new BoundExpressionList());
   for (int i = 0; i < haystack_arguments->size(); ++i) {
     FailureOrOwned<BoundExpression> converted = BoundInternalCast(

@@ -19,9 +19,9 @@
 #include <memory>
 #include <string>
 namespace supersonic {using std::string; }
+using std::unique_ptr;
 
 #include "supersonic/utils/macros.h"
-#include "supersonic/utils/scoped_ptr.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -72,7 +72,7 @@ class RegexpExpression : public UnaryExpression {
       BufferAllocator* const allocator,
       rowcount_t row_capacity,
       BoundExpression* child) const {
-    scoped_ptr<BoundExpression> child_ptr(child);
+    unique_ptr<BoundExpression> child_ptr(child);
     DataType child_type = GetExpressionType(child);
     if (child_type != STRING) {
       THROW(new Exception(ERROR_ATTRIBUTE_TYPE_MISMATCH,
@@ -107,7 +107,7 @@ class RegexpExtractExpression : public UnaryExpression {
       BufferAllocator* const allocator,
       rowcount_t row_capacity,
       BoundExpression* child) const {
-    scoped_ptr<BoundExpression> child_ptr(child);
+    unique_ptr<BoundExpression> child_ptr(child);
     DataType child_type = GetExpressionType(child);
     if (child_type != STRING) {
       THROW(new Exception(ERROR_ATTRIBUTE_TYPE_MISMATCH,
@@ -144,8 +144,8 @@ class RegexpReplaceExpression : public BinaryExpression {
       rowcount_t row_capacity,
       BoundExpression* left,
       BoundExpression* right) const {
-    scoped_ptr<BoundExpression> left_ptr(left);
-    scoped_ptr<BoundExpression> right_ptr(right);
+    unique_ptr<BoundExpression> left_ptr(left);
+    unique_ptr<BoundExpression> right_ptr(right);
     DataType left_type = GetExpressionType(left);
     if (left_type != STRING) {
       THROW(new Exception(ERROR_ATTRIBUTE_TYPE_MISMATCH,
