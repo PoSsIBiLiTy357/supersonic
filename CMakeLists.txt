@@ -219,8 +219,6 @@ set(HEADERS_SUPERSONIC
     supersonic/utils/paranoid.h
     supersonic/utils/pointer_vector.h
     supersonic/utils/port.h
-    supersonic/utils/scoped_ptr.h
-    supersonic/utils/scoped_ptr_internals.h
     supersonic/utils/sparsetable.h
     supersonic/utils/std_namespace.h
     supersonic/utils/strtoint.h
