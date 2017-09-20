@@ -15,13 +15,7 @@
 
 #include "supersonic/base/infrastructure/copy_column.h"
 
-#include <cstddef>
-#include <memory>
-#include <string>
-namespace supersonic {using std::string; }
-using std::make_unique;
-using std::unique_ptr;
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/integral_types.h"
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"

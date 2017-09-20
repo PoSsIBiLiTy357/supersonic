@@ -18,6 +18,7 @@
 #define SUPERSONIC_EXPRESSION_TEMPLATED_CAST_EXPRESSION_H_
 
 #include "supersonic/proto/supersonic.pb.h"
+#include "supersonic/utils/std_namespace.h"
 
 namespace supersonic {
 
@@ -30,9 +31,9 @@ namespace supersonic {
 // never fails.
 class Expression;
 
-const Expression* InternalCast(DataType to_type,
-                               const Expression* const source,
-                               bool is_implicit);
+unique_ptr<const Expression> InternalCast(DataType to_type,
+                                          unique_ptr<const Expression> source,
+                                          bool is_implicit);
 
 }  // namespace supersonic
 

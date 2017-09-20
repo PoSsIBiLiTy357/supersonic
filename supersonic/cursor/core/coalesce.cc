@@ -13,13 +13,6 @@
 // limitations under the License.
 //
 
-#include "supersonic/cursor/core/coalesce.h"
-
-#include <cstdint>
-
-#include <memory>
-#include <vector>
-using std::vector;
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
@@ -39,6 +32,7 @@ using std::vector;
 #include "supersonic/cursor/infrastructure/iterators.h"
 #include "supersonic/utils/pointer_vector.h"
 #include "supersonic/utils/stl_util.h"
+#include "supersonic/cursor/core/coalesce.h"
 
 namespace supersonic {
 
@@ -46,18 +40,20 @@ class TupleSchema;
 
 namespace {
 
-class CoalesceCursor : public BasicCursor {
+class CoalesceCursor: public BasicCursor {
+ using Container = CursorIterator;
+
  public:
   // Takes ownership of child cursors and the projector
   // The child cursors must not be NULL and must have distinct attribute names.
-  CoalesceCursor(const vector<Cursor*>& children,
-                 const BoundMultiSourceProjector* projector)
-      : BasicCursor(CHECK_NOTNULL(projector)->result_schema()),
-        projector_(projector) {
-    for (int i = 0; i < children.size(); ++i) {
-      Cursor* child = children[i];
-      DCHECK(child);
-      inputs_.emplace_back(new CursorIterator(child));
+  CoalesceCursor(vector<unique_ptr<Cursor>> children,
+                 unique_ptr<const BoundMultiSourceProjector> projector)
+      : BasicCursor(projector->result_schema()),
+        projector_(std::move(projector)) {
+    for (auto& child: children) {
+      CHECK_NOTNULL(projector_.get());
+      DCHECK(child != nullptr);
+      inputs_.emplace_back(make_unique<Container>(std::move(child)));
     }
   }
 
@@ -73,7 +69,7 @@ class CoalesceCursor : public BasicCursor {
   virtual CursorId GetCursorId() const { return COALESCE; }
 
  private:
-  util::gtl::PointerVector<CursorIterator> inputs_;
+  vector<unique_ptr<Container>> inputs_;
   std::unique_ptr<const BoundMultiSourceProjector> projector_;
 
   DISALLOW_COPY_AND_ASSIGN(CoalesceCursor);
@@ -111,23 +107,19 @@ class CoalesceOperation : public BasicOperation {
  public:
   virtual ~CoalesceOperation() {}
 
-  explicit CoalesceOperation(const vector<Operation*>& children)
-      : BasicOperation(children) {}
+  explicit CoalesceOperation(vector<unique_ptr<Operation>> children)
+      : BasicOperation(std::move(children)) {}
 
   virtual FailureOrOwned<Cursor> CreateCursor() const {
-    vector<Cursor*> child_cursors(children_count());
-    ElementDeleter child_cursors_deleter(&child_cursors);
+    vector<unique_ptr<Cursor>> child_cursors(children_count());
     for (int i = 0; i < children_count(); ++i) {
       FailureOrOwned<Cursor> child_cursor = child_at(i)->CreateCursor();
       PROPAGATE_ON_FAILURE(child_cursor);
-      child_cursors[i] = child_cursor.release();
+      child_cursors[i] = child_cursor.move();
     }
-    FailureOrOwned<Cursor> cursor = BoundCoalesce(child_cursors);
+    FailureOrOwned<Cursor> cursor = BoundCoalesce(std::move(child_cursors));
     PROPAGATE_ON_FAILURE(cursor);
-    // CoalesceCursor took ownership, so prevent child_cursors_delete
-    // to delete them.
-    child_cursors.clear();
-    return Success(cursor.release());
+    return Success(cursor.move());
   }
 
  private:
@@ -136,19 +128,18 @@ class CoalesceOperation : public BasicOperation {
 
 }  // namespace
 
-FailureOrOwned<Cursor> BoundCoalesce(const vector<Cursor*>& children) {
+FailureOrOwned<Cursor> BoundCoalesce(vector<unique_ptr<Cursor>> children) {
   if (children.empty()) {
     return BoundGenerate(0);
   }
   if (children.size() == 1) {
-    DCHECK(children[0] != NULL);
-    return Success(children[0]);
+    return Success(std::move(children[0]));
   }
 
   CompoundMultiSourceProjector all_attributes_projector;
   vector<const TupleSchema*> child_schemas;
   for (int i = 0; i < children.size(); ++i) {
-    Cursor* child = children[i];
+    Cursor* child = children[i].get();
     DCHECK(child != NULL);
     child_schemas.push_back(&child->schema());
     all_attributes_projector.add(i, ProjectAllAttributes());
@@ -156,11 +147,11 @@ FailureOrOwned<Cursor> BoundCoalesce(const vector<Cursor*>& children) {
   FailureOrOwned<const BoundMultiSourceProjector> bound_projector =
       all_attributes_projector.Bind(child_schemas);
   PROPAGATE_ON_FAILURE(bound_projector);
-  return Success(new CoalesceCursor(children, bound_projector.release()));
+  return Success(make_unique<CoalesceCursor>(std::move(children), bound_projector.move()));
 }
 
-Operation* Coalesce(const vector<Operation*>& children) {
-  return new CoalesceOperation(children);
+unique_ptr<Operation> Coalesce(vector<unique_ptr<Operation>> children) {
+  return make_unique<CoalesceOperation>(std::move(children));
 }
 
 }  // namespace supersonic

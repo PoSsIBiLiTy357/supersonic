@@ -18,11 +18,9 @@
 
 #include <sys/time.h>
 
-#include <cstring>
-#include <algorithm>
 #include "supersonic/utils/std_namespace.h"  // For max.
-#include <string>
-namespace supersonic {using std::string; }
+using std::unique_ptr;
+using std::make_unique;
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
@@ -246,8 +244,8 @@ MTRandom::~MTRandom() {
   memset(&context_, 0, sizeof(MTContext));
 }
 
-MTRandom* MTRandom::Clone() const {
-  MTRandom *twin = new MTRandom(0);
+unique_ptr<RandomBase> MTRandom::Clone() const {
+  auto twin = make_unique<MTRandom>(0);
   memcpy(&(twin->context_), &context_, sizeof(MTContext));
   return twin;
 }

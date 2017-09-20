@@ -37,7 +37,7 @@ class BufferAllocator;
 FailureOrOwned<BoundExpression> BoundInternalCast(
     BufferAllocator* allocator,
     rowcount_t row_capacity,
-    BoundExpression* child_ptr,
+    unique_ptr<BoundExpression> child_ptr,
     DataType to_type,
     bool is_implicit);
 

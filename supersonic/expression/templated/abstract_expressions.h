@@ -36,8 +36,8 @@ namespace supersonic {
 template<OperatorId op>
 class AbstractUnaryExpression : public UnaryExpression {
  public:
-  explicit AbstractUnaryExpression(const Expression* const argument)
-      : UnaryExpression(argument) {}
+  explicit AbstractUnaryExpression(unique_ptr<const Expression> argument)
+      : UnaryExpression(std::move(argument)) {}
 
   virtual string ToString(bool verbose) const {
     return UnaryExpressionTraits<op>::FormatDescription(
@@ -159,17 +159,17 @@ class NumericToTemplateUnaryExpression : public AbstractUnaryExpression<op> {
 class ToStringUnaryExpression
     : public AbstractUnaryExpression<OPERATOR_TOSTRING> {
  public:
-  explicit ToStringUnaryExpression(const Expression* const child)
-      : AbstractUnaryExpression<OPERATOR_TOSTRING>(child) {}
+  explicit ToStringUnaryExpression(unique_ptr<const Expression> child)
+      : AbstractUnaryExpression<OPERATOR_TOSTRING>(std::move(child)) {}
 
  private:
   virtual FailureOrOwned<BoundExpression> CreateBoundUnaryExpression(
       const TupleSchema& input_schema, BufferAllocator* const allocator,
-      rowcount_t row_capacity, BoundExpression* child) const {
+      rowcount_t row_capacity, unique_ptr<BoundExpression> child) const {
     if (child->result_schema().attribute(0).type() == STRING)
-      return Success(child);
+      return Success(std::move(child));
     return CreateUnaryArbitraryInputExpression<OPERATOR_TOSTRING, STRING>(
-        allocator, row_capacity, child);
+        allocator, row_capacity, std::move(child));
   }
 
   DISALLOW_COPY_AND_ASSIGN(ToStringUnaryExpression);
@@ -180,8 +180,8 @@ class ToStringUnaryExpression
 template<OperatorId op>
 class RoundUnaryExpression : public AbstractUnaryExpression<op> {
  public:
-  explicit RoundUnaryExpression(const Expression* const child)
-      : AbstractUnaryExpression<op>(child) {}
+  explicit RoundUnaryExpression(unique_ptr<const Expression> child)
+      : AbstractUnaryExpression<op>(std::move(child)) {}
 
  private:
   virtual FailureOrOwned<BoundExpression> CreateBoundUnaryExpression(
@@ -200,13 +200,13 @@ template<OperatorId op, DataType to_type>
 class RoundToIntUnaryExpression
     : public AbstractUnaryExpression<op> {
  public:
-  explicit RoundToIntUnaryExpression(const Expression* const child)
-      : AbstractUnaryExpression<op>(child) {}
+  explicit RoundToIntUnaryExpression(unique_ptr<const Expression> child)
+      : AbstractUnaryExpression<op>(std::move(child)) {}
 
  private:
   virtual FailureOrOwned<BoundExpression> CreateBoundUnaryExpression(
       const TupleSchema& input_schema, BufferAllocator* const allocator,
-      rowcount_t row_capacity, BoundExpression* child) const {
+      rowcount_t row_capacity, BoundExpression* child) {
     if (GetTypeInfo(child->result_schema().attribute(0).type()).is_integer())
       return Success(child);
     return CreateUnaryFloatingInputExpression<op, to_type>(allocator,
@@ -221,9 +221,9 @@ class RoundToIntUnaryExpression
 template<OperatorId op>
 class AbstractBinaryExpression : public BinaryExpression {
  public:
-  AbstractBinaryExpression(const Expression* const left,
-                           const Expression* const right)
-      : BinaryExpression(left, right) {}
+  AbstractBinaryExpression(unique_ptr<const Expression> left,
+                           unique_ptr<const Expression> right)
+      : BinaryExpression(std::move(left), std::move(right)) {}
 
   virtual string ToString(bool verbose) const {
     return BinaryExpressionTraits<op>::FormatDescription(
@@ -239,19 +239,19 @@ template<OperatorId op, DataType left_type, DataType right_type,
          DataType to_type>
 class TypedBinaryExpression : public AbstractBinaryExpression<op> {
  public:
-  TypedBinaryExpression(const Expression* const left,
-                        const Expression* const right) :
-    AbstractBinaryExpression<op>(left, right) {}
+  TypedBinaryExpression(unique_ptr<const Expression> left,
+                        unique_ptr<const Expression> right) :
+    AbstractBinaryExpression<op>(std::move(left), std::move(right)) {}
 
  private:
   virtual FailureOrOwned<BoundExpression> CreateBoundBinaryExpression(
       const TupleSchema& input_schema,
       BufferAllocator* const allocator,
       rowcount_t row_capacity,
-      BoundExpression* left,
-      BoundExpression* right) const {
+      unique_ptr<BoundExpression> left,
+      unique_ptr<BoundExpression> right) const {
     return CreateTypedBoundBinaryExpression<op, left_type, right_type,
-        to_type>(allocator, row_capacity, left, right);
+        to_type>(allocator, row_capacity, std::move(left), std::move(right));
   }
 
   DISALLOW_COPY_AND_ASSIGN(TypedBinaryExpression);

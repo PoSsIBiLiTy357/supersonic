@@ -358,7 +358,7 @@ class bit_array {
   }
 
  private:
-  std::unique_ptr<Buffer> data_buffer_;
+  unique_ptr<Buffer> data_buffer_;
 
   DISALLOW_COPY_AND_ASSIGN(bit_array);
 };
@@ -383,7 +383,7 @@ class boolean_array {
   }
 
  private:
-  std::unique_ptr<Buffer> data_buffer_;
+  unique_ptr<Buffer> data_buffer_;
 
   DISALLOW_COPY_AND_ASSIGN(boolean_array);
 };
@@ -575,7 +575,7 @@ class BoolView {
   }
 
  private:
-  std::unique_ptr<bool_ptr[]> columns_;
+  unique_ptr<bool_ptr[]> columns_;
   int column_count_;
   rowcount_t row_count_;
 };
@@ -618,7 +618,7 @@ class BoolBlock {
  private:
   BufferAllocator* allocator_;
   int column_count_;
-  std::unique_ptr<bool_array[]> columns_;
+  unique_ptr<bool_array[]> columns_;
   BoolView view_;
 
   DISALLOW_COPY_AND_ASSIGN(BoolBlock);

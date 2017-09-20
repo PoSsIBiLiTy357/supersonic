@@ -30,16 +30,15 @@
 
 namespace supersonic {
 
-Block* CreateOutputBlock(size_t row_count) {
+unique_ptr<Block> CreateOutputBlock(size_t row_count) {
   // 3rd output column explicitly set as nullable != 3rd input column.
   TupleSchema output_schema;
   output_schema.add_attribute(Attribute("c1", INT64, NULLABLE));
   output_schema.add_attribute(Attribute("c2", STRING, NULLABLE));
   output_schema.add_attribute(Attribute("c3", STRING, NULLABLE));
-  std::unique_ptr<Block> result(
-      new Block(output_schema, HeapBufferAllocator::Get()));
+  auto result = make_unique<Block>(output_schema, HeapBufferAllocator::Get());
   CHECK(result->Reallocate(row_count));
-  return result.release();
+  return result;
 }
 
 class RowCopierTest : public testing::Test {};
@@ -50,7 +49,7 @@ TEST_F(RowCopierTest, RowCopierSimpleCopy) {
                                    .AddRow(1, "c", "d")
                                    .AddRow(2, "e", "f")
                                    .Build());
-  std::unique_ptr<Block> output(CreateOutputBlock(10));
+  auto output = CreateOutputBlock(10);
   RowCopier<
       DirectRowSourceReader<RowSourceAdapter>,
       DirectRowSourceWriter<RowSinkAdapter> > copier(output->schema(), true);

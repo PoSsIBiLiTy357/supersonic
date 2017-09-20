@@ -20,11 +20,8 @@
 #ifndef SUPERSONIC_BENCHMARK_DOT_DOT_DRAWER_H_
 #define SUPERSONIC_BENCHMARK_DOT_DOT_DRAWER_H_
 
-#include <memory>
-#include <string>
-namespace supersonic {using std::string; }
-
 #include "supersonic/utils/macros.h"
+#include "supersonic/utils/std_namespace.h"
 
 namespace supersonic {
 
@@ -56,8 +53,9 @@ class DOTDrawer {
   static const char* kGlobalStatsNodeName;
 
   // Takes ownership of the writer.
-  explicit DOTDrawer(DOTOutputWriter* dot_writer, const string& benchmark_name)
-      : dot_writer_(dot_writer),
+  explicit DOTDrawer(unique_ptr<DOTOutputWriter> dot_writer,
+                     const string& benchmark_name)
+      : dot_writer_(std::move(dot_writer)),
         benchmark_name_(benchmark_name),
         node_counter_(0),
         already_used_(false) {}
@@ -92,7 +90,7 @@ class DOTDrawer {
 
   // Field representing the policy on sending the generated graph code to its
   // destination.
-  std::unique_ptr<DOTOutputWriter> dot_writer_;
+  unique_ptr<DOTOutputWriter> dot_writer_;
 
   string benchmark_name_;
 
@@ -114,12 +112,12 @@ class DOTDrawer {
 // Creates a DOT writer which outputs the diagram code to the given file.
 // Creates the file if it does not exist, and overwrites it if it does.
 // Will fail if there are any errors concerning file access.
-DOTOutputWriter* CreateFileOutputWriter(const string& file_name);
+unique_ptr<DOTOutputWriter> CreateFileOutputWriter(const string& file_name);
 
 
 // Appends the created graph's code to the argument string. Does not take
 // ownership of the argument.
-DOTOutputWriter* CreateStringOutputWriter(string* dot_output);
+unique_ptr<DOTOutputWriter> CreateStringOutputWriter(string* dot_output);
 
 }  // namespace supersonic
 

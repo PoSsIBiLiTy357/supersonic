@@ -139,23 +139,6 @@ ValueComparatorInterface* CreateValueComparator(DataType type) {
 // Holds and updates a set of unique keys on which input is clustered.
 class AggregateClustersKeySet {
  public:
-  // Creates a AggregateClustersKeySet. group_by_columns describes which
-  // columns constitute a key and should be grouped together, it can be empty,
-  // in which case all rows are considered equal and are grouped together.
-  // Input data has to be clustered (rows with equal key need to be in
-  // continuous block).
-  // All columns specified in group_by_columns must exist in child's schema.
-  // Set can store only output_block_capacity unique keys.
-  static FailureOrOwned<AggregateClustersKeySet> Create(
-      const BoundSingleSourceProjector* group_by,
-      BufferAllocator* allocator,
-      rowcount_t output_block_capacity) {
-    std::unique_ptr<AggregateClustersKeySet> key_set(
-        new AggregateClustersKeySet(group_by, allocator));
-    PROPAGATE_ON_FAILURE(key_set->Init(output_block_capacity));
-    return Success(key_set.release());
-  }
-
   const TupleSchema& key_schema() const {
     return key_projector_->result_schema();
   }
@@ -199,17 +182,16 @@ class AggregateClustersKeySet {
         << "Init() must be called first";
     indexed_block_.ResetArenas();
     indexed_block_row_count_ = 0;
-    last_added_.reset(NULL);
+    last_added_ = nullptr;
   }
 
   ~AggregateClustersKeySet();
 
- private:
-  AggregateClustersKeySet(const BoundSingleSourceProjector* group_by,
+  AggregateClustersKeySet(unique_ptr<const BoundSingleSourceProjector> group_by,
                           BufferAllocator* allocator)
-      : child_key_view_(group_by->result_schema()),
-        key_projector_(group_by),
-        indexed_block_(group_by->result_schema(), allocator),
+      : key_projector_(std::move(group_by)),
+        child_key_view_(key_projector_->result_schema()),
+        indexed_block_(key_projector_->result_schema(), allocator),
         indexed_block_row_count_(0),
         copier_(indexed_block_.schema(), true) {
     for (int i = 0; i < key_schema().attribute_count(); i++) {
@@ -228,6 +210,8 @@ class AggregateClustersKeySet {
     return Success();
   }
 
+private:
+
   // Column-oriented comparison, result is put into diff.
   void column_compare(const View& view, Row* last_added, int col_id,
                       bool all_equal, bool* diff);
@@ -241,9 +225,10 @@ class AggregateClustersKeySet {
   // Bitmask indicating whether consecutive rows are different.
   bool row_diff_[Cursor::kDefaultRowCount];
 
+  unique_ptr<const BoundSingleSourceProjector> key_projector_;
+
   // View over an input view from child but with only key columns.
   View child_key_view_;
-  std::unique_ptr<const BoundSingleSourceProjector> key_projector_;
 
   // Contains all the inserted rows.
   Block indexed_block_;
@@ -339,11 +324,11 @@ class AggregateClustersCursor : public BasicCursor {
  public:
   // Creates cursor.
   static FailureOrOwned<Cursor> Create(
-      const BoundSingleSourceProjector* group_by,
-      Aggregator* aggregator,
+      unique_ptr<const BoundSingleSourceProjector> group_by,
+      unique_ptr<Aggregator> aggregator,
       BufferAllocator* allocator,
       rowcount_t block_size,
-      Cursor* child);
+      unique_ptr<Cursor> child);
 
   virtual ResultView Next(rowcount_t max_row_count);
 
@@ -359,13 +344,13 @@ class AggregateClustersCursor : public BasicCursor {
 
   virtual CursorId GetCursorId() const { return AGGREGATE_CLUSTERS; }
 
- private:
   // Takes ownership of key_set, aggregator and child.
   AggregateClustersCursor(const TupleSchema& result_schema,
                           AggregateClustersKeySet* key_set,
                           Aggregator* aggregator,
-                          Cursor* child);
+                          unique_ptr<Cursor> child);
 
+ private:
   // Aggregates part of the input. Sets result_ to iterate over the
   // aggregation result.
   FailureOrVoid ProcessInput();
@@ -373,8 +358,8 @@ class AggregateClustersCursor : public BasicCursor {
   // The input.
   CursorIterator child_;
 
-  std::unique_ptr<AggregateClustersKeySet> key_set_;
-  std::unique_ptr<Aggregator> aggregator_;
+  unique_ptr<AggregateClustersKeySet> key_set_;
+  unique_ptr<Aggregator> aggregator_;
 
   // Iterates over a result of last call to ProcessInput. When result_.next()
   // returns false and result_.is_eos() is true and input_exhausted() is false,
@@ -394,14 +379,14 @@ AggregateClustersCursor::AggregateClustersCursor(
     const TupleSchema& result_schema,
     AggregateClustersKeySet* key_set,
     Aggregator* aggregator,
-    Cursor* child)
+    unique_ptr<Cursor> child)
     : BasicCursor(result_schema),
-      child_(child),
+      child_(std::move(child)),
       key_set_(key_set),
       aggregator_(aggregator),
       result_(result_schema),
       input_exhausted_(false),
-      view_to_process_(child->schema()),
+      view_to_process_(child_.schema()),
       result_block_half_capacity_(
           key_set->max_view_row_count_to_insert() / 2) {
   // If aggregator reallocation is needed, we have to do it once and before
@@ -542,19 +527,18 @@ ResultView AggregateClustersCursor::Next(rowcount_t max_row_count) {
 }
 
 FailureOrOwned<Cursor> AggregateClustersCursor::Create(
-    const BoundSingleSourceProjector* group_by,
-    Aggregator* aggregator,
+    unique_ptr<const BoundSingleSourceProjector> group_by,
+    unique_ptr<Aggregator> aggregator,
     BufferAllocator* allocator,
     rowcount_t block_size,
-    Cursor* child) {
+    unique_ptr<Cursor> child) {
   CHECK(allocator != NULL);
   CHECK_GT(block_size, 0);
-  std::unique_ptr<Cursor> child_owner(child);
-  std::unique_ptr<Aggregator> aggregator_owner(aggregator);
 
-  FailureOrOwned<AggregateClustersKeySet> key_row_set =
-      AggregateClustersKeySet::Create(group_by, allocator, block_size);
-  PROPAGATE_ON_FAILURE(key_row_set);
+  auto key_row_set = make_unique<AggregateClustersKeySet>(
+      std::move(group_by), allocator);
+  PROPAGATE_ON_FAILURE(key_row_set->Init(block_size));
+
   // Make sure that the allocator buffer has enough rows.
   if (aggregator->capacity() < block_size) {
     if (!aggregator->Reallocate(block_size)) {
@@ -565,7 +549,7 @@ FailureOrOwned<Cursor> AggregateClustersCursor::Create(
     }
   }
   if (!TupleSchema::CanMerge(key_row_set->key_schema(),
-                             aggregator_owner->schema())) {
+                             aggregator->schema())) {
     THROW(new Exception(
         ERROR_ATTRIBUTE_EXISTS,
         "Incorrect aggregation specification. Result of aggregation can not "
@@ -573,11 +557,11 @@ FailureOrOwned<Cursor> AggregateClustersCursor::Create(
   }
   TupleSchema result_schema = TupleSchema::Merge(
       key_row_set->key_schema(),
-      aggregator_owner->schema());
+      aggregator->schema());
 
-  return Success(new AggregateClustersCursor(
+  return Success(make_unique<AggregateClustersCursor>(
       result_schema, key_row_set.release(),
-      aggregator_owner.release(), child_owner.release()));
+      aggregator.release(), std::move(child)));
 }
 
 namespace {
@@ -587,13 +571,13 @@ class AggregateClustersOperation : public BasicOperation {
   // Takes ownership of SingleSourceProjector, AggregationSpecification and
   // child_operation.
   AggregateClustersOperation(
-      const SingleSourceProjector* clustered_by_columns,
-      const AggregationSpecification* aggregation_specification,
+      unique_ptr<const SingleSourceProjector> clustered_by_columns,
+      unique_ptr<const AggregationSpecification> aggregation_specification,
       int64 block_size,
-      Operation* child)
-      : BasicOperation(child),
-        group_by_(clustered_by_columns),
-        aggregation_specification_(aggregation_specification),
+      unique_ptr<Operation> child)
+      : BasicOperation(std::move(child)),
+        group_by_(std::move(clustered_by_columns)),
+        aggregation_specification_(std::move(aggregation_specification)),
         block_size_(block_size) {}
 
   virtual ~AggregateClustersOperation() {}
@@ -608,52 +592,49 @@ class AggregateClustersOperation : public BasicOperation {
     FailureOrOwned<const BoundSingleSourceProjector> bound_group_by =
         group_by_->Bind(child_cursor->schema());
     PROPAGATE_ON_FAILURE(bound_group_by);
-    return AggregateClustersCursor::Create(bound_group_by.release(),
-                                           aggregator.release(),
+    return AggregateClustersCursor::Create(bound_group_by.move(),
+                                           aggregator.move(),
                                            buffer_allocator(),
                                            block_size_,
-                                           child_cursor.release());
+                                           child_cursor.move());
   }
 
  private:
-  std::unique_ptr<const SingleSourceProjector> group_by_;
-  std::unique_ptr<const AggregationSpecification> aggregation_specification_;
+  unique_ptr<const SingleSourceProjector> group_by_;
+  unique_ptr<const AggregationSpecification> aggregation_specification_;
   rowcount_t block_size_;
   DISALLOW_COPY_AND_ASSIGN(AggregateClustersOperation);
 };
 
 }  // namespace
 
-Operation* AggregateClusters(
-    const SingleSourceProjector* group_by,
-    const AggregationSpecification* aggregation,
-    Operation* child) {
-  return new AggregateClustersOperation(group_by, aggregation,
-                                        2 * Cursor::kDefaultRowCount,
-                                        child);
+unique_ptr<Operation> AggregateClusters(
+    unique_ptr<const SingleSourceProjector> group_by,
+    unique_ptr<const AggregationSpecification> aggregation,
+    unique_ptr<Operation> child) {
+  return make_unique<AggregateClustersOperation>(
+      std::move(group_by), std::move(aggregation), 2 * Cursor::kDefaultRowCount,
+      std::move(child));
 }
 
-Operation* AggregateClustersWithSpecifiedOutputBlockSize(
-    const SingleSourceProjector* group_by,
-    const AggregationSpecification* aggregation,
+unique_ptr<Operation> AggregateClustersWithSpecifiedOutputBlockSize(
+    unique_ptr<const SingleSourceProjector> group_by,
+    unique_ptr<const AggregationSpecification> aggregation,
     rowcount_t block_size,
-    Operation* child) {
-  return new AggregateClustersOperation(group_by, aggregation,
-                                        block_size,
-                                        child);
+    unique_ptr<Operation> child) {
+  return make_unique<AggregateClustersOperation>(
+      std::move(group_by), std::move(aggregation), block_size, std::move(child));
 }
 
 FailureOrOwned<Cursor> BoundAggregateClusters(
-    const BoundSingleSourceProjector* group_by,
-    Aggregator* aggregator,
+    unique_ptr<const BoundSingleSourceProjector> group_by,
+    unique_ptr<Aggregator> aggregation,
     BufferAllocator* allocator,
-    Cursor* child) {
+    unique_ptr<Cursor> child) {
   return AggregateClustersCursor::Create(
-      group_by,
-      aggregator,
-      allocator,
+      std::move(group_by), std::move(aggregation), allocator,
       2 * Cursor::kDefaultRowCount,
-      child);
+      std::move(child));
 }
 
 }  // namespace supersonic

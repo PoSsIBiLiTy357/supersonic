@@ -40,17 +40,21 @@ const rowcount_t kCapacity = 1024;
 // testing.
 class BoundSkipperExpression : public BoundExpression {
  public:
-  BoundSkipperExpression(BoundExpression* left,
-                         BoundExpression* right)
+  BoundSkipperExpression(unique_ptr<BoundExpression> left,
+                         unique_ptr<BoundExpression> right)
       : BoundExpression(CreateSchema(StrCat("Skipper(",
-                                            GetExpressionName(left),
+                                            GetExpressionName(left.get()),
                                             ", ",
-                                            GetExpressionName(right),
+                                            GetExpressionName(right.get()),
                                             ")"),
-                                     GetExpressionType(right),
+                                     GetExpressionType(right.get()),
                                      NULLABLE)),
-        left_child_(CHECK_NOTNULL(left)),
-        right_child_(CHECK_NOTNULL(right)) {}
+        left_child_(std::move(left)),
+        right_child_(std::move(right))
+  {
+    CHECK_NOTNULL(left_child_.get());
+    CHECK_NOTNULL(right_child_.get());
+  }
 
   virtual ~BoundSkipperExpression() {}
 
@@ -98,20 +102,24 @@ class BoundSkipperExpression : public BoundExpression {
 // testing.
 class BoundSkipVectorExpectationExpression : public BoundExpression {
  public:
-  BoundSkipVectorExpectationExpression(BoundExpression* left,
-                                       BoundExpression* right,
+  BoundSkipVectorExpectationExpression(unique_ptr<BoundExpression> left,
+                                       unique_ptr<BoundExpression> right,
                                        BufferAllocator* allocator)
       : BoundExpression(CreateSchema(StrCat("SkipVectorExpectation(",
-                                            GetExpressionName(left),
+                                            GetExpressionName(left.get()),
                                             ", ",
-                                            GetExpressionName(right),
+                                            GetExpressionName(right.get()),
                                             ")"),
-                                     GetExpressionType(right),
-                                     right)),
-        left_child_(CHECK_NOTNULL(left)),
-        right_child_(CHECK_NOTNULL(right)),
+                                     GetExpressionType(right.get()),
+                                     right.get())),
+        left_child_(std::move(left)),
+        right_child_(std::move(right)),
         local_skip_vector_storage_(1, allocator),
-        initialized_(false) {}
+        initialized_(false) {
+
+    CHECK_NOTNULL(left_child_.get());
+    CHECK_NOTNULL(right_child_.get());
+  }
 
   virtual ~BoundSkipVectorExpectationExpression() {}
 
@@ -174,12 +182,10 @@ class BoundSkipVectorExpectationExpression : public BoundExpression {
 
 }  // namespace
 
-FailureOrOwned<BoundExpression> BoundSkipper(BoundExpression* skip_vector_ptr,
-                                             BoundExpression* input_ptr,
+FailureOrOwned<BoundExpression> BoundSkipper(unique_ptr<BoundExpression> skip_vector,
+                                             unique_ptr<BoundExpression> input,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count) {
-  std::unique_ptr<BoundExpression> skip_vector(skip_vector_ptr);
-  std::unique_ptr<BoundExpression> input(input_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(string("Skipper skip vector"),
                                            skip_vector->result_schema(),
                                            1));
@@ -192,18 +198,15 @@ FailureOrOwned<BoundExpression> BoundSkipper(BoundExpression* skip_vector_ptr,
                         "The skip vector argument has to be non-nullable in "
                         "the short circuit test."));
   }
-  return Success(new BoundSkipperExpression(skip_vector.release(),
-                                            input.release()));
+  return Success(make_unique<BoundSkipperExpression>(
+      std::move(skip_vector), std::move(input)));
 }
 
 FailureOrOwned<BoundExpression> BoundSkipVectorExpectation(
-    BoundExpression* expected_skip_vector_ptr,
-    BoundExpression* input_ptr,
+    unique_ptr<BoundExpression> expected_skip_vector,
+    unique_ptr<BoundExpression> input,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  std::unique_ptr<BoundExpression> expected_skip_vector(
-      expected_skip_vector_ptr);
-  std::unique_ptr<BoundExpression> input(input_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       string("Expected skip vector"),
       expected_skip_vector->result_schema(),
@@ -217,55 +220,51 @@ FailureOrOwned<BoundExpression> BoundSkipVectorExpectation(
                         "The expected skip vector argument has to be "
                         "non-nullable in the short circuit test."));
   }
-  return Success(new BoundSkipVectorExpectationExpression(
-      expected_skip_vector.release(),
-      input.release(),
+  return Success(make_unique<BoundSkipVectorExpectationExpression>(
+      std::move(expected_skip_vector),
+      std::move(input),
       allocator));
 }
 
-const Expression* Skipper(const Expression* skip_vector,
-                          const Expression* input) {
+unique_ptr<const Expression> Skipper(
+    unique_ptr<const Expression> skip_vector,
+    unique_ptr<const Expression> input) {
   return CreateExpressionForExistingBoundFactory(
-      skip_vector, input, &BoundSkipper, "SKIPPER($0, $1)");
+      std::move(skip_vector), std::move(input), &BoundSkipper, "SKIPPER($0, $1)");
 }
 
-const Expression* SkipVectorExpectation(const Expression* expected,
-                                        const Expression* input) {
+unique_ptr<const Expression> SkipVectorExpectation(
+    unique_ptr<const Expression> expected,
+    unique_ptr<const Expression> input) {
   return CreateExpressionForExistingBoundFactory(
-      expected, input, &BoundSkipVectorExpectation, "$1");
+      std::move(expected), std::move(input), &BoundSkipVectorExpectation, "$1");
 }
 
-void TestShortCircuitUnary(const Block* block,
+void TestShortCircuitUnary(unique_ptr<const Block> block,
                            UnaryExpressionCreator factory) {
-  std::unique_ptr<const Block> deleter(block);
-  const Expression* expression =
-      Skipper(AttributeAt(0), factory(SkipVectorExpectation(AttributeAt(2),
-                                                            AttributeAt(1))));
-  TestEvaluationCommon(block, true, expression);
+  auto expression = Skipper(
+      AttributeAt(0),
+      factory(SkipVectorExpectation(AttributeAt(2), AttributeAt(1))));
+  TestEvaluationCommon(*block, true, std::move(expression));
 }
 
-void TestShortCircuitBinary(const Block* block,
+void TestShortCircuitBinary(unique_ptr<const Block> block,
                             BinaryExpressionCreator factory) {
-  const Expression* expression =
-      Skipper(AttributeAt(0), factory(SkipVectorExpectation(AttributeAt(2),
-                                                            AttributeAt(1)),
-                                      SkipVectorExpectation(AttributeAt(4),
-                                                            AttributeAt(3))));
-  std::unique_ptr<const Block> deleter(block);
-  TestEvaluationCommon(block, true, expression);
+  auto expression = Skipper(
+      AttributeAt(0),
+      factory(SkipVectorExpectation(AttributeAt(2), AttributeAt(1)),
+              SkipVectorExpectation(AttributeAt(4), AttributeAt(3))));
+  TestEvaluationCommon(*block, true, std::move(expression));
 }
 
-void TestShortCircuitTernary(const Block* block,
+void TestShortCircuitTernary(unique_ptr<const Block> block,
                              TernaryExpressionCreator factory) {
-  const Expression* expression =
-      Skipper(AttributeAt(0), factory(SkipVectorExpectation(AttributeAt(2),
-                                                            AttributeAt(1)),
-                                      SkipVectorExpectation(AttributeAt(4),
-                                                            AttributeAt(3)),
-                                      SkipVectorExpectation(AttributeAt(6),
-                                                            AttributeAt(5))));
-  std::unique_ptr<const Block> deleter(block);
-  TestEvaluationCommon(block, true, expression);
+  auto expression = Skipper(
+      AttributeAt(0),
+      factory(SkipVectorExpectation(AttributeAt(2), AttributeAt(1)),
+              SkipVectorExpectation(AttributeAt(4), AttributeAt(3)),
+              SkipVectorExpectation(AttributeAt(6), AttributeAt(5))));
+  TestEvaluationCommon(*block, true, std::move(expression));
 }
 
 }  // namespace supersonic

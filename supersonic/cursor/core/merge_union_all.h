@@ -16,9 +16,7 @@
 #ifndef SUPERSONIC_CURSOR_CORE_MERGE_UNION_ALL_H_
 #define SUPERSONIC_CURSOR_CORE_MERGE_UNION_ALL_H_
 
-#include <vector>
-using std::vector;
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/exception/result.h"
 
 namespace supersonic {
@@ -36,13 +34,15 @@ class Cursor;
 // an empty operation.
 // MergeUnionAll is deterministic. Given the same inputs it will always produce
 // results in the same order.
-Operation* MergeUnionAll(const SortOrder* sort_order,
-                         const vector<Operation*>& inputs);
+unique_ptr<Operation> MergeUnionAll(
+    unique_ptr<const SortOrder> sort_order,
+    vector<unique_ptr<Operation>> inputs);
 
 // Bound version of the above.
-FailureOrOwned<Cursor> BoundMergeUnionAll(const BoundSortOrder* sort_order,
-                                          vector<Cursor*> inputs,
-                                          BufferAllocator* buffer_allocator);
+FailureOrOwned<Cursor> BoundMergeUnionAll(
+    unique_ptr<const BoundSortOrder> sort_order,
+    vector<unique_ptr<Cursor>> inputs,
+    BufferAllocator* buffer_allocator);
 
 }  // namespace supersonic
 

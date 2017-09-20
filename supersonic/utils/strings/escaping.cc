@@ -8,12 +8,8 @@
 
 #include <limits>
 #include <memory>
-#include "supersonic/utils/std_namespace.h"
 #include <string>
 #include <vector>
-namespace supersonic {using std::string; }
-using std::vector;
-using std::unique_ptr;
 
 #include "supersonic/utils/integral_types.h"
 #include "supersonic/utils/macros.h"
@@ -25,6 +21,9 @@ using std::unique_ptr;
 #include "supersonic/utils/stl_util.h"
 
 namespace strings {
+
+using std::vector;
+using std::unique_ptr;
 
 // Digit conversion.
 static char hex_char[] = "0123456789abcdef";

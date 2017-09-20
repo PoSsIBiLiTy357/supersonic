@@ -13,9 +13,7 @@
 // limitations under the License.
 //
 
-#include <memory>
-using std::unique_ptr;
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/exception/result.h"
 
 #include "supersonic/proto/supersonic.pb.h"
@@ -46,7 +44,7 @@ TEST_F(ResultTest, FailureOrReferenceWorksOnSuccess) {
 }
 
 TEST_F(ResultTest, FailureOrOwnedWorksOnSuccess) {
-  int* result_content = new int(5);
+  auto* result_content = new int(5);
   FailureOrOwned<int> result = Success(result_content);
   ASSERT_TRUE(result.is_success());
   EXPECT_FALSE(result.is_failure());
@@ -58,7 +56,7 @@ TEST_F(ResultTest, FailureOrOwnedWorksOnSuccess) {
 }
 
 TEST_F(ResultTest, FailureOrOwnedReleasesResult) {
-  unique_ptr<int> value(SucceedOrDie(FailureOrOwned<int>(Success(new int(7)))));
+  auto value = SucceedOrDie(FailureOrOwned<int>(Success(make_unique<int>(7))));
   EXPECT_EQ(7, *value);
 }
 
@@ -79,7 +77,7 @@ TEST_F(ResultTest, ResultWorksOnFailure) {
 template<typename ResultType> void TestThatResultReleasesException() {
   ResultType result = Failure(new Exception(ERROR_GENERAL_IO_ERROR, ""));
   ASSERT_TRUE(result.is_failure());
-  unique_ptr<Exception> exception(result.release_exception());
+  unique_ptr<Exception> exception = result.move_exception();
   EXPECT_TRUE(result.is_failure());  // Release doesn't clear the exception.
   EXPECT_EQ(ERROR_GENERAL_IO_ERROR, exception->return_code());
 }

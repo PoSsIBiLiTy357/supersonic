@@ -31,7 +31,7 @@ class Operation;
 // Will log the result of the operation iff log_result is set to true.
 //
 // Takes ownership of operation.
-void BenchmarkOperation(Operation* operation,
+void BenchmarkOperation(unique_ptr<Operation> operation,
                         const string& benchmark_name,
                         GraphVisualisationOptions options,
                         rowcount_t max_block_size,

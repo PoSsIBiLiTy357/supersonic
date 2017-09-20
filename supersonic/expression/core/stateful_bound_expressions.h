@@ -28,26 +28,26 @@ namespace supersonic {
 class BoundExpression;
 class BufferAllocator;
 
-FailureOrOwned<BoundExpression> BoundChanged(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundChanged(unique_ptr<BoundExpression> argument,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundRunningSum(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundRunningSum(unique_ptr<BoundExpression> argument,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundSmudge(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundSmudge(unique_ptr<BoundExpression> argument,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundRunningMinWithFlush(
-    BoundExpression* flush,
-    BoundExpression* input,
+    unique_ptr<BoundExpression> flush,
+    unique_ptr<BoundExpression> input,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundSmudgeIf(BoundExpression* argument,
-                                              BoundExpression* condition,
+FailureOrOwned<BoundExpression> BoundSmudgeIf(unique_ptr<BoundExpression> argument,
+                                              unique_ptr<BoundExpression> condition,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count);
 

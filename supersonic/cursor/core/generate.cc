@@ -81,12 +81,12 @@ class GenerateCursor : public BasicCursor {
 
 }  // namespace
 
-Operation* Generate(rowcount_t count) {
-  return new GenerateOperation(count);
+unique_ptr<Operation> Generate(rowcount_t count) {
+  return make_unique<GenerateOperation>(count);
 }
 
 FailureOrOwned<Cursor> BoundGenerate(rowcount_t count) {
-  return Success(new GenerateCursor(count));
+  return Success(make_unique<GenerateCursor>(count));
 }
 
 }  // namespace supersonic

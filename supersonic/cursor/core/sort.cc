@@ -85,18 +85,7 @@
 
 #include "supersonic/cursor/core/sort.h"
 
-#include <cstdint>
-
-#include <algorithm>
 #include "supersonic/utils/std_namespace.h"
-#include <memory>
-#include <string>
-namespace supersonic {using std::string; }
-#include <utility>
-#include "supersonic/utils/std_namespace.h"
-#include <vector>
-using std::vector;
-
 #include "supersonic/utils/basictypes.h"
 #include "supersonic/utils/integral_types.h"
 #include <glog/logging.h>
@@ -328,8 +317,7 @@ class BasicMerger : public Merger {
         temporary_directory_prefix_(temporary_directory_prefix.ToString()),
         allocator_(allocator) {}
 
-  FailureOrVoid AddSorted(Cursor* cursor) {
-    std::unique_ptr<Cursor> cursor_owner(cursor);
+  FailureOrVoid AddSorted(unique_ptr<Cursor> cursor) {
     std::unique_ptr<file::FileRemover> temp_file(new file::FileRemover(
         TempFile::Create(temporary_directory_prefix_.c_str())));
     if (temp_file->get() == NULL) {
@@ -340,7 +328,7 @@ class BasicMerger : public Merger {
     {
       std::unique_ptr<Sink> file_sink(
           FileOutput(temp_file->get(), DO_NOT_TAKE_OWNERSHIP));
-      Writer part_writer(cursor_owner.release());
+      Writer part_writer(std::move(cursor));
       FailureOr<rowcount_t> write_all_result =
           part_writer.WriteAll(file_sink.get());
       if (write_all_result.is_failure() &&
@@ -362,11 +350,9 @@ class BasicMerger : public Merger {
 
   // TODO(user): Consider some pre-merging phase if the number of files is big
   // enough.
-  FailureOrOwned<Cursor> Merge(const BoundSortOrder* sort_order,
-                               Cursor* additional) {
-    std::unique_ptr<Cursor> additional_owned(additional);
-    vector<Cursor*> merged_cursors;
-    ElementDeleter deleter(&merged_cursors);
+  FailureOrOwned<Cursor> Merge(unique_ptr<const BoundSortOrder> sort_order,
+                               unique_ptr<Cursor> additional) {
+    vector<unique_ptr<Cursor>> merged_cursors;
     while (!file_buffers_.empty()) {
       FailureOrOwned<Cursor> file_cursor(
           FileInput(schema_,
@@ -375,17 +361,16 @@ class BasicMerger : public Merger {
                     allocator_));
       file_buffers_.pop_back();
       PROPAGATE_ON_FAILURE(file_cursor);
-      merged_cursors.push_back(file_cursor.release());
+      merged_cursors.push_back(file_cursor.move());
     }
-    if (additional_owned.get() != NULL) {
+    if ((bool) additional) {
       // Use the additional cursor as the last source.
-      merged_cursors.push_back(additional_owned.release());
+      merged_cursors.emplace_back(std::move(additional));
     }
     FailureOrOwned<Cursor> merged(
-        BoundMergeUnionAll(sort_order,
-                           merged_cursors,
+        BoundMergeUnionAll(std::move(sort_order),
+                           std::move(merged_cursors),
                            allocator_));
-    merged_cursors.clear();
     PROPAGATE_ON_FAILURE(merged);
     return merged;
   }
@@ -408,10 +393,10 @@ class UnbufferedSorter : public Sorter {
   // UnbufferedSorter exists and then as long as the cursor returned from
   // GetResultCursor() exists.
   UnbufferedSorter(const TupleSchema& schema,
-                   const BoundSortOrder* sort_order,
+                   unique_ptr<const BoundSortOrder> sort_order,
                    StringPiece temporary_directory_prefix,
                    BufferAllocator* allocator)
-      : sort_order_(sort_order),
+      : sort_order_(std::move(sort_order)),
         allocator_(allocator),
         merger_(CreateMerger(schema, temporary_directory_prefix, allocator)) {}
 
@@ -421,45 +406,45 @@ class UnbufferedSorter : public Sorter {
     rowcount_t row_count = data.row_count();
     FailureOrOwned<Cursor> sorted = SortView(data);
     PROPAGATE_ON_FAILURE(sorted);
-    PROPAGATE_ON_FAILURE(merger_->AddSorted(sorted.release()));
+    PROPAGATE_ON_FAILURE(merger_->AddSorted(sorted.move()));
     return Success(row_count);
   }
 
   FailureOrOwned<Cursor> GetResultCursor() {
-    FailureOrOwned<Cursor> merged = merger_->Merge(sort_order_.release(), NULL);
+    FailureOrOwned<Cursor> merged = merger_->Merge(std::move(sort_order_), nullptr);
     PROPAGATE_ON_FAILURE(merged);
-    return Success(merged.release());
+    return Success(merged.move());
   }
 
   // Return all the written data sorted and merged with an optional
   // sorted_cursor.
-  FailureOrOwned<Cursor> GetResultCursorMergedWith(Cursor* sorted_cursor) {
+  FailureOrOwned<Cursor> GetResultCursorMergedWith(unique_ptr<Cursor> sorted_cursor) {
     if (merger_->empty() && sorted_cursor != NULL) {
-      return Success(sorted_cursor);
+      return Success(std::move(sorted_cursor));
     } else {
       FailureOrOwned<Cursor> merged =
-          merger_->Merge(sort_order_.release(), sorted_cursor);
+          merger_->Merge(std::move(sort_order_), std::move(sorted_cursor));
       PROPAGATE_ON_FAILURE(merged);
-      return Success(merged.release());
+      return Success(merged.move());
     }
   }
 
   // Returns a Cursor containing sorted data from the input view. View should be
   // valid as long as the Cursor exists.
   FailureOrOwned<Cursor> SortView(const View& view) {
-    std::unique_ptr<Permutation> permutation(new Permutation(view.row_count()));
+    auto permutation = make_unique<Permutation>(view.row_count());
     SortPermutation(*sort_order_, view, permutation.get());
     FailureOrOwned<Cursor> sorted = BoundScanViewWithSelection(
         view, permutation->size(), permutation->permutation(),
         allocator_, Cursor::kDefaultRowCount);
     PROPAGATE_ON_FAILURE(sorted);
-    return Success(TakeOwnership(sorted.release(), permutation.release()));
+    return Success(TakeOwnership(sorted.move(), std::move(permutation)));
   }
 
  private:
-  std::unique_ptr<const BoundSortOrder> sort_order_;
+  unique_ptr<const BoundSortOrder> sort_order_;
   BufferAllocator* allocator_;
-  std::unique_ptr<Merger> merger_;
+  unique_ptr<Merger> merger_;
   DISALLOW_COPY_AND_ASSIGN(UnbufferedSorter);
 };
 
@@ -469,7 +454,7 @@ class BufferingSorter : public Sorter {
   // BufferingSorter exists and then as long as the cursor returned from
   // GetResultCursor() exists.
   BufferingSorter(const TupleSchema& schema,
-                  const BoundSortOrder* sort_order,
+                  unique_ptr<const BoundSortOrder> sort_order,
                   size_t memory_quota,
                   StringPiece temporary_directory_prefix,
                   BufferAllocator* allocator)
@@ -486,7 +471,7 @@ class BufferingSorter : public Sorter {
                             softquota_bypass_allocator_.get())),
         memory_buffer_(
             new Table(schema, materialization_allocator_.get())),
-        unbuffered_sorter_(schema, sort_order, temporary_directory_prefix,
+        unbuffered_sorter_(schema, std::move(sort_order), temporary_directory_prefix,
                            allocator) {}
 
   virtual ~BufferingSorter() {}
@@ -531,11 +516,11 @@ class BufferingSorter : public Sorter {
     FailureOrOwned<Cursor> last_sorted =
         unbuffered_sorter_.SortView(memory_buffer_->view());
     PROPAGATE_ON_FAILURE(last_sorted);
-    std::unique_ptr<Cursor> last_sorted_owning(TakeOwnership(
-        last_sorted.release(), softquota_bypass_allocator_.release(),
-        materialization_allocator_.release(), memory_buffer_.release()));
+    auto last_sorted_owning = TakeOwnership(
+        last_sorted.move(), std::move(softquota_bypass_allocator_),
+        std::move(materialization_allocator_), std::move(memory_buffer_));
     return unbuffered_sorter_.GetResultCursorMergedWith(
-        last_sorted_owning.release());
+        std::move(last_sorted_owning));
   }
 
  private:
@@ -571,17 +556,17 @@ class BufferingSorter : public Sorter {
 
 class SortCursor : public BasicCursor {
  public:
-  SortCursor(const BoundSortOrder* sort_order,
-             const BoundSingleSourceProjector* result_projector,
+  SortCursor(unique_ptr<const BoundSortOrder> sort_order,
+             unique_ptr<const BoundSingleSourceProjector> result_projector,
              size_t memory_quota,
              StringPiece temporary_directory_prefix,
              BufferAllocator* allocator,
-             Cursor* child)
+             unique_ptr<Cursor> child)
       : BasicCursor(result_projector->result_schema()),
         is_waiting_on_barrier_supported_(child->IsWaitingOnBarrierSupported()),
-        writer_(child),
-        result_projector_(result_projector),
-        sorter_(CreateBufferingSorter(writer_.schema(), sort_order,
+        writer_(std::move(child)),
+        result_projector_(std::move(result_projector)),
+        sorter_(CreateBufferingSorter(writer_.schema(), std::move(sort_order),
                                       memory_quota, temporary_directory_prefix,
                                       allocator)),
         sorter_sink_(sorter_.get()) {}
@@ -618,15 +603,15 @@ class SortCursor : public BasicCursor {
  private:
   FailureOrVoid ProcessData();
 
-  void SetResultWithProjection(Cursor* result) {
-    result_.reset(BoundProject(result_projector_.release(), result));
+  void SetResultWithProjection(unique_ptr<Cursor> result) {
+    result_ = BoundProject(std::move(result_projector_), std::move(result));
   }
 
   bool is_waiting_on_barrier_supported_;
   Writer writer_;
-  std::unique_ptr<const BoundSingleSourceProjector> result_projector_;
-  std::unique_ptr<Cursor> result_;
-  std::unique_ptr<Sorter> sorter_;
+  unique_ptr<const BoundSingleSourceProjector> result_projector_;
+  unique_ptr<Cursor> result_;
+  unique_ptr<Sorter> sorter_;
   SorterSink sorter_sink_;
   DISALLOW_COPY_AND_ASSIGN(SortCursor);
 };
@@ -644,24 +629,24 @@ FailureOrVoid SortCursor::ProcessData() {
   PROPAGATE_ON_FAILURE(sorter_sink_.Finalize());
   FailureOrOwned<Cursor> sorter_result = sorter_->GetResultCursor();
   PROPAGATE_ON_FAILURE(sorter_result);
-  SetResultWithProjection(sorter_result.release());
+  SetResultWithProjection(sorter_result.move());
   return Success();
 }
 
 class SortOperation : public BasicOperation {
  public:
   // Takes ownership of the sort order and the projector.
-  SortOperation(const SortOrder* sort_order,
-                const SingleSourceProjector* result_projector,
+  SortOperation(unique_ptr<const SortOrder> sort_order,
+                unique_ptr<const SingleSourceProjector> result_projector,
                 size_t memory_quota,
                 StringPiece temporary_directory_prefix,
-                Operation* child)
-      : BasicOperation(child),
-        sort_order_(sort_order),
-        result_projector_(result_projector),
+                unique_ptr<Operation> child)
+      : BasicOperation(std::move(child)),
+        sort_order_(std::move(sort_order)),
+        result_projector_(std::move(result_projector)),
         memory_quota_(memory_quota),
         temporary_directory_prefix_(temporary_directory_prefix.ToString()) {
-    CHECK_NOTNULL(sort_order);
+    CHECK_NOTNULL(sort_order_.get());
   }
 
   virtual ~SortOperation() {}
@@ -677,15 +662,15 @@ class SortOperation : public BasicOperation {
       FailureOrOwned<const BoundSingleSourceProjector> result_projector(
           result_projector_->Bind(schema));
       PROPAGATE_ON_FAILURE(result_projector);
-      result_projector_ptr.reset(result_projector.release());
+      result_projector_ptr = result_projector.move();
     }
     // result_projector_ptr can contain NULL. BoundSort handles this.
-    return BoundSort(sort_order.release(),
-                     result_projector_ptr.release(),
+    return BoundSort(sort_order.move(),
+                     std::move(result_projector_ptr),
                      memory_quota_,
                      temporary_directory_prefix_,
                      buffer_allocator(),
-                     child_cursor.release());
+                     child_cursor.move());
   }
 
  private:
@@ -704,8 +689,8 @@ class ExtendedSortOperation : public BasicOperation {
                         const SingleSourceProjector* result_projector,
                         size_t memory_quota,
                         StringPiece temporary_directory_prefix,
-                        Operation* child)
-      : BasicOperation(child),
+                        unique_ptr<Operation> child)
+      : BasicOperation(std::move(child)),
         sort_order_(sort_order),
         result_projector_(result_projector),
         memory_quota_(memory_quota),
@@ -716,16 +701,15 @@ class ExtendedSortOperation : public BasicOperation {
   virtual ~ExtendedSortOperation() {}
 
   virtual FailureOrOwned<Cursor> CreateCursor() const {
-    FailureOrOwned<Cursor> raw_child_cursor = child()->CreateCursor();
-    PROPAGATE_ON_FAILURE(raw_child_cursor);
-    std::unique_ptr<Cursor> child_cursor(raw_child_cursor.release());
+    FailureOrOwned<Cursor> child_cursor = child()->CreateCursor();
+    PROPAGATE_ON_FAILURE(child_cursor);
 
     std::unique_ptr<const BoundSingleSourceProjector> bound_result_projector;
     if (result_projector_.get() != NULL) {
       FailureOrOwned<const BoundSingleSourceProjector> result_projector(
           result_projector_->Bind(child_cursor->schema()));
       PROPAGATE_ON_FAILURE(result_projector);
-      bound_result_projector.reset(result_projector.release());
+      bound_result_projector = result_projector.move();
     }
 
     // result_projector_ptr can contain NULL. BoundSort handles this.
@@ -735,7 +719,7 @@ class ExtendedSortOperation : public BasicOperation {
                              temporary_directory_prefix_,
                              buffer_allocator(),
                              Cursor::kDefaultRowCount,
-                             child_cursor.release());
+                             child_cursor.move());
   }
 
  private:
@@ -749,32 +733,29 @@ class ExtendedSortOperation : public BasicOperation {
 
 }  // namespace
 
-Merger* CreateMerger(TupleSchema schema,
+unique_ptr<Merger> CreateMerger(TupleSchema schema,
                      StringPiece temporary_directory_prefix,
                      BufferAllocator* allocator) {
-  return new BasicMerger(schema, temporary_directory_prefix, allocator);
+  return make_unique<BasicMerger>(schema, temporary_directory_prefix, allocator);
 }
 
-Sorter* CreateUnbufferedSorter(const TupleSchema& schema,
-                               const BoundSortOrder* sort_order,
-                               StringPiece temporary_directory_prefix,
-                               BufferAllocator* allocator) {
-  return new UnbufferedSorter(schema,
-                              sort_order,
-                              temporary_directory_prefix,
-                              allocator);
+unique_ptr<Sorter> CreateUnbufferedSorter(const TupleSchema& schema,
+                                          unique_ptr<const BoundSortOrder> sort_order,
+                                          StringPiece temporary_directory_prefix,
+                                          BufferAllocator* allocator) {
+  return make_unique<UnbufferedSorter>(schema, std::move(sort_order),
+                                       temporary_directory_prefix, allocator);
 }
 
-Sorter* CreateBufferingSorter(const TupleSchema& schema,
-                              const BoundSortOrder* sort_order,
-                              size_t memory_quota,
-                              StringPiece temporary_directory_prefix,
-                              BufferAllocator* allocator) {
-  return new BufferingSorter(schema,
-                             sort_order,
-                             memory_quota,
-                             temporary_directory_prefix,
-                             allocator);
+unique_ptr<Sorter> CreateBufferingSorter(
+    const TupleSchema& schema,
+    unique_ptr<const BoundSortOrder> sort_order,
+    size_t memory_quota,
+    StringPiece temporary_directory_prefix,
+    BufferAllocator* allocator) {
+  return make_unique<BufferingSorter>(schema, std::move(sort_order),
+                                      memory_quota, temporary_directory_prefix,
+                                      allocator);
 }
 
 void SortPermutation(const BoundSortOrder& sort_order,
@@ -803,48 +784,53 @@ void SortPermutation(const BoundSortOrder& sort_order,
   }
 }
 
-Operation* Sort(const SortOrder* sort_order,
-                const SingleSourceProjector* result_projector,
-                size_t memory_quota,
-                Operation* child) {
-  return new SortOperation(sort_order, result_projector,
-                           memory_quota, "", child);
+unique_ptr<Operation> Sort(
+    unique_ptr<const SortOrder> sort_order,
+    unique_ptr<const SingleSourceProjector> result_projector,
+    size_t memory_quota,
+    unique_ptr<Operation> child) {
+  return make_unique<SortOperation>(
+      std::move(sort_order), std::move(result_projector),
+      memory_quota, "", std::move(child));
 }
 
-Operation* ExtendedSort(const ExtendedSortSpecification* specification,
-                        const SingleSourceProjector* result_projector,
-                        size_t memory_limit,
-                        Operation* child) {
-  return new ExtendedSortOperation(specification, result_projector,
-                                   memory_limit, "", child);
+unique_ptr<Operation> ExtendedSort(const ExtendedSortSpecification* specification,
+                                   const SingleSourceProjector* result_projector,
+                                   size_t memory_limit,
+                                   unique_ptr<Operation> child) {
+  return make_unique<ExtendedSortOperation>(specification, result_projector,
+                                            memory_limit, "", std::move(child));
 }
 
-Operation* SortWithTempDirPrefix(const SortOrder* sort_order,
-                                 const SingleSourceProjector* result_projector,
-                                 size_t memory_quota,
-                                 StringPiece temporary_directory_prefix,
-                                 Operation* child) {
-  return new SortOperation(sort_order, result_projector,
-                           memory_quota, temporary_directory_prefix, child);
+unique_ptr<Operation> SortWithTempDirPrefix(
+    unique_ptr<const SortOrder> sort_order,
+    unique_ptr<const SingleSourceProjector> result_projector,
+    size_t memory_quota,
+    StringPiece temporary_directory_prefix,
+    unique_ptr<Operation> child) {
+  return make_unique<SortOperation>(
+      std::move(sort_order), std::move(result_projector),
+      memory_quota, temporary_directory_prefix, std::move(child));
 }
 
 FailureOrOwned<Cursor> BoundSort(
-    const BoundSortOrder* sort_order,
-    const BoundSingleSourceProjector* result_projector,
+    unique_ptr<const BoundSortOrder> sort_order,
+    unique_ptr<const BoundSingleSourceProjector> result_projector,
     size_t memory_quota,
     StringPiece temporary_directory_prefix,
     BufferAllocator* allocator,
-    Cursor* child) {
-  if (result_projector == NULL) {
-    std::unique_ptr<const SingleSourceProjector> all(ProjectAllAttributes());
+    unique_ptr<Cursor> child) {
+  if (result_projector == nullptr) {
+    auto all = ProjectAllAttributes();
     result_projector = SucceedOrDie(all->Bind(child->schema()));
   }
-  return Success(
-      new SortCursor(sort_order, result_projector,
-                     memory_quota,
-                     temporary_directory_prefix,
-                     allocator,
-                     child));
+
+  return Success(make_unique<SortCursor>(
+      std::move(sort_order), std::move(result_projector),
+      memory_quota,
+      temporary_directory_prefix,
+      allocator,
+      std::move(child)));
 }
 
 // This methods works by creating an additional attribute for each key attribute
@@ -860,10 +846,9 @@ FailureOrOwned<Cursor> BoundExtendedSort(
     StringPiece temporary_directory_prefix,
     BufferAllocator* allocator,
     rowcount_t max_row_count,
-    Cursor* child) {
+    unique_ptr<Cursor> child) {
   std::unique_ptr<const ExtendedSortSpecification> owned_sort_specification(
       sort_specification);
-  std::unique_ptr<Cursor> owned_child(child);
   std::unique_ptr<const BoundSingleSourceProjector> owned_result_projector(
       result_projector);
 
@@ -872,7 +857,7 @@ FailureOrOwned<Cursor> BoundExtendedSort(
   set<string> case_sensitive_keys_field_paths;
   for (size_t i = 0; i < sort_specification->keys_size(); ++i) {
     if (!sort_specification->keys(i).case_sensitive() &&
-        owned_child->schema().LookupAttribute(
+        child->schema().LookupAttribute(
             sort_specification->keys(i).attribute_name()).type() == STRING) {
       if (case_insensitive_keys_field_paths.find(
           sort_specification->keys(i).attribute_name()) !=
@@ -882,7 +867,7 @@ FailureOrOwned<Cursor> BoundExtendedSort(
               StrCat("Duplicate case insensitive key: ",
                      sort_specification->keys(i).attribute_name(),
                      " column in schema (",
-                     owned_child->schema().GetHumanReadableSpecification(),
+                     child->schema().GetHumanReadableSpecification(),
                      ")")));
       }
       case_insensitive_keys_field_paths.insert(
@@ -896,7 +881,7 @@ FailureOrOwned<Cursor> BoundExtendedSort(
               StrCat("Duplicate case sensitive key: ",
                      sort_specification->keys(i).attribute_name(),
                      " column in schema (",
-                     owned_child->schema().GetHumanReadableSpecification(),
+                     child->schema().GetHumanReadableSpecification(),
                      ")")));
       }
       case_sensitive_keys_field_paths.insert(
@@ -910,7 +895,7 @@ FailureOrOwned<Cursor> BoundExtendedSort(
 
   // We have to project out the temporary columns we're going to make.
   size_t initial_number_of_attributes =
-      owned_child->schema().attribute_count();
+      child->schema().attribute_count();
 
   // We have to project some of the fields to uppercase. We also need to
   // assign unique names to them.
@@ -918,21 +903,21 @@ FailureOrOwned<Cursor> BoundExtendedSort(
 
   // We create the parameters to create a bound compute expression.
   map<string, size_t> uppercase_version_position;
-  std::unique_ptr<ExpressionList> compute_argument(new ExpressionList());
-  for (size_t i = 0; i < owned_child->schema().attribute_count(); ++i) {
+  auto compute_argument = make_unique<ExpressionList>();
+  for (size_t i = 0; i < child->schema().attribute_count(); ++i) {
     compute_argument->add(AttributeAt(i));
   }
   set<string> uppercase_version_attribute_names;
   for (size_t i = 0; i < sort_specification->keys_size(); ++i) {
     if (!sort_specification->keys(i).case_sensitive() &&
-        owned_child->schema().LookupAttribute(
+        child->schema().LookupAttribute(
             sort_specification->keys(i).attribute_name()).type() == STRING) {
       string attribute_name = sort_specification->keys(i).attribute_name();
       if (uppercase_version_position.find(attribute_name) ==
           uppercase_version_position.end()) {
         // Find the name for this attribute;
         string temporary_attribute_name =
-            CreateUniqueName(owned_child->schema(),
+            CreateUniqueName(child->schema(),
                              uppercase_version_attribute_names,
                              StrCat(kBaseTemporaryAttributeName,
                                     attribute_name));
@@ -945,38 +930,37 @@ FailureOrOwned<Cursor> BoundExtendedSort(
   }
 
   FailureOrOwned<BoundExpressionList> bound_compute_argument(
-      compute_argument->DoBind(owned_child->schema(),
+      compute_argument->DoBind(child->schema(),
                                allocator,
                                max_row_count));
   PROPAGATE_ON_FAILURE(bound_compute_argument);
   FailureOrOwned<BoundExpression> compound_expression =
-      BoundCompoundExpression(bound_compute_argument.release());
+      BoundCompoundExpression(bound_compute_argument.move());
   PROPAGATE_ON_FAILURE(compound_expression);
   FailureOrOwned<BoundExpressionTree> compound_expression_tree =
-      CreateBoundExpressionTree(compound_expression.release(),
+      CreateBoundExpressionTree(compound_expression.move(),
                                 allocator,
                                 max_row_count);
   PROPAGATE_ON_FAILURE(compound_expression_tree);
   FailureOrOwned<Cursor> bound_compute = BoundCompute(
-      compound_expression_tree.release(),
+      compound_expression_tree.move(),
       allocator,
       max_row_count,
-      owned_child.release());
+      std::move(child));
   PROPAGATE_ON_FAILURE(bound_compute);
-  owned_child.reset(bound_compute.release());
+  child = bound_compute.move();
 
   // We create BoundSortOrder for BoundSort.
-  std::unique_ptr<BoundSingleSourceProjector> keys_projector(
-      new BoundSingleSourceProjector(owned_child->schema()));
+  auto keys_projector = make_unique<BoundSingleSourceProjector>(child->schema());
   vector<ColumnOrder> keys_orders;
 
   for (size_t i = 0; i < sort_specification->keys_size(); ++i) {
     keys_orders.push_back(ColumnOrder(
         sort_specification->keys(i).column_order()));
     if (sort_specification->keys(i).case_sensitive() ||
-        owned_child->schema().LookupAttribute(
+        child->schema().LookupAttribute(
             sort_specification->keys(i).attribute_name()).type() != STRING) {
-      keys_projector->Add(owned_child->schema().LookupAttributePosition(
+      keys_projector->Add(child->schema().LookupAttributePosition(
           sort_specification->keys(i).attribute_name()));
     } else {
       keys_projector->Add(uppercase_version_position[
@@ -986,33 +970,32 @@ FailureOrOwned<Cursor> BoundExtendedSort(
 
   // We also need to project out the temporary attributes.
   if (owned_result_projector.get() == NULL) {
-    std::unique_ptr<BoundSingleSourceProjector> output_projector(
-        new BoundSingleSourceProjector(owned_child->schema()));
+    auto output_projector = make_unique<BoundSingleSourceProjector>(child->schema());
     for (size_t i = 0; i < initial_number_of_attributes; ++i) {
       output_projector->Add(i);
     }
-    owned_result_projector.reset(output_projector.release());
+    owned_result_projector = std::move(output_projector);
   }
 
   FailureOrOwned<Cursor> freshly_sorted_cursor =
-      BoundSort(new BoundSortOrder(keys_projector.release(), keys_orders),
-          owned_result_projector.release(),
+      BoundSort(make_unique<BoundSortOrder>(std::move(keys_projector), keys_orders),
+          std::move(owned_result_projector),
           memory_quota,
           temporary_directory_prefix,
           allocator,
-          owned_child.release());
+          std::move(child));
 
   PROPAGATE_ON_FAILURE(freshly_sorted_cursor);
 
-  std::unique_ptr<Cursor> final_cursor(freshly_sorted_cursor.release());
+  auto final_cursor = freshly_sorted_cursor.move();
 
   // TODO(user): Sort should be able to use this more efficiently then simply
   // layering a limit over a sort. Fix this.
   if (sort_specification->has_limit()) {
-    final_cursor.reset(
-        BoundLimit(0, sort_specification->limit(), final_cursor.release()));
+    final_cursor = BoundLimit(0, sort_specification->limit(), std::move(final_cursor));
   }
-  return Success(final_cursor.release());
+
+  return Success(std::move(final_cursor));
 }
 
 }  // namespace supersonic

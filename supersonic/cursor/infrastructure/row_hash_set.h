@@ -72,7 +72,7 @@ class RowHashSet {
 
   RowHashSet(const TupleSchema& block_schema,
              BufferAllocator* const allocator,
-             const BoundSingleSourceProjector* key_selector);
+             unique_ptr<const BoundSingleSourceProjector> key_selector);
 
   // All columns are key.
   RowHashSet(const TupleSchema& block_schema,
@@ -84,7 +84,7 @@ class RowHashSet {
   // schema.
   RowHashSet(const TupleSchema& block_schema,
              BufferAllocator* const allocator,
-             const BoundSingleSourceProjector* key_selector,
+             unique_ptr<const BoundSingleSourceProjector> key_selector,
              int64 max_unique_keys_in_result);
 
   // Ensures that the hash set has capacity for at least the specified
@@ -160,7 +160,7 @@ class RowHashMultiSet {
   // schema.
   RowHashMultiSet(const TupleSchema& block_schema,
                   BufferAllocator* const allocator,
-                  const BoundSingleSourceProjector* key_selector);
+                  unique_ptr<const BoundSingleSourceProjector> key_selector);
 
   // Ensures that the hash set has capacity for at least the specified
   // number of rows. Returns false on OOM. Using this method may reduce
@@ -218,7 +218,7 @@ class RowHashMultiSet {
   rowcount_t capacity() const;
 
  private:
-  RowHashSetImpl* impl_;
+  unique_ptr<RowHashSetImpl> impl_;
 };
 
 

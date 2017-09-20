@@ -86,21 +86,21 @@ BinaryExpressionFactory* HashFactory(DataType type) {
 
 }  // namespace
 
-FailureOrOwned<BoundExpression> BoundFingerprint(BoundExpression* child,
+FailureOrOwned<BoundExpression> BoundFingerprint(unique_ptr<BoundExpression> child,
                                                  BufferAllocator* allocator,
                                                  rowcount_t row_capacity) {
   UnaryExpressionFactory* factory =
-      FingerprintFactory(GetExpressionType(child));
-  return RunUnaryFactory(factory, allocator, row_capacity, child,
+      FingerprintFactory(GetExpressionType(child.get()));
+  return RunUnaryFactory(factory, allocator, row_capacity, std::move(child),
                          "FINGERPRINT");
 }
 
-FailureOrOwned<BoundExpression> BoundHash(BoundExpression* child,
-                                          BoundExpression* seed,
+FailureOrOwned<BoundExpression> BoundHash(unique_ptr<BoundExpression> child,
+                                          unique_ptr<BoundExpression> seed,
                                           BufferAllocator* allocator,
                                           rowcount_t row_capacity) {
-  BinaryExpressionFactory* factory = HashFactory(GetExpressionType(child));
-  return RunBinaryFactory(factory, allocator, row_capacity, child, seed,
+  BinaryExpressionFactory* factory = HashFactory(GetExpressionType(child.get()));
+  return RunBinaryFactory(factory, allocator, row_capacity, std::move(child), std::move(seed),
                           "HASH");
 }
 

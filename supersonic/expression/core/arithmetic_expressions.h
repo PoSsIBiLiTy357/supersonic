@@ -18,6 +18,8 @@
 #ifndef SUPERSONIC_EXPRESSION_CORE_ARITHMETIC_EXPRESSIONS_H_
 #define SUPERSONIC_EXPRESSION_CORE_ARITHMETIC_EXPRESSIONS_H_
 
+#include "supersonic/utils/std_namespace.h"
+#include "supersonic/expression/base/expression.h"
 
 
 namespace supersonic {
@@ -28,36 +30,36 @@ namespace supersonic {
 // Creates an expression that will return a sum of two subexpressions.
 class Expression;
 
-const Expression* Plus(const Expression* const a,
-                       const Expression* const b);
+unique_ptr<const Expression> Plus(unique_ptr<const Expression> a,
+                       unique_ptr<const Expression> b);
 
 // Creates an expression that will return a difference of two subexpressions.
-const Expression* Minus(const Expression* const a,
-                        const Expression* const b);
+unique_ptr<const Expression> Minus(unique_ptr<const Expression> a,
+                        unique_ptr<const Expression> b);
 
 // Creates an expression that will return a product of two subexpressions.
-const Expression* Multiply(const Expression* const a,
-                           const Expression* const b);
+unique_ptr<const Expression> Multiply(unique_ptr<const Expression> a,
+                           unique_ptr<const Expression> b);
 
 // Creates an expression that will return a ratio of two subexpressions.
 //
 // DEPRECATED. Use one of the policy-conscious types instead.
-const Expression* Divide(const Expression* const a,
-                         const Expression* const b);
+unique_ptr<const Expression> Divide(unique_ptr<const Expression> a,
+                         unique_ptr<const Expression> b);
 
 // Creates an expression that will return a ratio of two subexpressions. Will
 // fail the evaluation at division by zero.
-const Expression* DivideSignaling(const Expression* const a,
-                                  const Expression* const b);
+unique_ptr<const Expression> DivideSignaling(unique_ptr<const Expression> a,
+                                  unique_ptr<const Expression> b);
 
 // This version assumes x / 0 = NULL.
-const Expression* DivideNulling(const Expression* const a,
-                                const Expression* const b);
+unique_ptr<const Expression> DivideNulling(unique_ptr<const Expression> a,
+                                unique_ptr<const Expression> b);
 
 // This version assumes division as in CPP (so x / 0 is an inf, -inf or nan,
 // depending on x).
-const Expression* DivideQuiet(const Expression* const a,
-                              const Expression* const b);
+unique_ptr<const Expression> DivideQuiet(unique_ptr<const Expression> a,
+                              unique_ptr<const Expression> b);
 
 // TODO(onufry): This expression should be removed in favour of an
 // IntegerDivide, which will take only integer arguments.
@@ -65,40 +67,40 @@ const Expression* DivideQuiet(const Expression* const a,
 // of integers). Examples: 5 / 2 = 2, but 5.0 / 2 = 2.5 and 5 / 2.0 = 2.5.
 //
 // DEPRECATED! Use one of the policy-concious types instead.
-const Expression* CppDivide(const Expression* const a,
-                            const Expression* const b);
+unique_ptr<const Expression> CppDivide(unique_ptr<const Expression> a,
+                            unique_ptr<const Expression> b);
 
 // This version assumes x / 0 = NULL.
-const Expression* CppDivideNulling(const Expression* const a,
-                                   const Expression* const b);
+unique_ptr<const Expression> CppDivideNulling(unique_ptr<const Expression> a,
+                                   unique_ptr<const Expression> b);
 
 // This version assumes x / 0 fails.
-const Expression* CppDivideSignaling(const Expression* const a,
-                                     const Expression* const b);
+unique_ptr<const Expression> CppDivideSignaling(unique_ptr<const Expression> a,
+                                     unique_ptr<const Expression> b);
 
 // Creates an expression that negates a number.
-const Expression* Negate(const Expression* const a);
+unique_ptr<const Expression> Negate(unique_ptr<const Expression> a);
 
 // Creates an expression that will return a modulus of two integer
 // subexpressions.
-const Expression* Modulus(const Expression* const a,
-                          const Expression* const b);
+unique_ptr<const Expression> Modulus(unique_ptr<const Expression> a,
+                          unique_ptr<const Expression> b);
 
 // This version assumes x % 0 == NULL.
-const Expression* ModulusNulling(const Expression* const a,
-                                 const Expression* const b);
+unique_ptr<const Expression> ModulusNulling(unique_ptr<const Expression> a,
+                                 unique_ptr<const Expression> b);
 
 // This version assumes x % 0 fails.
-const Expression* ModulusSignaling(const Expression* const a,
-                                   const Expression* const b);
+unique_ptr<const Expression> ModulusSignaling(unique_ptr<const Expression> a,
+                                   unique_ptr<const Expression> b);
 
 // Creates an expression that will return true if the argument is odd.
 // Requires the argument to be integer.
-const Expression* IsOdd(const Expression* const arg);
+unique_ptr<const Expression> IsOdd(unique_ptr<const Expression> arg);
 
 // Creates an expression that will return true if the argument is even.
 // Requires the argument to be integer.
-const Expression* IsEven(const Expression* const arg);
+unique_ptr<const Expression> IsEven(unique_ptr<const Expression> arg);
 
 }  // namespace supersonic
 

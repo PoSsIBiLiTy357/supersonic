@@ -54,25 +54,25 @@ FailureOrOwned<BoundExpression> BoundNamedAttribute(const TupleSchema& schema,
 // Creates an expression that takes a single-column-child argument and renames
 // it (without changing the data, type or nullability).
 FailureOrOwned<BoundExpression> BoundAlias(const string& new_name,
-                                           BoundExpression* argument,
+                                           unique_ptr<BoundExpression> argument,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
 // Creates an expression that will return a projection over its child
 // expressions.
 FailureOrOwned<BoundExpression> BoundProjection(
-    const BoundMultiSourceProjector* projector,
-    BoundExpressionList* arguments);
+    unique_ptr<const BoundMultiSourceProjector> projector,
+    unique_ptr<BoundExpressionList> arguments);
 
 // Creates an expression that is compound by given set of expressions.
 FailureOrOwned<BoundExpression> BoundCompoundExpression(
-    BoundExpressionList* expressions);
+    unique_ptr<BoundExpressionList> expressions);
 
 // Creates an expression that is compound by given set of expressions, renames
 // all columns to given names.
 FailureOrOwned<BoundExpression> BoundRenameCompoundExpression(
     const vector<string>& names,
-    BoundExpressionList* expressions);
+    unique_ptr<BoundExpressionList> expressions);
 
 }  // namespace supersonic
 

@@ -16,19 +16,8 @@
 
 #include "supersonic/expression/core/comparison_bound_expressions.h"
 
-#include <cstddef>
-#include "supersonic/utils/std_namespace.h"
-#include <algorithm>
-#include <memory>
-#include <set>
-#include <string>
-#include <unordered_set>
-#include <vector>
-namespace supersonic {using std::string; }
-using std::unique_ptr;
-using std::vector;
-
 #include <glog/logging.h>
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/stringprintf.h"
@@ -457,8 +446,8 @@ BinaryExpressionFactory* CreateTwoTypesBinaryFactory(DataType left_type,
 FailureOrOwned<BoundExpression> EqualTypeComparison(
     BufferAllocator* allocator,
     rowcount_t max_row_count,
-    BoundExpression* left_ptr,
-    BoundExpression* right_ptr,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     OperatorId operator_id,
     DataType type) {
   BinaryExpressionFactory* factory = NULL;
@@ -480,8 +469,8 @@ FailureOrOwned<BoundExpression> EqualTypeComparison(
     default:
         LOG(FATAL) << "Unknown operator in Comparison creation";
   }
-  return RunBinaryFactory(factory, allocator, max_row_count, left_ptr,
-                          right_ptr, "Comparison");
+  return RunBinaryFactory(factory, allocator, max_row_count, std::move(left),
+                          std::move(right), "Comparison");
 }
 
 template<OperatorId op>
@@ -489,14 +478,14 @@ FailureOrOwned<BoundExpression>
     AsymmetricOperatorDifferentIntegerTypesComparison(
         BufferAllocator* allocator,
         rowcount_t max_row_count,
-        BoundExpression* left,
-        BoundExpression* right) {
+        unique_ptr<BoundExpression> left,
+        unique_ptr<BoundExpression> right) {
   COMPILE_ASSERT(op == OPERATOR_LESS || op == OPERATOR_LESS_OR_EQUAL,
                  unexpected_operator_given_as_asymmetric_comparison);
   BinaryExpressionFactory* factory = CreateTwoTypesBinaryFactory<op>(
-      GetExpressionType(left), GetExpressionType(right));
-  return RunBinaryFactory(factory, allocator, max_row_count, left, right,
-                          "Asymmetric comparison");
+      GetExpressionType(left.get()), GetExpressionType(right.get()));
+  return RunBinaryFactory(factory, allocator, max_row_count, std::move(left),
+                          std::move(right), "Asymmetric comparison");
 }
 
 template<OperatorId op>
@@ -504,12 +493,12 @@ FailureOrOwned<BoundExpression>
     SymmetricOperatorDifferentIntegerTypesComparison(
         BufferAllocator* allocator,
         rowcount_t max_row_count,
-        BoundExpression* left,
-        BoundExpression* right) {
+        unique_ptr<BoundExpression> left,
+        unique_ptr<BoundExpression> right) {
   COMPILE_ASSERT(op == OPERATOR_EQUAL || op == OPERATOR_NOT_EQUAL,
                  unexpected_operator_given_as_symmetric_comparison);
-  DataType left_type = GetExpressionType(left);
-  DataType right_type = GetExpressionType(right);
+  DataType left_type = GetExpressionType(left.get());
+  DataType right_type = GetExpressionType(right.get());
   // For EQUAL and NOT_EQUAL, which are symmetric, we can shave off another 12
   // template expansions by assuring that the left-hand argument is smaller
   // (in some arbitrary ordering) than the right-hand. We use the ordering
@@ -544,38 +533,38 @@ FailureOrOwned<BoundExpression>
       (left_type == UINT64 && right_type == UINT32) ||
       (left_type == UINT64 && right_type == INT64)) {
     return SymmetricOperatorDifferentIntegerTypesComparison<op>(
-        allocator, max_row_count, right, left);
+        allocator, max_row_count, std::move(right), std::move(left));
   }
-  return RunBinaryFactory(factory, allocator, max_row_count, left, right,
-                          "Symmetric comparison");
+  return RunBinaryFactory(factory, allocator, max_row_count, std::move(left),
+                          std::move(right), "Symmetric comparison");
 }
 
 FailureOrOwned<BoundExpression> IntegerDifferentTypeComparison(
     BufferAllocator* allocator,
     rowcount_t max_row_count,
-    BoundExpression* left_ptr,
-    BoundExpression* right_ptr,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     OperatorId operator_id) {
-  DataType left_type = GetExpressionType(left_ptr);
-  DataType right_type = GetExpressionType(right_ptr);
+  DataType left_type = GetExpressionType(left.get());
+  DataType right_type = GetExpressionType(right.get());
   DCHECK(GetTypeInfo(left_type).is_integer());
   DCHECK(GetTypeInfo(right_type).is_integer());
   DCHECK(left_type != right_type);
   if (operator_id == OPERATOR_EQUAL) {
     return SymmetricOperatorDifferentIntegerTypesComparison<
-        OPERATOR_EQUAL>(allocator, max_row_count, left_ptr, right_ptr);
+        OPERATOR_EQUAL>(allocator, max_row_count, std::move(left), std::move(right));
   }
   if (operator_id == OPERATOR_NOT_EQUAL) {
     return SymmetricOperatorDifferentIntegerTypesComparison<
-        OPERATOR_NOT_EQUAL>(allocator, max_row_count, left_ptr, right_ptr);
+        OPERATOR_NOT_EQUAL>(allocator, max_row_count, std::move(left), std::move(right));
   }
   if (operator_id == OPERATOR_LESS) {
     return AsymmetricOperatorDifferentIntegerTypesComparison<
-        OPERATOR_LESS>(allocator, max_row_count, left_ptr, right_ptr);
+        OPERATOR_LESS>(allocator, max_row_count, std::move(left), std::move(right));
   }
   if (operator_id == OPERATOR_LESS_OR_EQUAL) {
     return AsymmetricOperatorDifferentIntegerTypesComparison<
-        OPERATOR_LESS_OR_EQUAL>(allocator, max_row_count, left_ptr, right_ptr);
+        OPERATOR_LESS_OR_EQUAL>(allocator, max_row_count, std::move(left), std::move(right));
   }
   LOG(FATAL) << "Unexpected operator in IntegerDifferentTypeComparison";
 }
@@ -586,11 +575,9 @@ FailureOrOwned<BoundExpression> IntegerDifferentTypeComparison(
 // templates that are strictly necessary.
 FailureOrOwned<BoundExpression> GenerateComparison(BufferAllocator* allocator,
                                                    rowcount_t max_row_count,
-                                                   BoundExpression* left_ptr,
-                                                   BoundExpression* right_ptr,
+                                                   unique_ptr<BoundExpression> left,
+                                                   unique_ptr<BoundExpression> right,
                                                    OperatorId operator_id) {
-  unique_ptr<BoundExpression> left(left_ptr);
-  unique_ptr<BoundExpression> right(right_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount("Comparison",
                                            left.get()->result_schema(),
                                            1));
@@ -601,8 +588,8 @@ FailureOrOwned<BoundExpression> GenerateComparison(BufferAllocator* allocator,
   DataType right_type = GetExpressionType(right.get());
   // The easy case.
   if (left_type == right_type) {
-    return EqualTypeComparison(allocator, max_row_count, left.release(),
-                               right.release(), operator_id, left_type);
+    return EqualTypeComparison(allocator, max_row_count, std::move(left),
+                               std::move(right), operator_id, left_type);
   }
   // Now we have to deal with non-equal types. We will do something only if both
   // the types are numeric.
@@ -614,25 +601,25 @@ FailureOrOwned<BoundExpression> GenerateComparison(BufferAllocator* allocator,
   }
   // If any of the types is DOUBLE, compare as doubles (force cast).
   if (left_type == DOUBLE || right_type == DOUBLE) {
-    return EqualTypeComparison(allocator, max_row_count, left.release(),
-                               right.release(), operator_id, DOUBLE);
+    return EqualTypeComparison(allocator, max_row_count, std::move(left),
+                               std::move(right), operator_id, DOUBLE);
   }
   // If any of the types is FLOAT, compare as floats (force cast).
   if (left_type == FLOAT || right_type == FLOAT) {
     // We perform force casts to FLOAT here, non-explicit, as we want to force
     // (the normally not performed) INT64->FLOAT casts.
     FailureOrOwned<BoundExpression> cast_left = BoundInternalCast(
-        allocator, max_row_count, left.release(), FLOAT, false);
+        allocator, max_row_count, std::move(left), FLOAT, false);
     PROPAGATE_ON_FAILURE(cast_left);
     FailureOrOwned<BoundExpression> cast_right = BoundInternalCast(
-        allocator, max_row_count, right.release(), FLOAT, false);
+        allocator, max_row_count, std::move(right), FLOAT, false);
     PROPAGATE_ON_FAILURE(cast_right);
-    return EqualTypeComparison(allocator, max_row_count, cast_left.release(),
-                               cast_right.release(), operator_id, FLOAT);
+    return EqualTypeComparison(allocator, max_row_count, cast_left.move(),
+                               cast_right.move(), operator_id, FLOAT);
   }
   // Now we have two integers of different types.
   return IntegerDifferentTypeComparison(
-      allocator, max_row_count, left.release(), right.release(), operator_id);
+      allocator, max_row_count, std::move(left), std::move(right), operator_id);
 }
 
 // ----------------In set expression instantiation -----------------------------
@@ -667,8 +654,7 @@ FailureOrOwned<BoundExpression> BoundInSetDataTypeAware(
   bool contains_null_constant = false;
   for (int i = 0; i < haystack_arguments->size(); ++i) {
     if (haystack_arguments->get(i)->is_constant()) {
-      unique_ptr<BoundExpression> scoped_arguments_element(
-          haystack_arguments->release(i));
+      auto scoped_arguments_element = haystack_arguments->move(i);
       bool is_null;
       FailureOr<hold_type> value = GetConstantBoundExpressionValue<data_type>(
           scoped_arguments_element.get(), &is_null);
@@ -680,20 +666,20 @@ FailureOrOwned<BoundExpression> BoundInSetDataTypeAware(
       }
       haystack_constants.push_back(value.get());
     } else {
-      haystack_non_constant_expressions->add(haystack_arguments->release(i));
+      haystack_non_constant_expressions->add(haystack_arguments->move(i));
     }
   }
 
   // This part is responsible for choosing between using binary search or
   // hashing for matching needle with constant-valued haystack expressions.
-  BasicBoundExpression* bound;
+  unique_ptr<BasicBoundExpression> bound;
   typedef typename TypeTraits<data_type>::cpp_type cpp_type;
   // Note: SortedVector and hash_set stores cpp_type instead of hold_type. If
   // the data type is of variable length, the copying is done in
   // BoundInSetExpression.
   if (haystack_constants.size() <= kBinarySearchOverHashLimit) {
-    bound = new BoundInSetExpression<data_type,
-        SortedVector<data_type> >(
+    bound = make_unique<BoundInSetExpression<data_type,
+        SortedVector<data_type>>>(
           allocator,
           name,
           needle_expression.release(),
@@ -701,8 +687,8 @@ FailureOrOwned<BoundExpression> BoundInSetDataTypeAware(
           haystack_constants,
           contains_null_constant);
   } else {
-    bound = new BoundInSetExpression<data_type,
-        std::unordered_set<cpp_type, operators::Hash, operators::Equal> >(
+    bound = make_unique<BoundInSetExpression<data_type,
+        std::unordered_set<cpp_type, operators::Hash, operators::Equal>>>(
             allocator,
             name,
             needle_expression.release(),
@@ -710,7 +696,7 @@ FailureOrOwned<BoundExpression> BoundInSetDataTypeAware(
             haystack_constants,
             contains_null_constant);
   }
-  return InitBasicExpression(max_row_count, bound, allocator);
+  return InitBasicExpression(max_row_count, std::move(bound), allocator);
 }
 
 // Functor used in the TypeSpecialization setup (see types_infrastructure.h).
@@ -739,30 +725,28 @@ struct InSetResolver {
 
 // -------------------------- IsOdd and IsEven ---------------------------------
 
-FailureOrOwned<BoundExpression> BoundIsOdd(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundIsOdd(unique_ptr<BoundExpression> argument,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count) {
   return CreateUnaryIntegerInputExpression<OPERATOR_IS_ODD, BOOL>(
-      allocator, max_row_count, argument);
+      allocator, max_row_count, std::move(argument));
 }
 
-FailureOrOwned<BoundExpression> BoundIsEven(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundIsEven(unique_ptr<BoundExpression> argument,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count) {
   return CreateUnaryIntegerInputExpression<OPERATOR_IS_EVEN, BOOL>(
-      allocator, max_row_count, argument);
+      allocator, max_row_count, std::move(argument));
 }
 
 // ---------------- In expression set expression instantiation -----------------
 
 // Called by the general In expression.
 FailureOrOwned<BoundExpression> BoundInSet(
-    BoundExpression* input_needle_expression,
-    BoundExpressionList* input_haystack_arguments,
+    unique_ptr<BoundExpression> needle_expression,
+    unique_ptr<BoundExpressionList> haystack_arguments,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> needle_expression(input_needle_expression);
-  unique_ptr<BoundExpressionList> haystack_arguments(input_haystack_arguments);
   PROPAGATE_ON_FAILURE(CheckAttributeCount("Needle Bound Expression",
                                            needle_expression->result_schema(),
                                            1));
@@ -789,19 +773,19 @@ FailureOrOwned<BoundExpression> BoundInSet(
   FailureOrOwned<BoundExpression> converted = BoundInternalCast(
       allocator,
       max_row_count,
-      needle_expression.release(),
+      std::move(needle_expression),
       common_data_type,
       true);  // Disallow down-casting
   PROPAGATE_ON_FAILURE(converted);
-  needle_expression.reset(converted.release());
+  needle_expression = converted.move();
   unique_ptr<BoundExpressionList> converted_arguments(
       new BoundExpressionList());
   for (int i = 0; i < haystack_arguments->size(); ++i) {
     FailureOrOwned<BoundExpression> converted = BoundInternalCast(
-        allocator, max_row_count, haystack_arguments->release(i),
+        allocator, max_row_count, haystack_arguments->move(i),
         common_data_type, true);
     PROPAGATE_ON_FAILURE(converted);
-    converted_arguments->add(converted.release());
+    converted_arguments->add(converted.move());
   }
 
   InSetResolver resolver(needle_expression.release(),
@@ -815,13 +799,12 @@ FailureOrOwned<BoundExpression> BoundInSet(
 // ------------------- Comparison instantiation --------------------------------
 
 #define DEFINE_BINARY_COMPARISON_EXPRESSION(expression_name, operator_id)      \
-FailureOrOwned<BoundExpression> expression_name(BoundExpression* left,         \
-                                                BoundExpression* right,        \
-                                                BufferAllocator* allocator,    \
-                                                rowcount_t max_row_count) {    \
-  return GenerateComparison(allocator, max_row_count,                          \
-                            left, right, operator_id);                         \
-}
+  FailureOrOwned<BoundExpression> expression_name(                             \
+      unique_ptr<BoundExpression> left, unique_ptr<BoundExpression> right,     \
+      BufferAllocator *allocator, rowcount_t max_row_count) {                  \
+    return GenerateComparison(allocator, max_row_count, std::move(left),       \
+                              std::move(right), operator_id);                  \
+  }
 
 DEFINE_BINARY_COMPARISON_EXPRESSION(BoundEqual, OPERATOR_EQUAL);
 DEFINE_BINARY_COMPARISON_EXPRESSION(BoundNotEqual, OPERATOR_NOT_EQUAL);
@@ -829,21 +812,21 @@ DEFINE_BINARY_COMPARISON_EXPRESSION(BoundLess, OPERATOR_LESS);
 DEFINE_BINARY_COMPARISON_EXPRESSION(BoundLessOrEqual,
                                     OPERATOR_LESS_OR_EQUAL);
 
-FailureOrOwned<BoundExpression> BoundGreater(BoundExpression* left,
-                                             BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundGreater(unique_ptr<BoundExpression> left,
+                                             unique_ptr<BoundExpression> right,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count) {
   // We implement Greater in terms of Less to decrease the binary size.
   return GenerateComparison(allocator, max_row_count,
-                            right, left, OPERATOR_LESS);
+                            std::move(right), std::move(left), OPERATOR_LESS);
 }
 
-FailureOrOwned<BoundExpression> BoundGreaterOrEqual(BoundExpression* left,
-                                                    BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundGreaterOrEqual(unique_ptr<BoundExpression> left,
+                                                    unique_ptr<BoundExpression> right,
                                                     BufferAllocator* allocator,
                                                     rowcount_t max_row_count) {
   return GenerateComparison(allocator, max_row_count,
-                            right, left, OPERATOR_LESS_OR_EQUAL);
+                            std::move(right), std::move(left), OPERATOR_LESS_OR_EQUAL);
 }
 
 #undef DEFINE_BINARY_COMPARISON_EXPRESSION

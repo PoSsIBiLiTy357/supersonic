@@ -46,19 +46,19 @@ namespace supersonic {
 // TODO(user): rename to BoundSortSpecification for consistency.
 class BoundSortOrder {
  public:
-  BoundSortOrder(const BoundSingleSourceProjector* projector,
+  BoundSortOrder(unique_ptr<const BoundSingleSourceProjector> projector,
                  const vector<ColumnOrder>& column_order)
-      : projector_(projector),
+      : projector_(std::move(projector)),
         column_order_(column_order) {
     CHECK_EQ(projector_->result_schema().attribute_count(),
              column_order_.size());
   }
 
   // A short-hand for all ASCENDING.
-  explicit BoundSortOrder(const BoundSingleSourceProjector* projector)
-      : projector_(projector),
+  explicit BoundSortOrder(unique_ptr<const BoundSingleSourceProjector> projector)
+      : projector_(std::move(projector)),
         column_order_(
-            vector<ColumnOrder>(projector->result_schema().attribute_count(),
+            vector<ColumnOrder>(projector_->result_schema().attribute_count(),
                                 ASCENDING)) {
     CHECK_EQ(projector_->result_schema().attribute_count(),
              column_order_.size());
@@ -106,7 +106,15 @@ class SortOrder {
   // sorted in a direction specified by the column_order parameter.
   SortOrder* add(const SingleSourceProjector* projector,
                  const ColumnOrder column_order) {
-    projectors_.push_back(make_linked_ptr(projector));
+
+    projectors_.emplace_back(unique_ptr<const SingleSourceProjector>(projector));
+    column_order_.push_back(column_order);
+    return this;
+  }
+
+  SortOrder* add(unique_ptr<const SingleSourceProjector> projector,
+                 const ColumnOrder column_order) {
+    projectors_.emplace_back(std::move(projector));
     column_order_.push_back(column_order);
     return this;
   }
@@ -127,7 +135,7 @@ class SortOrder {
       const TupleSchema& source_schema) const;
 
  private:
-  vector<linked_ptr<const SingleSourceProjector> > projectors_;
+  vector<unique_ptr<const SingleSourceProjector>> projectors_;
   vector<ColumnOrder> column_order_;
   DISALLOW_COPY_AND_ASSIGN(SortOrder);
 };

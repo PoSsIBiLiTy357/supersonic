@@ -164,7 +164,7 @@ class TupleSchema {
     }
 
     int LookupAttributePosition(const string& attribute_name) const {
-      map<string, int>::const_iterator i = attribute_names_.find(
+      auto i = attribute_names_.find(
           attribute_name);
       return (i == attribute_names_.end()) ? -1 : i->second;
     }

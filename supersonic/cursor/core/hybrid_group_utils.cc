@@ -52,7 +52,7 @@ class HybridGroupTransformCursor : public BasicCursor {
       const SingleSourceProjector& group_by_columns,
       const PointerVector<const SingleSourceProjector>& column_group_projectors,
       BufferAllocator* allocator,
-      Cursor* input);
+      unique_ptr<Cursor> input);
 
   virtual ResultView Next(rowcount_t max_row_count);
 
@@ -62,17 +62,17 @@ class HybridGroupTransformCursor : public BasicCursor {
 
   virtual CursorId GetCursorId() const { return HYBRID_GROUP_TRANSFORM; }
 
- private:
-  typedef PointerVector<const BoundMultiSourceProjector> ProjectorVector;
-
   // Doesn't take ownership of allocator.
   // Takes ownership of input.
   HybridGroupTransformCursor(
       const TupleSchema& transformed_schema,
       const TupleSchema& nulls_block_schema,
       PointerVector<const BoundMultiSourceProjector>* transformation_projectors,
-      Cursor* input,
+      unique_ptr<Cursor> input,
       BufferAllocator* allocator);
+
+ private:
+  typedef PointerVector<const BoundMultiSourceProjector> ProjectorVector;
 
   // Builds a BoundMultiSourceProjector that can be used to select data for the
   // given column group (selected_group). Columns other then the selected column
@@ -124,13 +124,12 @@ FailureOrOwned<Cursor> HybridGroupTransformCursor::Create(
     const SingleSourceProjector& group_by_columns,
     const PointerVector<const SingleSourceProjector>& column_group_projectors,
     BufferAllocator* allocator,
-    Cursor* input) {
-  std::unique_ptr<Cursor> input_owned(input);
+    unique_ptr<Cursor> input) {
   // Prepare the schema for nulls_block. It is the same as input schema, but
   // with all columns NULLABLE (because we want to put NULLs in them).
   TupleSchema nulls_block_schema;
-  for (int i = 0; i < input_owned->schema().attribute_count(); ++i) {
-    const Attribute& attribute(input_owned->schema().attribute(i));
+  for (int i = 0; i < input->schema().attribute_count(); ++i) {
+    const Attribute& attribute(input->schema().attribute(i));
     nulls_block_schema.add_attribute(
         Attribute(attribute.name(),
                   attribute.type(),
@@ -139,7 +138,7 @@ FailureOrOwned<Cursor> HybridGroupTransformCursor::Create(
   // We need a vector with both schemas - input schema and nulls_block_schema -
   // to create the BoundMultiSourceProjectors.
   vector<const TupleSchema*> schemas(2);
-  schemas[0] = &input_owned->schema();
+  schemas[0] = &input->schema();
   schemas[1] = &nulls_block_schema;
   // Calculate transformed_schema by applying all the column_group_projectors
   // to nulls_block_schema (which is in schemas[1]).
@@ -170,14 +169,14 @@ FailureOrOwned<Cursor> HybridGroupTransformCursor::Create(
         SelectColumnGroup(group_by_columns, column_group_projectors, schemas,
                           selected_group));
     PROPAGATE_ON_FAILURE(bound_projector);
-    transformation_projectors->emplace_back(bound_projector.release());
+    transformation_projectors->emplace_back(bound_projector.move());
   }
   // Build the actual cursor.
-  return Success(new HybridGroupTransformCursor(
+  return Success(make_unique<HybridGroupTransformCursor>(
       transformed_schema,
       nulls_block_schema,
       transformation_projectors.release(),
-      input_owned.release(),
+      std::move(input),
       allocator));
 }
 
@@ -212,9 +211,9 @@ HybridGroupTransformCursor::HybridGroupTransformCursor(
     const TupleSchema& transformed_schema,
     const TupleSchema& nulls_block_schema,
     PointerVector<const BoundMultiSourceProjector>* transformation_projectors,
-    Cursor* input,
+    unique_ptr<Cursor> input,
     BufferAllocator* allocator)
-    : BasicCursor(transformed_schema, input),
+    : BasicCursor(transformed_schema, std::move(input)),
       nulls_block_(nulls_block_schema, allocator),
       transformation_projectors_(transformation_projectors),
       next_projector_(transformation_projectors_->end()),
@@ -279,7 +278,7 @@ FailureOrOwned<BoundExpression> TypedZero(
   PROPAGATE_ON_FAILURE(zero);
   if (type != UINT64) {
     FailureOrOwned<BoundExpression> cast(
-        BoundCastTo(type, zero.release(), allocator, max_row_count));
+        BoundCastTo(type, zero.move(), allocator, max_row_count));
     PROPAGATE_ON_FAILURE(cast);
     return cast;
   } else {
@@ -290,47 +289,41 @@ FailureOrOwned<BoundExpression> TypedZero(
 }  // namespace
 
 FailureOrOwned<Cursor> BoundHybridGroupTransform(
-    const SingleSourceProjector* group_by_columns,
+    unique_ptr<const SingleSourceProjector> group_by_columns,
     const util::gtl::PointerVector<const SingleSourceProjector>&
         column_group_projectors,
     BufferAllocator* allocator,
-    Cursor* child) {
-  std::unique_ptr<Cursor> child_owner(child);
-  std::unique_ptr<const SingleSourceProjector> group_by_columns_owned(
-      group_by_columns);
+    unique_ptr<Cursor> child) {
   FailureOrOwned<Cursor> transform_cursor(
-      HybridGroupTransformCursor::Create(*group_by_columns_owned,
+      HybridGroupTransformCursor::Create(*group_by_columns,
                                          column_group_projectors,
                                          allocator,
-                                         child_owner.release()));
+                                         std::move(child)));
   PROPAGATE_ON_FAILURE(transform_cursor);
   return transform_cursor;
 }
 
 FailureOrOwned<Cursor> MakeSelectedColumnsNotNullable(
-    const SingleSourceProjector* selection_projector,
+    unique_ptr<const SingleSourceProjector> selection_projector,
     BufferAllocator* allocator,
-    Cursor* input) {
+    unique_ptr<Cursor> input) {
   const rowcount_t max_row_count = Cursor::kDefaultRowCount;
-  std::unique_ptr<const SingleSourceProjector> selection_projector_owned(
-      selection_projector);
-  std::unique_ptr<Cursor> input_owner(input);
   FailureOrOwned<const BoundSingleSourceProjector> bound_selection_projector(
-      selection_projector_owned->Bind(input_owner->schema()));
+      selection_projector->Bind(input->schema()));
   PROPAGATE_ON_FAILURE(bound_selection_projector);
   // We take apart the cursor column by column and put it together with
   // BoundRenameCompoundExpression. name[i] defines an alias for
   // expression_list.GetAt(i).
   vector<string> names;
-  std::unique_ptr<BoundExpressionList> expression_list(new BoundExpressionList);
-  for (int i = 0; i < input_owner->schema().attribute_count(); ++i) {
-    const Attribute& attribute = input_owner->schema().attribute(i);
+  auto expression_list = make_unique<BoundExpressionList>();
+  for (int i = 0; i < input->schema().attribute_count(); ++i) {
+    const Attribute& attribute = input->schema().attribute(i);
     std::unique_ptr<BoundExpression> column_expression;
     {
       FailureOrOwned<BoundExpression> projection_expression(
-          BoundAttributeAt(input_owner->schema(), i));
+          BoundAttributeAt(input->schema(), i));
       PROPAGATE_ON_FAILURE(projection_expression);
-      column_expression.reset(projection_expression.release());
+      column_expression = projection_expression.move();
     }
     if (bound_selection_projector->IsAttributeProjected(i) &&
         attribute.nullability() == NULLABLE) {
@@ -340,30 +333,30 @@ FailureOrOwned<Cursor> MakeSelectedColumnsNotNullable(
           TypedZero(attribute.type(), allocator, max_row_count));
       PROPAGATE_ON_FAILURE(zero);
       FailureOrOwned<BoundExpression> ifnull(
-          BoundIfNull(column_expression.release(),
-                      zero.release(),
+          BoundIfNull(std::move(column_expression),
+                      zero.move(),
                       allocator,
                       max_row_count));
       PROPAGATE_ON_FAILURE(ifnull);
-      column_expression.reset(ifnull.release());
+      column_expression = ifnull.move();
     }
-    expression_list->add(column_expression.release());
+    expression_list->add(std::move(column_expression));
     names.push_back(attribute.name());
   }
   FailureOrOwned<BoundExpression> compound_expression(
-      BoundRenameCompoundExpression(names, expression_list.release()));
+      BoundRenameCompoundExpression(names, std::move(expression_list)));
   // Build the Compute cursor.
   PROPAGATE_ON_FAILURE(compound_expression);
   FailureOrOwned<BoundExpressionTree> expression_tree(
-      CreateBoundExpressionTree(compound_expression.release(),
+      CreateBoundExpressionTree(compound_expression.move(),
                                 allocator,
                                 max_row_count));
   PROPAGATE_ON_FAILURE(expression_tree);
   FailureOrOwned<Cursor> compute_cursor(
-      BoundCompute(expression_tree.release(),
+      BoundCompute(expression_tree.move(),
                    allocator,
                    max_row_count,
-                   input_owner.release()));
+                   std::move(input)));
   PROPAGATE_ON_FAILURE(compute_cursor);
   return compute_cursor;
 }
@@ -371,39 +364,38 @@ FailureOrOwned<Cursor> MakeSelectedColumnsNotNullable(
 FailureOrOwned<Cursor> ExtendByConstantColumn(
     const string& new_column_name,
     BufferAllocator* allocator,
-    Cursor* input) {
-  std::unique_ptr<Cursor> input_owner(input);
+    unique_ptr<Cursor> input) {
   const rowcount_t max_row_count = Cursor::kDefaultRowCount;
   vector<string> names;
   std::unique_ptr<BoundExpressionList> expression_list(new BoundExpressionList);
   // Add all original columns.
-  for (int i = 0; i < input_owner->schema().attribute_count(); ++i) {
+  for (int i = 0; i < input->schema().attribute_count(); ++i) {
     FailureOrOwned<BoundExpression> projection_expression(
-        BoundAttributeAt(input_owner->schema(), i));
+        BoundAttributeAt(input->schema(), i));
     PROPAGATE_ON_FAILURE(projection_expression);
-    expression_list->add(projection_expression.release());
-    names.push_back(input_owner->schema().attribute(i).name());
+    expression_list->add(projection_expression.move());
+    names.push_back(input->schema().attribute(i).name());
   }
   // Add the new column.
   FailureOrOwned<BoundExpression> bound_zero(
       BoundConstInt32(0, allocator, max_row_count));
   PROPAGATE_ON_FAILURE(bound_zero);
-  expression_list->add(bound_zero.release());
+  expression_list->add(bound_zero.move());
   names.push_back(new_column_name);
   FailureOrOwned<BoundExpression> compound_expression(
-      BoundRenameCompoundExpression(names, expression_list.release()));
+      BoundRenameCompoundExpression(names, std::move(expression_list)));
   // Build the Compute cursor.
   PROPAGATE_ON_FAILURE(compound_expression);
   FailureOrOwned<BoundExpressionTree> expression_tree(
-      CreateBoundExpressionTree(compound_expression.release(),
+      CreateBoundExpressionTree(compound_expression.move(),
                                 allocator,
                                 max_row_count));
   PROPAGATE_ON_FAILURE(expression_tree);
   FailureOrOwned<Cursor> compute_cursor(
-      BoundCompute(expression_tree.release(),
+      BoundCompute(expression_tree.move(),
                    allocator,
                    max_row_count,
-                   input_owner.release()));
+                   std::move(input)));
   PROPAGATE_ON_FAILURE(compute_cursor);
   return compute_cursor;
 }

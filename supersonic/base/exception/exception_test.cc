@@ -15,22 +15,19 @@
 
 #include "supersonic/base/exception/exception.h"
 
-#include <vector>
-#include <memory>
-using std::vector;
-using std::unique_ptr;
 
 #include <glog/logging.h>
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/utils/exception/stack_trace.pb.h"
+#include "supersonic/utils/walltime.h"
 #include "supersonic/base/exception/exception_macros.h"
 #include "supersonic/base/exception/result.h"
 #include <google/protobuf/text_format.h>
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "supersonic/testing/proto_matcher.h"
-#include "supersonic/utils/walltime.h"
 
 
 namespace supersonic {

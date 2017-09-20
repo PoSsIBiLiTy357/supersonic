@@ -18,10 +18,9 @@
 
 #include <memory>
 #include <string>
-namespace supersonic {using std::string; }
-using std::unique_ptr;
 
 #include <glog/logging.h>
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/template_util.h"
@@ -68,9 +67,12 @@ template<DataType input_type>
 class BoundChangedExpression : public BoundUnaryExpression {
  public:
   BoundChangedExpression(BufferAllocator* const allocator,
-                         BoundExpression* argument)
-      : BoundUnaryExpression(CreateChangedSchema(argument),
-                             allocator, argument, input_type),
+                         unique_ptr<BoundExpression> argument)
+      : BoundUnaryExpression{
+          CreateSchema(StrCat("CHANGED(", GetExpressionName(argument.get()), ")"),
+              /* output_type = */ BOOL,
+              /* output is nullable = */ false),
+          allocator, input_type, std::move(argument)},
         initialized_(false),
         local_skip_vector_storage_(1, allocator),
         assignment_operator_(allocator) {}
@@ -162,12 +164,6 @@ class BoundChangedExpression : public BoundUnaryExpression {
     return Success(*my_view());
   }
 
-  TupleSchema CreateChangedSchema(BoundExpression* argument) {
-    return CreateSchema(StrCat("CHANGED(", GetExpressionName(argument), ")"),
-                       /* output_type = */ BOOL,
-                       /* output is nullable = */ false);
-  }
-
   // Does the expression have any state set yet?
   bool initialized_;
   // The storage for the local skip vector (preinitialized and always
@@ -187,22 +183,22 @@ class BoundChangedExpression : public BoundUnaryExpression {
 // This is a part of the TypeSpecialization pattern. See types_infrastructure.h.
 struct BoundChangedFactory {
   BoundChangedFactory(BufferAllocator* allocator,
-                      BoundExpression* argument,
+                      unique_ptr<BoundExpression> argument,
                       rowcount_t max_row_count)
       : allocator_(allocator),
-        argument_(argument),
+        argument_(std::move(argument)),
         max_row_count_(max_row_count) {}
 
   template<DataType type>
-  FailureOrOwned<BoundExpression> operator()() const {
+  FailureOrOwned<BoundExpression> operator()() {
     return InitBasicExpression(
         max_row_count_,
-        new BoundChangedExpression<type>(allocator_, argument_),
+        make_unique<BoundChangedExpression<type>>(allocator_, std::move(argument_)),
         allocator_);
   }
 
   BufferAllocator* allocator_;
-  BoundExpression* argument_;
+  unique_ptr<BoundExpression> argument_;
   rowcount_t max_row_count_;
 };
 
@@ -212,10 +208,10 @@ template<DataType input_type>
 class BoundRunningMinWithFlushExpression : public BoundBinaryExpression {
  public:
   BoundRunningMinWithFlushExpression(BufferAllocator* const allocator,
-                                     BoundExpression* flush,
-                                     BoundExpression* input)
-      : BoundBinaryExpression(CreateRunningMinWithFlushSchema(flush, input),
-                              allocator, flush, BOOL, input, input_type),
+                                     unique_ptr<BoundExpression> flush,
+                                     unique_ptr<BoundExpression> input)
+      : BoundBinaryExpression{CreateRunningMinWithFlushSchema(flush.get(), input.get()),
+                              allocator, std::move(flush), BOOL, std::move(input), input_type},
         local_skip_vector_storage_(1, allocator), is_null_(true) {
     COMPILE_ASSERT(TypeTraits<input_type>::is_integer,
                    RunningMinWithFlush_may_only_be_used_on_integer_types);
@@ -329,26 +325,26 @@ class BoundRunningMinWithFlushExpression : public BoundBinaryExpression {
 // This is a part of the TypeSpecialization pattern. See types_infrastructure.h.
 struct BoundRunningMinWithFlushFactory {
   BoundRunningMinWithFlushFactory(BufferAllocator* allocator,
-                                  BoundExpression* flush,
-                                  BoundExpression* input,
+                                  unique_ptr<BoundExpression> flush,
+                                  unique_ptr<BoundExpression> input,
                                   rowcount_t max_row_count)
       : allocator_(allocator),
-        flush_(flush),
-        input_(input),
+        flush_(std::move(flush)),
+        input_(std::move(input)),
         max_row_count_(max_row_count) {}
 
   template<DataType type>
-  FailureOrOwned<BoundExpression> operator()() const {
+  FailureOrOwned<BoundExpression> operator()() {
     return InitBasicExpression(
         max_row_count_,
-        new BoundRunningMinWithFlushExpression<type>(
-            allocator_, flush_, input_),
+        make_unique<BoundRunningMinWithFlushExpression<type>>(
+            allocator_, std::move(flush_), std::move(input_)),
         allocator_);
   }
 
   BufferAllocator* allocator_;
-  BoundExpression* flush_;
-  BoundExpression* input_;
+  unique_ptr<BoundExpression> flush_;
+  unique_ptr<BoundExpression> input_;
   rowcount_t max_row_count_;
 };
 
@@ -428,9 +424,10 @@ template<Aggregation aggregation_type, DataType input_type>
 class BoundRunningAggregationExpression : public BoundUnaryExpression {
  public:
   BoundRunningAggregationExpression(BufferAllocator* const allocator,
-                                    BoundExpression* argument)
-      : BoundUnaryExpression(CreateRunningAggregationSchema(argument),
-                             allocator, argument, input_type),
+                                    unique_ptr<BoundExpression> argument)
+      : BoundUnaryExpression{
+          CreateRunningAggregationSchema(argument.get()),
+          allocator, input_type, std::move(argument)},
         initialized_(false),
         local_skip_vector_storage_(1, allocator),
         aggregation_operator_(allocator),
@@ -569,23 +566,23 @@ class BoundRunningAggregationExpression : public BoundUnaryExpression {
 template<Aggregation aggregation_type>
 struct BoundRunningAggregationFactory {
   BoundRunningAggregationFactory(BufferAllocator* allocator,
-                                 BoundExpression* argument,
+                                 unique_ptr<BoundExpression> argument,
                                  rowcount_t max_row_count)
       : allocator_(allocator),
-        argument_(argument),
+        argument_(std::move(argument)),
         max_row_count_(max_row_count) {}
 
   template<DataType type>
-  FailureOrOwned<BoundExpression> operator()() const {
+  FailureOrOwned<BoundExpression> operator()() {
     return InitBasicExpression(
         max_row_count_,
-        new BoundRunningAggregationExpression<aggregation_type, type>(
-            allocator_, argument_),
+        make_unique<BoundRunningAggregationExpression<aggregation_type, type>>(
+            allocator_, std::move(argument_)),
         allocator_);
   }
 
   BufferAllocator* allocator_;
-  BoundExpression* argument_;
+  unique_ptr<BoundExpression> argument_;
   rowcount_t max_row_count_;
 };
 
@@ -594,12 +591,12 @@ struct BoundRunningAggregationFactory {
 template<DataType data_type>
 class BoundSmudgeIfExpression : public BoundBinaryExpression {
  public:
-  BoundSmudgeIfExpression(BoundExpression* argument,
-                          BoundExpression* condition,
+  BoundSmudgeIfExpression(unique_ptr<BoundExpression>  argument,
+                          unique_ptr<BoundExpression>  condition,
                           BufferAllocator* const allocator)
-      : BoundBinaryExpression(CreateSmudgeIfSchema(argument, condition),
-                              allocator, argument, data_type,
-                              condition, /* right_expression_type = */ BOOL),
+      : BoundBinaryExpression{CreateSmudgeIfSchema(argument.get(), condition.get()),
+                              allocator, std::move(argument), data_type,
+                              std::move(condition), /* right_expression_type = */ BOOL},
         local_skip_vector_storage_(1, allocator),
         local_skip_vectors_(1),
         last_output_value_id_(0),
@@ -774,35 +771,34 @@ class BoundSmudgeIfExpression : public BoundBinaryExpression {
 
 // Functor used in the TypeSpecialization setup (see types_infrastructure.h).
 struct BoundSmudgeIfResolver {
-  BoundSmudgeIfResolver(BoundExpression* argument,
-                        BoundExpression* condition,
+  BoundSmudgeIfResolver(unique_ptr<BoundExpression> argument,
+                        unique_ptr<BoundExpression> condition,
                         BufferAllocator* allocator,
                         rowcount_t max_row_count)
       : allocator_(allocator),
-        argument_(argument),
-        condition_(condition),
+        argument_(std::move(argument)),
+        condition_(std::move(condition)),
         max_row_count_(max_row_count) {}
 
   template<DataType data_type>
-  FailureOrOwned<BoundExpression> operator()() const {
+  FailureOrOwned<BoundExpression> operator()() {
     return InitBasicExpression(
         max_row_count_,
-        new BoundSmudgeIfExpression<data_type>(
-            argument_, condition_, allocator_),
+        make_unique<BoundSmudgeIfExpression<data_type>>(
+            std::move(argument_), std::move(condition_), allocator_),
         allocator_);
   }
   BufferAllocator* allocator_;
-  BoundExpression* argument_;
-  BoundExpression* condition_;
+  unique_ptr<BoundExpression> argument_;
+  unique_ptr<BoundExpression> condition_;
   rowcount_t max_row_count_;
 };
 
 }  // namespace
 
-FailureOrOwned<BoundExpression> BoundChanged(BoundExpression* argument_ptr,
+FailureOrOwned<BoundExpression> BoundChanged(unique_ptr<BoundExpression> argument,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> argument(argument_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       GetExpressionName(argument.get()), argument->result_schema(), 1));
   if (GetExpressionNullability(argument.get()) == NULLABLE) {
@@ -813,18 +809,18 @@ FailureOrOwned<BoundExpression> BoundChanged(BoundExpression* argument_ptr,
                "for: ", GetExpressionName(argument.get()))));
   }
   // TypeSpecialization application.
-  BoundChangedFactory factory(allocator, argument.release(), max_row_count);
+  BoundChangedFactory factory(allocator, std::move(argument), max_row_count);
+  auto expr_type = GetExpressionType(factory.argument_.get());
   FailureOrOwned<BoundExpression> result = TypeSpecialization<
       FailureOrOwned<BoundExpression>, BoundChangedFactory>(
-          GetExpressionType(factory.argument_), factory);
+          expr_type, std::move(factory));
   PROPAGATE_ON_FAILURE(result);
-  return Success(result.release());
+  return result;
 }
 
-FailureOrOwned<BoundExpression> BoundRunningSum(BoundExpression* argument_ptr,
+FailureOrOwned<BoundExpression> BoundRunningSum(unique_ptr<BoundExpression> argument,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> argument(argument_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       GetExpressionName(argument.get()), argument->result_schema(), 1));
   const TypeInfo& type_info = GetTypeInfo(GetExpressionType(argument.get()));
@@ -835,36 +831,35 @@ FailureOrOwned<BoundExpression> BoundRunningSum(BoundExpression* argument_ptr,
                "non-numeric input: ", GetExpressionName(argument.get()))));
   }
   BoundRunningAggregationFactory<SUM> factory(
-      allocator, argument.release(), max_row_count);
+      allocator, std::move(argument), max_row_count);
+  auto expr_type = GetExpressionType(factory.argument_.get());
   FailureOrOwned<BoundExpression> result = NumericTypeSpecialization<
       FailureOrOwned<BoundExpression>, BoundRunningAggregationFactory<SUM> >(
-          GetExpressionType(factory.argument_), factory);
+          expr_type, std::move(factory));
   PROPAGATE_ON_FAILURE(result);
-  return Success(result.release());
+  return result;
 }
 
-FailureOrOwned<BoundExpression> BoundSmudge(BoundExpression* argument_ptr,
+FailureOrOwned<BoundExpression> BoundSmudge(unique_ptr<BoundExpression> argument,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> argument(argument_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       GetExpressionName(argument.get()), argument->result_schema(), 1));
   BoundRunningAggregationFactory<LAST> factory(
-      allocator, argument.release(), max_row_count);
+      allocator, std::move(argument), max_row_count);
+  auto expr_type = GetExpressionType(factory.argument_.get());
   FailureOrOwned<BoundExpression> result = TypeSpecialization<
       FailureOrOwned<BoundExpression>, BoundRunningAggregationFactory<LAST> >(
-          GetExpressionType(factory.argument_), factory);
+          expr_type, std::move(factory));
   PROPAGATE_ON_FAILURE(result);
-  return Success(result.release());
+  return result;
 }
 
 FailureOrOwned<BoundExpression> BoundRunningMinWithFlush(
-    BoundExpression* flush_ptr,
-    BoundExpression* input_ptr,
+    unique_ptr<BoundExpression> flush,
+    unique_ptr<BoundExpression> input,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> flush(flush_ptr);
-  unique_ptr<BoundExpression> input(input_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       GetExpressionName(flush.get()), flush->result_schema(), 1));
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
@@ -892,22 +887,20 @@ FailureOrOwned<BoundExpression> BoundRunningMinWithFlush(
   }
 
   BoundRunningMinWithFlushFactory factory(
-      allocator, flush.release(), input.release(), max_row_count);
+      allocator, std::move(flush), std::move(input), max_row_count);
   FailureOrOwned<BoundExpression> result =
       IntegerTypeSpecialization<FailureOrOwned<BoundExpression>,
                                 BoundRunningMinWithFlushFactory>(
-                                    type_info.type(), factory);
+                                    type_info.type(), std::move(factory));
   PROPAGATE_ON_FAILURE(result);
   return result;
 }
 
 FailureOrOwned<BoundExpression> BoundSmudgeIf(
-    BoundExpression* argument_raw,
-    BoundExpression* condition_raw,
+    unique_ptr<BoundExpression> argument,
+    unique_ptr<BoundExpression> condition,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> argument(argument_raw);
-  unique_ptr<BoundExpression> condition(condition_raw);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       GetExpressionName(condition.get()),
       condition->result_schema(),
@@ -928,10 +921,10 @@ FailureOrOwned<BoundExpression> BoundSmudgeIf(
   }
   DataType argument_type = GetExpressionType(argument.get());
   BoundSmudgeIfResolver resolver(
-      argument.release(), condition.release(), allocator, max_row_count);
+      std::move(argument), std::move(condition), allocator, max_row_count);
   FailureOrOwned<BoundExpression> result =
       TypeSpecialization<FailureOrOwned<BoundExpression>,
-          BoundSmudgeIfResolver>(argument_type, resolver);
+          BoundSmudgeIfResolver>(argument_type, std::move(resolver));
   PROPAGATE_ON_FAILURE(result);
   return result;
 }

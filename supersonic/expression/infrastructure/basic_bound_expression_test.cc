@@ -41,19 +41,23 @@ using util::gtl::Container;
 
 class BasicBoundExpressionTest : public ::testing::Test {
  protected:
-  BoundExpression* GetTrue() {
-    return SucceedOrDie(InitBasicExpression(10, new BoundConstExpression<BOOL>(
-        HeapBufferAllocator::Get(), true),
-        HeapBufferAllocator::Get()));
+  unique_ptr<BoundExpression> GetTrue() {
+    return SucceedOrDie(
+        InitBasicExpression(10,
+            make_unique<BoundConstExpression<BOOL>>(
+                HeapBufferAllocator::Get(), true),
+                HeapBufferAllocator::Get()));
   }
 
-  BoundExpression* GetFalse() {
-    return SucceedOrDie(InitBasicExpression(15, new BoundConstExpression<BOOL>(
-        HeapBufferAllocator::Get(), false),
-        HeapBufferAllocator::Get()));
+  unique_ptr<BoundExpression> GetFalse() {
+    return SucceedOrDie(
+        InitBasicExpression(15,
+            make_unique<BoundConstExpression<BOOL>>(
+                HeapBufferAllocator::Get(), false),
+                HeapBufferAllocator::Get()));
   }
 
-  BoundExpression* GetNull() {
+  unique_ptr<BoundExpression> GetNull() {
     FailureOrOwned<BoundExpression> null =
         BoundNull(BOOL, HeapBufferAllocator::Get(), 5);
     CHECK(null.is_success());
@@ -63,10 +67,11 @@ class BasicBoundExpressionTest : public ::testing::Test {
   template<DataType data_type>
   void TestGetConstantBoundExpressionValue(
       typename TypeTraits<data_type>::hold_type value) {
-    std::unique_ptr<BoundExpression> expression(SucceedOrDie(
-        InitBasicExpression(15, new BoundConstExpression<data_type>(
-                                    HeapBufferAllocator::Get(), value),
-                            HeapBufferAllocator::Get())));
+    auto expression = SucceedOrDie(
+        InitBasicExpression(
+            15, make_unique<BoundConstExpression<data_type>>(
+                HeapBufferAllocator::Get(), value),
+            HeapBufferAllocator::Get()));
     bool is_null;
     FailureOr<typename TypeTraits<data_type>::hold_type> result =
         GetConstantBoundExpressionValue<data_type>(
@@ -76,42 +81,45 @@ class BasicBoundExpressionTest : public ::testing::Test {
     EXPECT_FALSE(is_null);
   }
 
-  BoundExpression* GetNamedAttribute(const string attribute_name) {
+  unique_ptr<BoundExpression> GetNamedAttribute(const string attribute_name) {
     return SucceedOrDie(BoundNamedAttribute(GetTestSchema(), attribute_name));
   }
 
-  BoundExpression* GetAnd(BoundExpression* left, BoundExpression* right) {
+  unique_ptr<BoundExpression> GetAnd(
+      unique_ptr<BoundExpression> left,
+      unique_ptr<BoundExpression>right) {
     FailureOrOwned<BoundExpression> and_expression =
-        BoundAnd(left, right, HeapBufferAllocator::Get(), 20);
+        BoundAnd(std::move(left), std::move(right), HeapBufferAllocator::Get(),
+                 20);
     CHECK(and_expression.is_success());
     return SucceedOrDie(and_expression);
   }
 
-  BoundExpression* GetIf(BoundExpression* left, BoundExpression* middle,
-                         BoundExpression* right) {
+  unique_ptr<BoundExpression> GetIf(
+      unique_ptr<BoundExpression> left, unique_ptr<BoundExpression> middle,
+      unique_ptr<BoundExpression> right) {
     FailureOrOwned<BoundExpression> if_expression =
-        BoundIf(left, middle,  right, HeapBufferAllocator::Get(), 20);
+        BoundIf(std::move(left), std::move(middle),  std::move(right),
+                HeapBufferAllocator::Get(), 20);
     CHECK(if_expression.is_success());
     return SucceedOrDie(if_expression);
   }
 
-  BoundExpression* GetNot(BoundExpression* arg) {
+  unique_ptr<BoundExpression> GetNot(unique_ptr<BoundExpression> arg) {
     FailureOrOwned<BoundExpression> not_expression =
-        BoundNot(arg, HeapBufferAllocator::Get(), 20);
+        BoundNot(std::move(arg), HeapBufferAllocator::Get(), 20);
     CHECK(not_expression.is_success());
     return SucceedOrDie(not_expression);
   }
 
-  void TestResolve(BoundExpression* expression_ptr, const string& description) {
-    std::unique_ptr<BoundExpression> expression(expression_ptr);
+  void TestResolve(unique_ptr<BoundExpression> expression, const string& description) {
     EXPECT_EQ(description,
               expression->result_schema().GetHumanReadableSpecification());
   }
 
   void TestreferredAttributeNames(
-      BoundExpression* expression_ptr,
+      unique_ptr<BoundExpression> expression,
       const set<string>& exprected_referred_attribute_names) {
-    std::unique_ptr<BoundExpression> expression(expression_ptr);
     EXPECT_EQ(exprected_referred_attribute_names,
               expression->referred_attribute_names());
   }
@@ -162,7 +170,7 @@ TEST_F(BasicBoundExpressionTest, ResolvingFailureDoesNotCrash) {
   ASSERT_TRUE(zero.is_success());
 
   FailureOrOwned<BoundExpression> modulus =
-      BoundModulusSignaling(one.release(), zero.release(),
+      BoundModulusSignaling(one.move(), zero.move(),
                             HeapBufferAllocator::Get(), 10);
   EXPECT_TRUE(modulus.is_failure());
 }
@@ -209,7 +217,7 @@ TEST_F(BasicBoundExpressionTest, GetConstantBoundExpressionValueNotNull) {
   EXPECT_TRUE(result.get());
   EXPECT_FALSE(is_null);
 
-  expression.reset(GetFalse());
+  expression = GetFalse();
   result = GetConstantBoundExpressionValue<BOOL>(expression.get(), &is_null);
   EXPECT_TRUE(result.is_success());
   EXPECT_FALSE(result.get());
@@ -240,7 +248,7 @@ TEST_F(BasicBoundExpressionTest, GetConstantExpressionValueNotNull) {
   EXPECT_TRUE(result.get());
   EXPECT_FALSE(is_null);
 
-  expression.reset(ConstBool(false));
+  expression = ConstBool(false);
   result = GetConstantExpressionValue<BOOL>(*expression, &is_null);
   EXPECT_TRUE(result.is_success());
   EXPECT_FALSE(result.get());

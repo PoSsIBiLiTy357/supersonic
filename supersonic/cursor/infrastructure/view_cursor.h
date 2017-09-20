@@ -17,6 +17,8 @@
 #ifndef SUPERSONIC_CURSOR_INFRASTRUCTURE_VIEW_CURSOR_H_
 #define SUPERSONIC_CURSOR_INFRASTRUCTURE_VIEW_CURSOR_H_
 
+#include <memory>
+
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/types.h"
 
@@ -28,7 +30,7 @@ class View;
 
 // Creates a cursor that iterates over a specified view. The view must outlive
 // the cursor.
-Cursor* CreateCursorOverView(const View& view);
+std::unique_ptr<Cursor> CreateCursorOverView(const View& view);
 
 // Creates a cursor that iterates over a specified view, using the supplied
 // selection vector for indirection. The view must outlive the cursor.

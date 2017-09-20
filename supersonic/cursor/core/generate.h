@@ -22,6 +22,7 @@
 
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/types.h"
+#include "supersonic/utils/std_namespace.h"
 
 namespace supersonic {
 
@@ -29,7 +30,7 @@ namespace supersonic {
 class Cursor;
 class Operation;
 
-Operation* Generate(rowcount_t count);
+unique_ptr<Operation> Generate(rowcount_t count);
 
 // Returns an cursor over 'count' rows with an empty schema.
 FailureOrOwned<Cursor> BoundGenerate(rowcount_t count);

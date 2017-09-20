@@ -23,6 +23,8 @@
 #ifndef SUPERSONIC_EXPRESSION_CORE_STATEFUL_EXPRESSIONS_H_
 #define SUPERSONIC_EXPRESSION_CORE_STATEFUL_EXPRESSIONS_H_
 
+#include "supersonic/utils/std_namespace.h"
+
 namespace supersonic {
 
 class Expression;
@@ -36,20 +38,20 @@ class Expression;
 // using this for nullable input, contact the Supersonic team with your
 // proposition of semantics. For now, this will fail (binding time) if argument
 // is nullable.
-const Expression* Changed(const Expression* const argument);
+unique_ptr<const Expression> Changed(unique_ptr<const Expression> argument);
 
 // The argument is a numeric expression. The output is the sum of all the
 // argument values so far. If the argument is NULL, it is ignored (treated as
 // zero), except for the case where there were no non-null values yet, in which
 // case the output is NULL.
-const Expression* RunningSum(const Expression* const argument);
+unique_ptr<const Expression> RunningSum(unique_ptr<const Expression> argument);
 
 // The argument is any expression. If the argument is not null, the output is
 // equal to the argument, if the argument is null, then the output is equal to
 // the last non-null argument. If no non-null argument appeared yet, the output
 // is NULL.
 // Note that this is a running aggregation, where the aggregation used is Last.
-const Expression* Smudge(const Expression* const argument);
+unique_ptr<const Expression> Smudge(unique_ptr<const Expression> argument);
 
 // Takes an integer expression and a boolean expression and returns the minimum
 // value observed from the integer expression since the last true value seen
@@ -58,16 +60,17 @@ const Expression* Smudge(const Expression* const argument);
 // null input values will be ignored once a non-null input is received. The
 // boolean expression may not be nullable. If it is, the expression will fail at
 // binding time.
-const Expression* RunningMinWithFlush(const Expression* const flush,
-                                      const Expression* const input);
+unique_ptr<const Expression> RunningMinWithFlush(
+    unique_ptr<const Expression> flush, unique_ptr<const Expression> input);
 
 // Takes an argument and a condition. The condition must be a non-nullable
 // boolean expression while the argument is an arbitrary one-column
 // expression. If the condition is false, or if it is the first row of argument,
 // the output is equal to the argument. Otherwise, the output is equal to the
 // previous output.
-const Expression* SmudgeIf(const Expression* const argument,
-                           const Expression* const condition);
+unique_ptr<const Expression> SmudgeIf(
+    unique_ptr<const Expression> argument,
+    unique_ptr<const Expression> condition);
 
 }  // namespace supersonic
 

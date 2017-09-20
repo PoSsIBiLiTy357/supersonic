@@ -51,42 +51,37 @@ class RowHashSetTest : public testing::Test {
         Attribute("c2", STRING, NULLABLE));
 
     row_hash_set_ = make_unique<RowHashSet>(row_hash_set_block_schema_,
-        HeapBufferAllocator::Get());
+                                            HeapBufferAllocator::Get());
     row_multi_set_ = make_unique<RowHashMultiSet>(row_hash_set_block_schema_,
-        HeapBufferAllocator::Get());
+                                                  HeapBufferAllocator::Get());
     row_hash_set_result_ = make_unique<FindResult>(10000);
     row_multi_set_result_ = make_unique<FindMultiResult>(10000);
 
-    query_1_.reset(
-        BlockBuilder<INT64, STRING>()
+    query_1_ = BlockBuilder<INT64, STRING>()
         .AddRow(1, "one")
-        .Build());
+        .Build();
 
-    query_11_.reset(
-        BlockBuilder<INT64, STRING>()
+    query_11_ = BlockBuilder<INT64, STRING>()
         .AddRow(1, "one")
         .AddRow(1, "one")
-        .Build());
+        .Build();
 
-    query_1122_.reset(
-        BlockBuilder<INT64, STRING>()
+    query_1122_ = BlockBuilder<INT64, STRING>()
         .AddRow(1, "one")
         .AddRow(1, "one")
         .AddRow(2, "two")
         .AddRow(2, "two")
-        .Build());
+        .Build();
 
-    query_24680_.reset(
-        BlockBuilder<INT64, STRING>()
+    query_24680_ = BlockBuilder<INT64, STRING>()
         .AddRow(2, "two")
         .AddRow(4, "four")
         .AddRow(6, "six")
         .AddRow(8, "eight")
         .AddRow(0, "zero")
-        .Build());
+        .Build();
 
-    query_1234567890_.reset(
-        BlockBuilder<INT64, STRING>()
+    query_1234567890_ = BlockBuilder<INT64, STRING>()
         .AddRow(1, "one")
         .AddRow(2, "two")
         .AddRow(3, "three")
@@ -97,29 +92,28 @@ class RowHashSetTest : public testing::Test {
         .AddRow(8, "eight")
         .AddRow(9, "nine")
         .AddRow(0, "zero")
-        .Build());
+        .Build();
 
-    query_1oNoNo1N1N_.reset(
-        BlockBuilder<INT64, STRING>()
+    query_1oNoNo1N1N_ = BlockBuilder<INT64, STRING>()
         .AddRow(1, "one")
         .AddRow(__, "one")
         .AddRow(__, "one")
         .AddRow(1, __)
         .AddRow(1, __)
-        .Build());
+        .Build();
 
-    query_1o2o1t2t_.reset(
-        BlockBuilder<INT64, STRING>()
+    query_1o2o1t2t_ = BlockBuilder<INT64, STRING>()
         .AddRow(1, "one")
         .AddRow(2, "one")
         .AddRow(1, "two")
         .AddRow(2, "two")
-        .Build());
+        .Build();
 
     BlockBuilder<INT64, STRING> query_1k_rows_builder;
-    for (size_t i = 0; i < 1000; i++)
+    for (size_t i = 0; i < 1000; i++) {
       query_1k_rows_builder.AddRow(i % 2, SimpleItoa(i % 2));
-    query_1k_rows_.reset(query_1k_rows_builder.Build());
+    }
+    query_1k_rows_ = query_1k_rows_builder.Build();
   }
 
   static bool RowIdSetHasElements(
@@ -328,13 +322,18 @@ TEST_F(RowHashSetTest,
 
 TEST_F(RowHashSetTest,
        RowHashSetWithKeySelectorInsertPartiallyUnequalRows) {
-  const BoundSingleSourceProjector* key_selector =
+  auto key_selector =
       SucceedOrDie(CompoundSingleSourceProjector()
                    .add(ProjectAttributeAt(1))
                    ->Bind(row_hash_set_block_schema_));
+
+  View query_oott(TupleSchema::Singleton("c1", STRING, NOT_NULLABLE));
+  key_selector->Project(query_1o2o1t2t(), &query_oott);
+  query_oott.set_row_count(query_1o2o1t2t().row_count());
+
   RowHashSet row_hash_set(row_hash_set_block_schema_,
                           HeapBufferAllocator::Get(),
-                          key_selector);
+                          std::move(key_selector));
   EXPECT_TRUE(
       row_hash_set.Insert(query_1o2o1t2t(), row_hash_set_result_.get()));
   EXPECT_EQ(0, row_hash_set_result_->Result(0));
@@ -346,9 +345,6 @@ TEST_F(RowHashSetTest,
   EXPECT_EQ(Row(query_1o2o1t2t(), 0), Row(row_hash_set.indexed_view(), 0));
   EXPECT_EQ(Row(query_1o2o1t2t(), 2), Row(row_hash_set.indexed_view(), 1));
 
-  View query_oott(TupleSchema::Singleton("c1", STRING, NOT_NULLABLE));
-  key_selector->Project(query_1o2o1t2t(), &query_oott);
-  query_oott.set_row_count(query_1o2o1t2t().row_count());
   row_hash_set.Find(query_oott, row_hash_set_result_.get());
   EXPECT_EQ(0, row_hash_set_result_->Result(0));
   EXPECT_EQ(0, row_hash_set_result_->Result(1));

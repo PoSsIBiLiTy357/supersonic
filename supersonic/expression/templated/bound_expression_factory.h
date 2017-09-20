@@ -52,7 +52,7 @@ namespace supersonic {
 // - DATE can be converted to DATETIME.
 class BufferAllocator;
 
-FailureOrOwned<BoundExpression> ResolveTypePromotion(BoundExpression* child,
+FailureOrOwned<BoundExpression> ResolveTypePromotion(unique_ptr<BoundExpression> child,
                                                      DataType result_type,
                                                      BufferAllocator* allocator,
                                                      rowcount_t row_capacity,
@@ -72,13 +72,13 @@ FailureOr<DataType> CalculateCommonExpressionType(BoundExpression* left,
 template<OperatorId op, DataType from_type, DataType to_type>
 FailureOrOwned<BoundExpression> CreateTypedBoundUnaryExpression(
     BufferAllocator* const allocator, rowcount_t row_capacity,
-    BoundExpression* child) {
+    unique_ptr<BoundExpression> child) {
   CHECK_EQ(1, child->result_schema().attribute_count());
   const bool promote = UnaryExpressionTraits<op>::supports_promotions;
   FailureOrOwned<BoundExpression> promoted = ResolveTypePromotion(
-      child, from_type, allocator, row_capacity, promote);
+      std::move(child), from_type, allocator, row_capacity, promote);
   if (promoted.is_failure()) return promoted;
-  return AbstractBoundUnary<op, from_type, to_type>(promoted.release(),
+  return AbstractBoundUnary<op, from_type, to_type>(promoted.move(),
                                                     allocator,
                                                     row_capacity);
 }
@@ -87,7 +87,7 @@ struct UnaryExpressionFactory {
  public:
   virtual FailureOrOwned<BoundExpression> create_expression(
       BufferAllocator* const allocator, rowcount_t row_capacity,
-      BoundExpression* child) = 0;
+      unique_ptr<BoundExpression> child) = 0;
 
   virtual ~UnaryExpressionFactory() {}
 };
@@ -111,9 +111,9 @@ struct SpecializedUnaryFactory : public UnaryExpressionFactory {
  public:
   virtual FailureOrOwned<BoundExpression> create_expression(
       BufferAllocator* const allocator,
-      rowcount_t row_capacity, BoundExpression* child) {
+      rowcount_t row_capacity, unique_ptr<BoundExpression> child) {
     return CreateTypedBoundUnaryExpression<op, from_type, to_type>(
-       allocator, row_capacity, child);
+       allocator, row_capacity, std::move(child));
   }
 };
 
@@ -251,7 +251,7 @@ FailureOrOwned<BoundExpression> RunUnaryFactory(
     UnaryExpressionFactory* factory_ptr,
     BufferAllocator* const allocator,
     rowcount_t row_capacity,
-    BoundExpression* child_ptr,
+    unique_ptr<BoundExpression> child_ptr,
     const string& operation_name);
 
 // Takes ownership of the child and passes it along to RunUnaryFactory.
@@ -261,14 +261,14 @@ FailureOrOwned<BoundExpression> RunUnaryFactory(
 template<OperatorId op>
 FailureOrOwned<BoundExpression> CreateUnarySignedNumericExpression(
     BufferAllocator* const allocator,
-    rowcount_t row_capacity, BoundExpression* child_ptr) {
+    rowcount_t row_capacity, unique_ptr<BoundExpression> child) {
   UnaryExpressionFactory* factory =
-      CreateSignedTypeUnaryFactory<op>(GetExpressionType(child_ptr));
+      CreateSignedTypeUnaryFactory<op>(GetExpressionType(child.get()));
   // TODO(onufry): Whenever BoundExpression will support a ToString function,
   // it will be better to pass something like
   // UnaryExpressionTratis<op>::FormatDescription(child_ptr->ToString(verbose))
   // instead of simply name (in this and other similar functions).
-  return RunUnaryFactory(factory, allocator, row_capacity, child_ptr,
+  return RunUnaryFactory(factory, allocator, row_capacity, std::move(child),
                          UnaryExpressionTraits<op>::name());
 }
 
@@ -277,10 +277,10 @@ FailureOrOwned<BoundExpression> CreateUnarySignedNumericExpression(
 template<OperatorId op, DataType to_type>
 FailureOrOwned<BoundExpression> CreateUnaryIntegerInputExpression(
     BufferAllocator* const allocator,
-    rowcount_t row_capacity, BoundExpression* child_ptr) {
+    rowcount_t row_capacity, unique_ptr<BoundExpression> child) {
   UnaryExpressionFactory* factory =
-      CreateIntegerInputUnaryFactory<op, to_type>(GetExpressionType(child_ptr));
-  return RunUnaryFactory(factory, allocator, row_capacity, child_ptr,
+      CreateIntegerInputUnaryFactory<op, to_type>(GetExpressionType(child.get()));
+  return RunUnaryFactory(factory, allocator, row_capacity, std::move(child),
                          UnaryExpressionTraits<op>::name());
 }
 
@@ -289,10 +289,10 @@ FailureOrOwned<BoundExpression> CreateUnaryIntegerInputExpression(
 template<OperatorId op>
 FailureOrOwned<BoundExpression> CreateUnaryNumericExpression(
     BufferAllocator* const allocator, rowcount_t row_capacity,
-    BoundExpression* child_ptr, DataType to_type) {
+    unique_ptr<BoundExpression> child, DataType to_type) {
   UnaryExpressionFactory* factory =
-      CreateNumericUnaryFactory<op>(GetExpressionType(child_ptr), to_type);
-  return RunUnaryFactory(factory, allocator, row_capacity, child_ptr,
+      CreateNumericUnaryFactory<op>(GetExpressionType(child.get()), to_type);
+  return RunUnaryFactory(factory, allocator, row_capacity, std::move(child),
                          UnaryExpressionTraits<op>::name());
 }
 
@@ -313,10 +313,10 @@ FailureOrOwned<BoundExpression> CreateUnaryNumericInputExpression(
 template<OperatorId op, DataType to_type>
 FailureOrOwned<BoundExpression> CreateUnaryArbitraryInputExpression(
     BufferAllocator* const allocator,
-    rowcount_t row_capacity, BoundExpression* child_ptr) {
+    rowcount_t row_capacity, unique_ptr<BoundExpression> child) {
   UnaryExpressionFactory* factory = CreateArbitraryInputUnaryFactory
-      <op, to_type>(GetExpressionType(child_ptr));
-  return RunUnaryFactory(factory, allocator, row_capacity, child_ptr,
+      <op, to_type>(GetExpressionType(child.get()));
+  return RunUnaryFactory(factory, allocator, row_capacity, std::move(child),
                          UnaryExpressionTraits<op>::name());
 }
 
@@ -327,10 +327,10 @@ template<OperatorId op>
 FailureOrOwned<BoundExpression> CreateUnaryFloatingExpression(
     BufferAllocator* const allocator,
     rowcount_t row_capacity,
-    BoundExpression* child_ptr) {
+    unique_ptr<BoundExpression> child) {
   UnaryExpressionFactory* factory = CreateFloatingUnaryFactory<op>(
-      GetExpressionType(child_ptr));
-  return RunUnaryFactory(factory, allocator, row_capacity, child_ptr,
+      GetExpressionType(child.get()));
+  return RunUnaryFactory(factory, allocator, row_capacity, std::move(child),
                          UnaryExpressionTraits<op>::name());
 }
 
@@ -340,10 +340,10 @@ FailureOrOwned<BoundExpression> CreateUnaryFloatingExpression(
 template<OperatorId op, DataType to_type>
 FailureOrOwned<BoundExpression> CreateUnaryFloatingInputExpression(
     BufferAllocator* const allocator,
-    rowcount_t row_capacity, BoundExpression* child_ptr) {
+    rowcount_t row_capacity, unique_ptr<BoundExpression> child) {
   UnaryExpressionFactory* factory = CreateFloatingInputUnaryFactory
-      <op, to_type>(GetExpressionType(child_ptr));
-  return RunUnaryFactory(factory, allocator, row_capacity, child_ptr,
+      <op, to_type>(GetExpressionType(child.get()));
+  return RunUnaryFactory(factory, allocator, row_capacity, std::move(child),
                          UnaryExpressionTraits<op>::name());
 }
 
@@ -353,10 +353,10 @@ FailureOrOwned<BoundExpression> CreateUnaryFloatingInputExpression(
 template<OperatorId op, DataType from_type>
 FailureOrOwned<BoundExpression> CreateUnaryArbitraryOutputExpression(
     BufferAllocator* const allocator,
-    rowcount_t row_capacity, BoundExpression* child_ptr, DataType to_type) {
+    rowcount_t row_capacity, unique_ptr<BoundExpression> child, DataType to_type) {
   UnaryExpressionFactory* factory = CreateArbitraryOutputUnaryFactory
       <op, from_type>(to_type);
-  return RunUnaryFactory(factory, allocator, row_capacity, child_ptr,
+  return RunUnaryFactory(factory, allocator, row_capacity, std::move(child),
                          UnaryExpressionTraits<op>::name());
 }
 
@@ -383,20 +383,18 @@ template<OperatorId op, DataType left_type, DataType right_type,
     DataType to_type>
 FailureOrOwned<BoundExpression> CreateTypedBoundBinaryExpression(
     BufferAllocator* const allocator, rowcount_t row_capacity,
-    BoundExpression* left_ptr, BoundExpression* right_ptr) {
-  std::unique_ptr<BoundExpression> left(left_ptr);
-  std::unique_ptr<BoundExpression> right(right_ptr);
+    unique_ptr<BoundExpression> left, unique_ptr<BoundExpression> right) {
   CHECK_EQ(1, left->result_schema().attribute_count());
   CHECK_EQ(1, right->result_schema().attribute_count());
   bool promote = BinaryExpressionTraits<op>::supports_promotions;
   FailureOrOwned<BoundExpression> left_promoted = ResolveTypePromotion(
-      left.release(), left_type, allocator, row_capacity, promote);
+      std::move(left), left_type, allocator, row_capacity, promote);
   PROPAGATE_ON_FAILURE(left_promoted);
   FailureOrOwned<BoundExpression> right_promoted = ResolveTypePromotion(
-      right.release(), right_type, allocator, row_capacity, promote);
+      std::move(right), right_type, allocator, row_capacity, promote);
   PROPAGATE_ON_FAILURE(right_promoted);
   return CreateAbstractBoundBinaryExpression<op, left_type, right_type,
-      to_type>(left_promoted.release(),  right_promoted.release(),
+      to_type>(left_promoted.move(), right_promoted.move(),
                allocator, row_capacity);
 }
 
@@ -405,7 +403,7 @@ class BinaryExpressionFactory {
  public:
   virtual FailureOrOwned<BoundExpression> create_expression(
       BufferAllocator* const allocator, rowcount_t row_capacity,
-      BoundExpression* left, BoundExpression* right) = 0;
+      unique_ptr<BoundExpression> left, unique_ptr<BoundExpression> right) = 0;
 
   virtual ~BinaryExpressionFactory() {}
 };
@@ -416,9 +414,9 @@ class SpecializedBinaryFactory : public BinaryExpressionFactory {
  public:
   virtual FailureOrOwned<BoundExpression> create_expression(
       BufferAllocator* const allocator, rowcount_t row_capacity,
-      BoundExpression* left, BoundExpression* right) {
+      unique_ptr<BoundExpression> left, unique_ptr<BoundExpression> right) {
     return CreateTypedBoundBinaryExpression<op, left_type, right_type, to_type>(
-       allocator, row_capacity, left, right);
+       allocator, row_capacity, std::move(left), std::move(right));
   }
 };
 
@@ -475,8 +473,8 @@ FailureOrOwned<BoundExpression> RunBinaryFactory(
     BinaryExpressionFactory* factory_ptr,
     BufferAllocator* const allocator,
     rowcount_t row_capacity,
-    BoundExpression* left_ptr,
-    BoundExpression* right_ptr,
+    unique_ptr<BoundExpression> left_ptr,
+    unique_ptr<BoundExpression> right_ptr,
     const string& operation_name);
 
 
@@ -495,8 +493,8 @@ FailureOrOwned<BoundExpression> CreateBinaryEqualTypesExpression(
       common_type.get());
   // TODO(onufry): it would be better to pass a FormatDescription instead of
   // name once BoundExpressions support ToString.
-  return RunBinaryFactory(factory, allocator, row_capacity, left.release(),
-                          right.release(), BinaryExpressionTraits<op>::name());
+  return RunBinaryFactory(factory, allocator, row_capacity, std::move(left),
+                          std::move(right), BinaryExpressionTraits<op>::name());
 }
 
 // Standard numeric expression - the inputs are numeric and the output is the
@@ -504,16 +502,14 @@ FailureOrOwned<BoundExpression> CreateBinaryEqualTypesExpression(
 template<OperatorId op>
 FailureOrOwned<BoundExpression> CreateBinaryNumericExpression(
     BufferAllocator* const allocator, rowcount_t row_capacity,
-    BoundExpression* left_ptr, BoundExpression* right_ptr) {
-  std::unique_ptr<BoundExpression> left(left_ptr);
-  std::unique_ptr<BoundExpression> right(right_ptr);
+    unique_ptr<BoundExpression> left, unique_ptr<BoundExpression> right) {
   FailureOr<DataType> common_type = CalculateCommonExpressionType(left.get(),
                                                                   right.get());
   PROPAGATE_ON_FAILURE(common_type);
   BinaryExpressionFactory* factory =
       CreateThreeEqualNumericTypesBinaryFactory<op>(common_type.get());
-  return RunBinaryFactory(factory, allocator, row_capacity, left.release(),
-                          right.release(), BinaryExpressionTraits<op>::name());
+  return RunBinaryFactory(factory, allocator, row_capacity, std::move(left),
+                          std::move(right), BinaryExpressionTraits<op>::name());
 }
 
 // Standard integer exprsesion - the inputs are integer, the output - their
@@ -521,16 +517,14 @@ FailureOrOwned<BoundExpression> CreateBinaryNumericExpression(
 template<OperatorId op>
 FailureOrOwned<BoundExpression> CreateBinaryIntegerExpression(
     BufferAllocator* const allocator, rowcount_t row_capacity,
-    BoundExpression* left_ptr, BoundExpression* right_ptr) {
-  std::unique_ptr<BoundExpression> left(left_ptr);
-  std::unique_ptr<BoundExpression> right(right_ptr);
+    unique_ptr<BoundExpression> left, unique_ptr<BoundExpression> right) {
   FailureOr<DataType> common_type = CalculateCommonExpressionType(left.get(),
                                                                   right.get());
   PROPAGATE_ON_FAILURE(common_type);
   BinaryExpressionFactory* factory =
       CreateThreeEqualIntegerTypesBinaryFactory<op>(common_type.get());
-  return RunBinaryFactory(factory, allocator, row_capacity, left.release(),
-                          right.release(), BinaryExpressionTraits<op>::name());
+  return RunBinaryFactory(factory, allocator, row_capacity, std::move(left),
+                          std::move(right), BinaryExpressionTraits<op>::name());
 }
 
 // ----------------------- Ternary factories --------------------------------
@@ -545,29 +539,26 @@ template<OperatorId op, DataType left_type, DataType middle_type,
 FailureOrOwned<BoundExpression> CreateTypedBoundTernaryExpression(
     BufferAllocator* const allocator,
     rowcount_t row_capacity,
-    BoundExpression* left_ptr,
-    BoundExpression* middle_ptr,
-    BoundExpression* right_ptr) {
-  std::unique_ptr<BoundExpression> left(left_ptr);
-  std::unique_ptr<BoundExpression> middle(middle_ptr);
-  std::unique_ptr<BoundExpression> right(right_ptr);
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> middle,
+    unique_ptr<BoundExpression> right) {
   CHECK_EQ(1, left->result_schema().attribute_count());
   CHECK_EQ(1, middle->result_schema().attribute_count());
   CHECK_EQ(1, right->result_schema().attribute_count());
   bool promote = TernaryExpressionTraits<op>::supports_promotions;
   FailureOrOwned<BoundExpression> left_promoted = ResolveTypePromotion(
-      left.release(), left_type, allocator, row_capacity, promote);
+      std::move(left), left_type, allocator, row_capacity, promote);
   PROPAGATE_ON_FAILURE(left_promoted);
   FailureOrOwned<BoundExpression> middle_promoted = ResolveTypePromotion(
-      middle.release(), middle_type, allocator, row_capacity, promote);
+      std::move(middle), middle_type, allocator, row_capacity, promote);
   PROPAGATE_ON_FAILURE(middle_promoted);
   FailureOrOwned<BoundExpression> right_promoted = ResolveTypePromotion(
-      right.release(), right_type, allocator, row_capacity, promote);
+      std::move(right), right_type, allocator, row_capacity, promote);
   PROPAGATE_ON_FAILURE(right_promoted);
   return CreateAbstractBoundTernaryExpression<op, left_type, middle_type,
-         right_type, to_type>(left_promoted.release(),
-                              middle_promoted.release(),
-                              right_promoted.release(),
+         right_type, to_type>(left_promoted.move(),
+                              middle_promoted.move(),
+                              right_promoted.move(),
                               allocator,
                               row_capacity);
 }

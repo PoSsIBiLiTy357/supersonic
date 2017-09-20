@@ -13,16 +13,17 @@
 // limitations under the License.
 //
 
-#include "supersonic/expression/infrastructure/basic_expressions.h"
 
 #include <string>
-namespace supersonic {using std::string; }
+
+#include "supersonic/utils/std_namespace.h"
 
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
 #include "supersonic/expression/infrastructure/bound_expression_creators.h"
 #include "supersonic/expression/infrastructure/expression_utils.h"
 #include "supersonic/utils/strings/substitute.h"
+#include "supersonic/expression/infrastructure/basic_expressions.h"
 
 namespace supersonic {
 
@@ -34,10 +35,10 @@ namespace {
 class DelegatingUnaryExpression : public UnaryExpression {
  public:
   DelegatingUnaryExpression(
-      const Expression* const child,
+      unique_ptr<const Expression> child,
       const BoundUnaryExpressionFactory bound_expression_factory,
       const string& description_pattern)
-      : UnaryExpression(child),
+      : UnaryExpression(std::move(child)),
         bound_expression_factory_(bound_expression_factory),
         description_pattern_(description_pattern) {}
 
@@ -53,8 +54,8 @@ class DelegatingUnaryExpression : public UnaryExpression {
       const TupleSchema& input_schema,
       BufferAllocator* const allocator,
       rowcount_t row_capacity,
-      BoundExpression* child) const {
-    return bound_expression_factory_(child, allocator, row_capacity);
+      unique_ptr<BoundExpression> child) const {
+    return bound_expression_factory_(std::move(child), allocator, row_capacity);
   }
 
   const BoundUnaryExpressionFactory bound_expression_factory_;
@@ -66,11 +67,11 @@ class DelegatingUnaryExpression : public UnaryExpression {
 class DelegatingBinaryExpression : public BinaryExpression {
  public:
   DelegatingBinaryExpression(
-      const Expression* const left,
-      const Expression* const right,
+      unique_ptr<const Expression> left,
+      unique_ptr<const Expression> right,
       const BoundBinaryExpressionFactory bound_expression_factory,
       const string& description_pattern)
-      : BinaryExpression(left, right),
+      : BinaryExpression(std::move(left), std::move(right)),
         bound_expression_factory_(bound_expression_factory),
         description_pattern_(description_pattern) {}
 
@@ -87,9 +88,9 @@ class DelegatingBinaryExpression : public BinaryExpression {
       const TupleSchema& input_schema,
       BufferAllocator* const allocator,
       rowcount_t row_capacity,
-      BoundExpression* left,
-      BoundExpression* right) const {
-    return bound_expression_factory_(left, right, allocator, row_capacity);
+      unique_ptr<BoundExpression> left,
+      unique_ptr<BoundExpression> right) const {
+    return bound_expression_factory_(std::move(left), std::move(right), allocator, row_capacity);
   }
 
   const BoundBinaryExpressionFactory bound_expression_factory_;
@@ -100,12 +101,12 @@ class DelegatingBinaryExpression : public BinaryExpression {
 class DelegatingTernaryExpression : public TernaryExpression {
  public:
   DelegatingTernaryExpression(
-      const Expression* const left,
-      const Expression* const middle,
-      const Expression* const right,
+      unique_ptr<const Expression> left,
+      unique_ptr<const Expression> middle,
+      unique_ptr<const Expression> right,
       const BoundTernaryExpressionFactory bound_expression_factory,
       const string& description_pattern)
-      : TernaryExpression(left, middle, right),
+      : TernaryExpression(std::move(left), std::move(middle), std::move(right)),
         bound_expression_factory_(bound_expression_factory),
         description_pattern_(description_pattern) {}
 
@@ -123,10 +124,10 @@ class DelegatingTernaryExpression : public TernaryExpression {
       const TupleSchema& input_schema,
       BufferAllocator* const allocator,
       rowcount_t row_capacity,
-      BoundExpression* left,
-      BoundExpression* middle,
-      BoundExpression* right) const {
-    return bound_expression_factory_(left, middle, right, allocator,
+      unique_ptr<BoundExpression> left,
+      unique_ptr<BoundExpression> middle,
+      unique_ptr<BoundExpression> right) const {
+    return bound_expression_factory_(std::move(left), std::move(middle), std::move(right), allocator,
                                      row_capacity);
   }
 
@@ -151,7 +152,7 @@ FailureOrOwned<BoundExpression> UnaryExpression::DoBind(
       "An operand of unary expression",
       bound_child->result_schema(), 1));
   return CreateBoundUnaryExpression(
-      input_schema, allocator, max_row_count, bound_child.release());
+      input_schema, allocator, max_row_count, bound_child.move());
 }
 
 FailureOrOwned<BoundExpression> BinaryExpression::DoBind(
@@ -172,7 +173,7 @@ FailureOrOwned<BoundExpression> BinaryExpression::DoBind(
       bound_right->result_schema(), 1));
   return CreateBoundBinaryExpression(
       input_schema, allocator, max_row_count,
-      bound_left.release(), bound_right.release());
+      bound_left.move(), bound_right.move());
 }
 
 FailureOrOwned<BoundExpression> TernaryExpression::DoBind(
@@ -198,36 +199,36 @@ FailureOrOwned<BoundExpression> TernaryExpression::DoBind(
       "A right operand of a ternary expression",
       bound_right->result_schema(), 1));
   return CreateBoundTernaryExpression(
-      input_schema, allocator, max_row_count, bound_left.release(),
-      bound_middle.release(), bound_right.release());
+      input_schema, allocator, max_row_count, bound_left.move(),
+      bound_middle.move(), bound_right.move());
 }
 
-Expression* CreateExpressionForExistingBoundFactory(
-    const Expression* const child,
+unique_ptr<const Expression> CreateExpressionForExistingBoundFactory(
+    unique_ptr<const Expression> child,
     const BoundUnaryExpressionFactory bound_expression_factory,
-    const string& description_pattern) {
-  return new DelegatingUnaryExpression(child, bound_expression_factory,
-                                       description_pattern);
+    const string &description_pattern) {
+  return make_unique<DelegatingUnaryExpression>(
+      std::move(child), bound_expression_factory, description_pattern);
 }
 
-Expression* CreateExpressionForExistingBoundFactory(
-    const Expression* const left,
-    const Expression* const right,
+unique_ptr<const Expression> CreateExpressionForExistingBoundFactory(
+    unique_ptr<const Expression> left, unique_ptr<const Expression> right,
     const BoundBinaryExpressionFactory bound_expression_factory,
-    const string& description_pattern) {
-  return new DelegatingBinaryExpression(left, right, bound_expression_factory,
-                                        description_pattern);
+    const string &description_pattern) {
+  return make_unique<DelegatingBinaryExpression>(
+      std::move(left), std::move(right), bound_expression_factory,
+      description_pattern);
 }
 
-Expression* CreateExpressionForExistingBoundFactory(
-    const Expression* const left,
-    const Expression* const middle,
-    const Expression* const right,
+unique_ptr<const Expression> CreateExpressionForExistingBoundFactory(
+    unique_ptr<const Expression> left,
+    unique_ptr<const Expression> middle,
+    unique_ptr<const Expression> right,
     const BoundTernaryExpressionFactory bound_expression_factory,
-    const string& description_pattern) {
-  return new DelegatingTernaryExpression(left, middle, right,
-                                         bound_expression_factory,
-                                         description_pattern);
+    const string &description_pattern) {
+  return make_unique<DelegatingTernaryExpression>(
+      std::move(left), std::move(middle), std::move(right),
+      bound_expression_factory, description_pattern);
 }
 
 }  // namespace supersonic

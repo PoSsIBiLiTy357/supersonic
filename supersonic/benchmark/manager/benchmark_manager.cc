@@ -18,8 +18,6 @@
 
 #include "supersonic/benchmark/manager/benchmark_manager.h"
 
-#include <memory>
-
 #include "supersonic/benchmark/infrastructure/benchmark_listener.h"
 #include "supersonic/benchmark/infrastructure/cursor_statistics.h"
 #include "supersonic/benchmark/infrastructure/node.h"
@@ -34,17 +32,16 @@ namespace {
 // Creates a DOT output writer depending on the visualisation options.
 // The output string will be used by the writer to store the outcome of
 // the operation. The caller takes ownership of the writer.
-DOTOutputWriter* CreateWriter(GraphVisualisationOptions options,
-                              string* output) {
-  std::unique_ptr<DOTOutputWriter> writer;
+unique_ptr<DOTOutputWriter> CreateWriter(
+    GraphVisualisationOptions options, string* output) {
   switch (options.destination) {
     case DOT_FILE:
-      writer.reset(CreateFileOutputWriter(options.file_name));
-      break;
+      return CreateFileOutputWriter(options.file_name);
     case DOT_STRING:
-      writer.reset(CreateStringOutputWriter(output));
+      return CreateStringOutputWriter(output);
+    default:
+      return nullptr;
   }
-  return writer.release();
 }
 
 // Gathers node's data and creates the result graph using drawer. Does not take
@@ -56,15 +53,14 @@ inline void GatherDataAndDraw(BenchmarkTreeNode* node, DOTDrawer* drawer) {
 
 }  // namespace
 
-BenchmarkDataWrapper* SetUpBenchmarkForCursor(Cursor* cursor) {
-  std::unique_ptr<BenchmarkTreeBuilder> tree_builder(
-      new BenchmarkTreeBuilder());
-  std::unique_ptr<BenchmarkResult> result(tree_builder->CreateTree(cursor));
+unique_ptr<BenchmarkDataWrapper> SetUpBenchmarkForCursor(unique_ptr<Cursor> cursor) {
+  auto tree_builder = make_unique<BenchmarkTreeBuilder>();
+  auto result = tree_builder->CreateTree(std::move(cursor));
 
-  return new BenchmarkDataWrapper(
-      result->release_cursor(),
-      tree_builder.release(),
-      result->release_node());
+  return make_unique<BenchmarkDataWrapper>(
+      result->move_cursor(),
+      std::move(tree_builder),
+      result->move_node());
 }
 
 string CreateGraph(
@@ -73,8 +69,8 @@ string CreateGraph(
     GraphVisualisationOptions options) {
   string graph_result;
 
-  std::unique_ptr<DOTDrawer> drawer(
-      new DOTDrawer(CreateWriter(options, &graph_result), benchmark_name));
+  auto drawer = make_unique<DOTDrawer>(
+    CreateWriter(options, &graph_result), benchmark_name);
 
   GatherDataAndDraw(node, drawer.get());
   return graph_result;
@@ -82,13 +78,12 @@ string CreateGraph(
 
 string PerformBenchmark(
     const string& benchmark_name,
-    Cursor* cursor,
+    unique_ptr<Cursor> cursor,
     rowcount_t max_block_size,
     GraphVisualisationOptions options) {
-  std::unique_ptr<BenchmarkDataWrapper> data_wrapper(
-      SetUpBenchmarkForCursor(cursor));
+  auto data_wrapper = SetUpBenchmarkForCursor(std::move(cursor));
 
-  std::unique_ptr<Cursor> spied_cursor(data_wrapper->release_cursor());
+  auto spied_cursor = data_wrapper->move_cursor();
 
   while (spied_cursor->Next(max_block_size).has_data()) {}
 

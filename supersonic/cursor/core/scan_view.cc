@@ -16,11 +16,7 @@
 
 #include "supersonic/cursor/core/scan_view.h"
 
-#include <cstddef>
-
-#include <string>
-namespace supersonic {using std::string; }
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/integral_types.h"
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
@@ -96,7 +92,7 @@ class ScanViewOperation : public BasicOperation {
 
 // The actual implementation of cursors over views is in
 // cursor/infrastructure/view_cursor.{cc,h}.
-Cursor* BoundScanView(const View& view) {
+unique_ptr<Cursor> BoundScanView(const View& view) {
   return CreateCursorOverView(view);
 }
 
@@ -110,17 +106,17 @@ FailureOrOwned<Cursor> BoundScanViewWithSelection(
       view, row_count, selection_vector, allocator, buffer_row_capacity);
 }
 
-Operation* ScanView(const View& view) {
-  return new ScanViewOperation(view, 0, NULL, 0);
+unique_ptr<Operation> ScanView(const View& view) {
+  return std::make_unique<ScanViewOperation>(view, 0, nullptr, 0);
 }
 
-Operation* ScanViewWithSelection(
+unique_ptr<Operation> ScanViewWithSelection(
     const View& view,
     const rowcount_t row_count,
     const rowid_t* selection_vector,
     rowcount_t buffer_row_capacity) {
   CHECK_NOTNULL(selection_vector);
-  return new ScanViewOperation(
+  return std::make_unique<ScanViewOperation>(
       view, row_count, selection_vector, buffer_row_capacity);
 }
 

@@ -14,23 +14,25 @@
 //
 // Author: onufry@google.com (Onufry Wojtaszczyk)
 
-#include "supersonic/expression/ext/hashing/hashing_expressions.h"
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/expression/ext/hashing/hashing_bound_expressions.h"
 #include "supersonic/expression/ext/hashing/hashing_evaluators.h"  // IWYU pragma: keep
 #include "supersonic/expression/infrastructure/basic_expressions.h"
+#include "supersonic/expression/ext/hashing/hashing_expressions.h"
 
 namespace supersonic {
 
 class Expression;
 
-const Expression* SupersonicFingerprint(const Expression* e) {
-  return CreateExpressionForExistingBoundFactory(e, &BoundFingerprint,
-                                                 "FINGERPRINT($0)");
+unique_ptr<const Expression> SupersonicFingerprint(unique_ptr<const Expression> e) {
+  return CreateExpressionForExistingBoundFactory(
+      std::move(e), &BoundFingerprint, "FINGERPRINT($0)");
 }
 
-const Expression* SupersonicHash(const Expression* e, const Expression* seed) {
-  return CreateExpressionForExistingBoundFactory(e, seed,
+unique_ptr<const Expression> SupersonicHash(unique_ptr<const Expression> e,
+                                            unique_ptr<const Expression> seed) {
+  return CreateExpressionForExistingBoundFactory(std::move(e), std::move(seed),
                                                  &BoundHash, "HASH($0, $1)");
 }
 

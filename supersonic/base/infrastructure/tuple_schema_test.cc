@@ -17,12 +17,10 @@ TEST(TupleSchemaTest, BigSchema) {
   for (int i = 0; i < kNumAttributes; ++i) {
     schema.add_attribute(Attribute(StrCat(i), INT32, NULLABLE));
   }
-  util::gtl::PointerVector<const BoundSingleSourceProjector> projectors;
+  vector<unique_ptr<const BoundSingleSourceProjector>> projectors;
   for (int i = 0; i < schema.attribute_count(); ++i) {
-    unique_ptr<const SingleSourceProjector> projector(CHECK_NOTNULL(
-        ProjectAttributeAt(i)));
-    projectors.push_back(common::SucceedOrDie(
-        projector->Bind(schema)));
+    auto projector(CHECK_NOTNULL(ProjectAttributeAt(i)));
+    projectors.emplace_back(common::SucceedOrDie(projector->Bind(schema)));
   }
 }
 

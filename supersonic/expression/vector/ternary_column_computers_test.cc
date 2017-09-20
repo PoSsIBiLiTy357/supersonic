@@ -178,7 +178,7 @@ class TernaryComputersTestBlockWrapper {
   OwnedColumn* output_column() { return block_->mutable_column(3); }
 
  private:
-  static Block* CreateBlock(size_t rows) {
+  static unique_ptr<Block> CreateBlock(size_t rows) {
     BlockBuilder<DOUBLE, DOUBLE, DOUBLE, DOUBLE, BOOL> builder;
     for (int i = 0; i < rows; ++i) {
       builder.AddRow(1., 1., 1., 1., __);

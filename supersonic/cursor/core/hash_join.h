@@ -45,11 +45,11 @@ class HashJoinOperation : public BasicOperation {
   // Takes ownership of all projectors.
   HashJoinOperation(
       JoinType join_type,
-      const SingleSourceProjector* lhs_key_selector,
-      const SingleSourceProjector* rhs_key_selector,
-      const MultiSourceProjector* result_projector,
+      unique_ptr<const SingleSourceProjector> lhs_key_selector,
+      unique_ptr<const SingleSourceProjector> rhs_key_selector,
+      unique_ptr<const MultiSourceProjector> result_projector,
       KeyUniqueness rhs_key_uniqueness,
-      Operation* lhs_child, Operation* rhs_child);
+      unique_ptr<Operation> lhs_child, unique_ptr<Operation> rhs_child);
 
   virtual FailureOrOwned<Cursor> CreateCursor() const;
 
@@ -57,8 +57,8 @@ class HashJoinOperation : public BasicOperation {
   template <KeyUniqueness rhs_key_uniqueness>
   FailureOrOwned<LookupIndexBuilder> CreateHashIndexMaterializer(
       JoinType join_type,
-      const BoundSingleSourceProjector* bound_rhs_key_selector,
-      Cursor* rhs_cursor) const;
+      unique_ptr<const BoundSingleSourceProjector> bound_rhs_key_selector,
+      unique_ptr<Cursor> rhs_cursor) const;
 
   const JoinType join_type_;
   std::unique_ptr<const SingleSourceProjector> lhs_key_selector_;

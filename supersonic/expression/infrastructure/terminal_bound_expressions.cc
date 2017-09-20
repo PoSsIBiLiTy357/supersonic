@@ -103,12 +103,12 @@ class BoundSequenceExpression : public BasicBoundNoArgumentExpression {
 
 class BoundRandInt32Expression : public BasicBoundNoArgumentExpression {
  public:
-  explicit BoundRandInt32Expression(RandomBase* random_generator,
+  explicit BoundRandInt32Expression(unique_ptr<RandomBase> random_generator,
                                     BufferAllocator* const allocator)
       : BasicBoundNoArgumentExpression(
             CreateSchema("RANDINT32", INT32, NOT_NULLABLE),
             allocator),
-        random_generator_(random_generator) {}
+        random_generator_(std::move(random_generator)) {}
 
   virtual EvaluationResult DoEvaluate(const View& input,
                                       const BoolView& skip_pointers) {
@@ -138,8 +138,8 @@ FailureOrOwned<BoundExpression> BoundNull(DataType type,
                                           rowcount_t max_row_count) {
   return InitBasicExpression(
       max_row_count,
-      new BoundNullExpression(TupleSchema::Singleton("NULL", type, NULLABLE),
-                              allocator),
+      make_unique<BoundNullExpression>(
+          TupleSchema::Singleton("NULL", type, NULLABLE), allocator),
       allocator);
 }
 
@@ -147,7 +147,7 @@ FailureOrOwned<BoundExpression> BoundSequence(BufferAllocator* allocator,
                                               rowcount_t max_row_count) {
   return InitBasicExpression(
       max_row_count,
-      new BoundSequenceExpression(
+      make_unique<BoundSequenceExpression>(
           TupleSchema::Singleton("SEQUENCE", INT64, NOT_NULLABLE), allocator),
       allocator);
 }
@@ -156,7 +156,7 @@ FailureOrOwned<BoundExpression> BoundConstInt32(const int32& value,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
-                             new BoundConstExpression<INT32>(allocator, value),
+                             make_unique<BoundConstExpression<INT32>>(allocator, value),
                              allocator);
 }
 
@@ -164,7 +164,7 @@ FailureOrOwned<BoundExpression> BoundConstInt64(const int64& value,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
-                             new BoundConstExpression<INT64>(allocator, value),
+                             make_unique<BoundConstExpression<INT64>>(allocator, value),
                              allocator);
 }
 
@@ -172,7 +172,7 @@ FailureOrOwned<BoundExpression> BoundConstUInt32(const uint32& value,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
-                             new BoundConstExpression<UINT32>(allocator, value),
+                             make_unique<BoundConstExpression<UINT32>>(allocator, value),
                              allocator);
 }
 
@@ -180,7 +180,7 @@ FailureOrOwned<BoundExpression> BoundConstUInt64(const uint64& value,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
-                             new BoundConstExpression<UINT64>(allocator, value),
+                             make_unique<BoundConstExpression<UINT64>>(allocator, value),
                              allocator);
 }
 
@@ -188,7 +188,7 @@ FailureOrOwned<BoundExpression> BoundConstFloat(const float& value,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
-                             new BoundConstExpression<FLOAT>(allocator, value),
+                             make_unique<BoundConstExpression<FLOAT>>(allocator, value),
                              allocator);
 }
 
@@ -196,7 +196,7 @@ FailureOrOwned<BoundExpression> BoundConstDouble(const double& value,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
-                             new BoundConstExpression<DOUBLE>(allocator, value),
+                             make_unique<BoundConstExpression<DOUBLE>>(allocator, value),
                              allocator);
 }
 
@@ -204,7 +204,7 @@ FailureOrOwned<BoundExpression> BoundConstBool(const bool& value,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
-                             new BoundConstExpression<BOOL>(allocator, value),
+                             make_unique<BoundConstExpression<BOOL>>(allocator, value),
                              allocator);
 }
 
@@ -212,7 +212,7 @@ FailureOrOwned<BoundExpression> BoundConstDate(const int32& value,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
-                             new BoundConstExpression<DATE>(allocator, value),
+                             make_unique<BoundConstExpression<DATE>>(allocator, value),
                              allocator);
 }
 
@@ -220,7 +220,7 @@ FailureOrOwned<BoundExpression> BoundConstDateTime(const int64& value,
                                                    BufferAllocator* allocator,
                                                    rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
-                             new BoundConstExpression<DATETIME>(allocator,
+                             make_unique<BoundConstExpression<DATETIME>>(allocator,
                                                                 value),
                              allocator);
 }
@@ -229,7 +229,7 @@ FailureOrOwned<BoundExpression> BoundConstString(const StringPiece& value,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
-                             new BoundConstExpression<STRING>(allocator, value),
+                             make_unique<BoundConstExpression<STRING>>(allocator, value),
                              allocator);
 }
 
@@ -237,7 +237,7 @@ FailureOrOwned<BoundExpression> BoundConstBinary(const StringPiece& value,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
-                             new BoundConstExpression<BINARY>(allocator, value),
+                             make_unique<BoundConstExpression<BINARY>>(allocator, value),
                              allocator);
 }
 
@@ -245,18 +245,18 @@ FailureOrOwned<BoundExpression> BoundConstDataType(const DataType& value,
                                                    BufferAllocator* allocator,
                                                    rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
-                             new BoundConstExpression<DATA_TYPE>(allocator,
+                             make_unique<BoundConstExpression<DATA_TYPE>>(allocator,
                                                                  value),
                              allocator);
 }
 
-FailureOrOwned<BoundExpression> BoundRandInt32(RandomBase* random_generator,
+FailureOrOwned<BoundExpression> BoundRandInt32(unique_ptr<RandomBase> random_generator,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
   return InitBasicExpression(
       max_row_count,
-      new BoundRandInt32Expression(
-          random_generator,
+      make_unique<BoundRandInt32Expression>(
+          std::move(random_generator),
           allocator),
       allocator);
 }

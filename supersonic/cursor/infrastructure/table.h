@@ -55,6 +55,8 @@ class Table : public BasicOperation {
   // ownership of the block.
   explicit Table(Block* block);
 
+  explicit Table(unique_ptr<Block> block);
+
   virtual ~Table();
 
   // Removes all data from this table. Does not decrease the capacity.
@@ -144,12 +146,11 @@ class Table : public BasicOperation {
   // NOTE: the number of rows in the block will be equal to row_capacity()
   // (not row_count()), so you may want to Compact() the table before calling
   // this method.
-  Block* extract_block() {
-    std::unique_ptr<Block> swapped(
-        new Block(block_->schema(), block_->allocator()));
+  unique_ptr<Block> move_block() {
+    auto swapped = make_unique<Block>(block_->schema(), block_->allocator());
     swapped.swap(block_);
     Clear();
-    return swapped.release();
+    return swapped;
   }
 
  private:
@@ -310,7 +311,7 @@ class TableSink : public Sink {
 
 // Convenience function to write a cursor into a table.
 FailureOrOwned<Table> MaterializeTable(BufferAllocator* allocator,
-                                       Cursor* cursor);
+                                       unique_ptr<Cursor> cursor);
 
 // Inline and template functions.
 

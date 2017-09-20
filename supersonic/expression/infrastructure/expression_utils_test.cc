@@ -45,38 +45,33 @@ class ExpressionUtilsTest : public ::testing::Test {
     return schema;
   }
 
-  BoundExpression* GetTrue() {
-    return SucceedOrDie(InitBasicExpression(10, new BoundConstExpression<BOOL>(
-        HeapBufferAllocator::Get(), true),
-        HeapBufferAllocator::Get()));
+  unique_ptr<BoundExpression> GetTrue() {
+    return SucceedOrDie(
+        InitBasicExpression(10,
+            make_unique<BoundConstExpression<BOOL>>(
+                HeapBufferAllocator::Get(), true),
+                HeapBufferAllocator::Get()));
   }
 
-  BoundExpression* GetFalse() {
-    return SucceedOrDie(InitBasicExpression(15, new BoundConstExpression<BOOL>(
-        HeapBufferAllocator::Get(), false),
-        HeapBufferAllocator::Get()));
+  unique_ptr<BoundExpression> GetFalse() {
+    return SucceedOrDie(
+        InitBasicExpression(10,
+            make_unique<BoundConstExpression<BOOL>>(
+                HeapBufferAllocator::Get(), false),
+                HeapBufferAllocator::Get()));
   }
 
-  BoundExpression* GetNull(DataType type) {
+  unique_ptr<BoundExpression> GetNull(DataType type) {
     return SucceedOrDie(BoundNull(type, HeapBufferAllocator::Get(), 5));
   }
 
-  BoundExpression* GetAnd(BoundExpression* left, BoundExpression* right) {
+  unique_ptr<BoundExpression> GetAnd(
+      unique_ptr<BoundExpression> left,
+      unique_ptr<BoundExpression> right) {
     FailureOrOwned<BoundExpression> and_expression =
-        BoundAnd(left, right, HeapBufferAllocator::Get(), 20);
+        BoundAnd(std::move(left), std::move(right), HeapBufferAllocator::Get(), 20);
     CHECK(and_expression.is_success());
-    return and_expression.release();
-  }
-
-  BoundExpressionList* BuildExpressionList(BoundExpression* expression1,
-                                           BoundExpression* expression2,
-                                           BoundExpression* expression3) {
-    std::unique_ptr<BoundExpressionList> scoped_expression_list(
-        new BoundExpressionList());
-    scoped_expression_list->add(expression1);
-    scoped_expression_list->add(expression2);
-    scoped_expression_list->add(expression3);
-    return scoped_expression_list.release();
+    return and_expression.move();
   }
 
   static const int kNumberOfTypes = 12;
@@ -154,14 +149,14 @@ TEST_F(ExpressionUtilsTest, GetExpressionNullability) {
 }
 
 TEST_F(ExpressionUtilsTest, GetExpressionListNullability) {
-  std::unique_ptr<BoundExpressionList> test_list(
-      BuildExpressionList(GetNull(BOOL), GetNull(BOOL), GetNull(BOOL)));
+  auto test_list = make_unique<BoundExpressionList>(
+      GetNull(BOOL), GetNull(BOOL), GetNull(BOOL));
   EXPECT_EQ(GetExpressionListNullability(test_list.get()), NULLABLE);
-  test_list.reset(BuildExpressionList(GetNull(BOOL), GetTrue(), GetFalse()));
+  test_list = make_unique<BoundExpressionList>(GetNull(BOOL), GetTrue(), GetFalse());
   EXPECT_EQ(GetExpressionListNullability(test_list.get()), NULLABLE);
-  test_list.reset(BuildExpressionList(GetTrue(), GetTrue(), GetNull(BOOL)));
+  test_list = make_unique<BoundExpressionList>(GetTrue(), GetTrue(), GetNull(BOOL));
   EXPECT_EQ(GetExpressionListNullability(test_list.get()), NULLABLE);
-  test_list.reset(BuildExpressionList(GetFalse(), GetTrue(), GetTrue()));
+  test_list = make_unique<BoundExpressionList>(GetFalse(), GetTrue(), GetTrue());
   EXPECT_EQ(GetExpressionListNullability(test_list.get()), NOT_NULLABLE);
 }
 

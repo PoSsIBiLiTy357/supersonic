@@ -68,7 +68,7 @@ DataType GetExpressionType(const BoundExpression* expression);
 // This is used mainly in creating cast-like expressions, that want to pass
 // along the argument if the input type is equal to the output type.
 FailureOrOwned<BoundExpression> CheckTypeAndPassAlong(
-    BoundExpression* expression,
+    unique_ptr<BoundExpression> expression,
     DataType type);
 
 // Convenience function. Returns the nullability of the expression. Assumes

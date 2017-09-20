@@ -126,7 +126,7 @@ class FakePredicate : public Expression {
       const TupleSchema& schema,
       BufferAllocator* allocator,
       rowcount_t max_row_count) const {
-    return Success(new BoundFakePredicate(results_, null_results_));
+    return Success(make_unique<BoundFakePredicate>(results_, null_results_));
   }
 
  private:
@@ -134,17 +134,17 @@ class FakePredicate : public Expression {
   const vector<bool> null_results_;
 };
 
-Operation* CreateFilter(Operation* input,
+unique_ptr<Operation> CreateFilter(unique_ptr<Operation> input,
                         const vector<bool> predicate_results,
                         const vector<bool> predicate_null_results) {
   return Filter(
-      new FakePredicate(predicate_results, predicate_null_results),
-      ProjectAllAttributes(), input);
+      make_unique<FakePredicate>(predicate_results, predicate_null_results),
+      ProjectAllAttributes(), std::move(input));
 }
 
-Operation* CreateFilter(Operation* input,
+unique_ptr<Operation> CreateFilter(unique_ptr<Operation> input,
                         const vector<bool> predicate_results) {
-  return CreateFilter(input, predicate_results, vector<bool>());
+  return CreateFilter(std::move(input), predicate_results, vector<bool>());
 }
 
 TEST(FilterCursorTest, AllPassing) {
@@ -190,12 +190,12 @@ TEST(FilterCursorTest, OnePassing) {
 }
 
 TEST(FilterCursorTest, OutOfMemoryError) {
-  Expression* predicate = new FakePredicate(vector<bool>(true),
-                                            vector<bool>(true));
+  auto predicate = make_unique<FakePredicate>(
+      vector<bool>(true), vector<bool>(true));
   MemoryLimit memory_limit(0);
-  std::unique_ptr<Operation> filter(
-      Filter(predicate, ProjectAllAttributes(),
-             new Table(BlockBuilder<INT32, STRING>().Build())));
+  auto filter = Filter(
+      std::move(predicate), ProjectAllAttributes(),
+      make_unique<Table>(BlockBuilder<INT32, STRING>().Build()));
   filter->SetBufferAllocator(&memory_limit, true);
   FailureOrOwned<Cursor> result = filter->CreateCursor();
   ASSERT_TRUE(result.is_failure());
@@ -328,23 +328,18 @@ TEST(FilterCursorTest, FilterOnDropped) {
 }
 
 TEST(FilterCursorTest, MaxRowCount) {
-  std::unique_ptr<Table> table(
-      new Table(BlockBuilder<INT32>().AddRow(-12).AddRow(12).Build()));
-  std::unique_ptr<Cursor> cursor(SucceedOrDie(table->CreateCursor()));
-  std::unique_ptr<BoundExpressionTree> bound(
-      DefaultBind(table->schema(), 1, Greater(AttributeAt(0), ConstInt32(0))));
+  auto table = make_unique<Table>(BlockBuilder<INT32>().AddRow(-12).AddRow(12).Build());
+  auto cursor = SucceedOrDie(table->CreateCursor());
+  auto bound = DefaultBind(table->schema(), 1, Greater(AttributeAt(0), ConstInt32(0)));
 
-  std::unique_ptr<const SingleSourceProjector> projector(
-      ProjectAllAttributes());
-  std::unique_ptr<const BoundSingleSourceProjector> bound_projector(
-      SucceedOrDie(projector->Bind(table->schema())));
+  auto projector =ProjectAllAttributes();
+  auto bound_projector = SucceedOrDie(projector->Bind(table->schema()));
 
   FailureOrOwned<Cursor> filter_result =
-      BoundFilter(bound.release(), bound_projector.release(),
-                  HeapBufferAllocator::Get(), cursor.release());
+      BoundFilter(std::move(bound), std::move(bound_projector),
+                  HeapBufferAllocator::Get(), std::move(cursor));
   ASSERT_TRUE(filter_result.is_success());
-  std::unique_ptr<Cursor> filter_cursor(filter_result.release());
-  filter_cursor->Next(1);
+  filter_result->Next(1);
 }
 
 }  // namespace supersonic

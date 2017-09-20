@@ -61,19 +61,19 @@ TupleSchema KeySelectorSchema() {
 class RowidMergeJoinCursor : public BasicCursor {
  public:
   RowidMergeJoinCursor(
-      const BoundSingleSourceProjector* left_key,
-      const BoundSingleSourceProjector* canonical_right_projector,
-      const BoundMultiSourceProjector* decomposed_result_projector,
-      Cursor* left,
-      Cursor* right,
+      unique_ptr<const BoundSingleSourceProjector> left_key,
+      unique_ptr<const BoundSingleSourceProjector> canonical_right_projector,
+      unique_ptr<const BoundMultiSourceProjector> decomposed_result_projector,
+      unique_ptr<Cursor> left,
+      unique_ptr<Cursor> right,
       BufferAllocator* allocator)
       : BasicCursor(decomposed_result_projector->result_schema()),
-        left_key_(left_key),
-        canonical_right_projector_(canonical_right_projector),
-        result_projector_(decomposed_result_projector),
+        left_key_(std::move(left_key)),
+        canonical_right_projector_(std::move(canonical_right_projector)),
+        result_projector_(std::move(decomposed_result_projector)),
         right_flattener_(canonical_right_projector_.get(), false),
-        left_(left),
-        right_(right),
+        left_(std::move(left)),
+        right_(std::move(right)),
         indirector_(KeySelectorSchema(), allocator),
         canonical_right_flattened_block_(
             canonical_right_projector_->result_schema(),
@@ -211,13 +211,14 @@ FailureOrVoid EnsureSingleColumnRowidTypeNotNull(const TupleSchema& schema) {
 
 class RowidMergeJoinOperation : public BasicOperation {
  public:
-  RowidMergeJoinOperation(const SingleSourceProjector* left_key_selector,
-                          const MultiSourceProjector* result_projector,
-                          Operation* left,
-                          Operation* right)
-      : BasicOperation(left, right),
-        left_key_selector_(left_key_selector),
-        result_projector_(result_projector) {}
+  RowidMergeJoinOperation(
+      unique_ptr<const SingleSourceProjector> left_key_selector,
+      unique_ptr<const MultiSourceProjector> result_projector,
+      unique_ptr<Operation> left,
+      unique_ptr<Operation> right)
+      : BasicOperation(std::move(left), std::move(right)),
+        left_key_selector_(std::move(left_key_selector)),
+        result_projector_(std::move(result_projector)) {}
 
   virtual FailureOrOwned<Cursor> CreateCursor() const {
     FailureOrOwned<Cursor> left = child_at(0)->CreateCursor();
@@ -237,8 +238,8 @@ class RowidMergeJoinOperation : public BasicOperation {
         result_projector_->Bind(schemas);
     PROPAGATE_ON_FAILURE(result);
     return Success(
-      BoundRowidMergeJoin(left_key.release(), result.release(),
-                          left.release(), right.release(),
+      BoundRowidMergeJoin(left_key.move(), result.move(),
+                          left.move(), right.move(),
                           buffer_allocator()));
   }
 
@@ -250,27 +251,28 @@ class RowidMergeJoinOperation : public BasicOperation {
 
 }  // namespace
 
-Operation* RowidMergeJoin(const SingleSourceProjector* left_key_selector,
-                          const MultiSourceProjector* result_projector,
-                          Operation* left,
-                          Operation* right) {
-  return new RowidMergeJoinOperation(left_key_selector, result_projector,
-                                     left, right);
+unique_ptr<Operation> RowidMergeJoin(
+    unique_ptr<const SingleSourceProjector> left_key_selector,
+    unique_ptr<const MultiSourceProjector> result_projector,
+    unique_ptr<Operation> left,
+    unique_ptr<Operation> right) {
+  return make_unique<RowidMergeJoinOperation>(
+      std::move(left_key_selector), std::move(result_projector),
+      std::move(left), std::move(right));
 }
 
-Cursor* BoundRowidMergeJoin(
-    const BoundSingleSourceProjector* left_key,
-    const BoundMultiSourceProjector* result_projector,
-    Cursor* left,
-    Cursor* right,
+unique_ptr<Cursor> BoundRowidMergeJoin(
+    unique_ptr<const BoundSingleSourceProjector> left_key,
+    unique_ptr<const BoundMultiSourceProjector> result_projector,
+    unique_ptr<Cursor> left,
+    unique_ptr<Cursor> right,
     BufferAllocator* allocator) {
   CHECK_LE(result_projector->source_count(), 2);
-  std::unique_ptr<const BoundMultiSourceProjector> result_projector_deleter(
-      result_projector);
-  pair<BoundMultiSourceProjector*, BoundSingleSourceProjector*> decomposed =
-      DecomposeNth(1, *result_projector);
-  return new RowidMergeJoinCursor(left_key, decomposed.second,
-                                  decomposed.first, left, right, allocator);
+  auto decomposed = DecomposeNth(1, *result_projector);
+  return make_unique<RowidMergeJoinCursor>(
+      std::move(left_key), std::move(decomposed.second),
+      std::move(decomposed.first), std::move(left), std::move(right),
+      allocator);
 }
 
 }  // namespace supersonic

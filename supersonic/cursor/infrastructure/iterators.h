@@ -161,6 +161,7 @@ namespace internal {
 class CursorProxy {
  public:
   explicit CursorProxy(Cursor* cursor);
+  explicit CursorProxy(std::unique_ptr<Cursor> cursor);
 
   void Next(rowcount_t max_row_count) {
     DCHECK(!cursor_status_.is_done())
@@ -177,7 +178,7 @@ class CursorProxy {
 
   // Replaces the underlying cursor with the result of the transformation.
   void ApplyToCursor(CursorTransformer* transformer) {
-    cursor_.reset(transformer->Transform(cursor_.release()));
+    cursor_ = transformer->Transform(std::move(cursor_));
   }
 
   const ResultView& status() const { return cursor_status_; }
@@ -186,13 +187,17 @@ class CursorProxy {
   // will then behave as if it reached an exception.
   void Terminate();
 
-  Exception* release_exception() { return cursor_status_.release_exception(); }
+  unique_ptr<Exception> move_exception() { return cursor_status_.move_exception(); }
 
   bool is_waiting_on_barrier_supported() const {
     return is_waiting_on_barrier_supported_;
   }
 
   void AppendDebugDescription(string* target) const;
+
+  const TupleSchema& schema() const {
+    return cursor_->schema();
+  }
 
  private:
   std::unique_ptr<Cursor> cursor_;
@@ -207,9 +212,9 @@ class CursorProxy {
 // An iterator interface to read from cursors in smaller chunks.
 class CursorIterator {
  public:
-  explicit CursorIterator(Cursor* cursor)
-      : proxy_(cursor),
-        view_iterator_(cursor->schema()),
+  explicit CursorIterator(unique_ptr<Cursor> cursor)
+      : proxy_(std::move(cursor)),
+        view_iterator_(proxy_.schema()),
         row_index_(0) {}
 
   // Advances the iterator, to return a view with as many rows as possible.
@@ -357,8 +362,8 @@ class CursorIterator {
   // Ownership is passed to the caller. This function exists mainly to
   // support PROPAGATE_ON_FAILURE(iterator). Can be called only once.
   // (Subsequent calls will crash).
-  Exception* release_exception() {
-    return proxy_.release_exception();
+  unique_ptr<Exception> move_exception() {
+    return proxy_.move_exception();
   }
 
   bool is_waiting_on_barrier_supported() const {
@@ -493,9 +498,9 @@ class ViewRowIterator {
 class CursorRowIterator {
  public:
   // Creates a new cursor iterator. Takes ownership of the cursor.
-  explicit CursorRowIterator(Cursor* cursor)
-      : proxy_(cursor),
-        view_iterator_(cursor->schema()),
+  explicit CursorRowIterator(unique_ptr<Cursor> cursor)
+      : proxy_(std::move(cursor)),
+        view_iterator_(proxy_.schema()),
         row_index_base_(0) {}
 
   // Advances the iterator to the next row. Returns true if successful;
@@ -622,8 +627,8 @@ class CursorRowIterator {
   // Ownership is passed to the caller. This function exists mainly to
   // support PROPAGATE_ON_FAILURE(iterator). Can be called only once.
   // (Subsequent calls will crash).
-  Exception* release_exception() {
-    return proxy_.release_exception();
+  unique_ptr<Exception> move_exception() {
+    return proxy_.move_exception();
   }
 
   bool is_waiting_on_barrier_supported() const {

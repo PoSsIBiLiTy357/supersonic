@@ -15,11 +15,7 @@
 
 #include "supersonic/base/infrastructure/view_copier.h"
 
-#include <cstddef>
-#include <memory>
-using std::make_unique;
-using std::unique_ptr;
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/infrastructure/block.h"
 #include "supersonic/base/infrastructure/projector.h"
 #include "supersonic/base/infrastructure/tuple_schema.h"
@@ -38,13 +34,12 @@ class ViewCopierTest : public testing::Test {
  public:
   void SetUp() {
     // BlockBuilder should set 3rd column as not nullable.
-    input_.reset(
-        BlockBuilder<INT64, STRING, STRING>().
+    input_ = BlockBuilder<INT64, STRING, STRING>().
         AddRow(1,  "a", "b").
         AddRow(__, "a", "b").
         AddRow(1,   __, "b").
         AddRow(__,  __, "b").
-        Build());
+        Build();
 
     TupleSchema output_schema;
     output_schema.add_attribute(Attribute("c1", INT64, NULLABLE));

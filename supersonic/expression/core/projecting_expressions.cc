@@ -16,13 +16,7 @@
 
 #include "supersonic/expression/core/projecting_expressions.h"
 
-#include <memory>
-#include <string>
-#include <vector>
-namespace supersonic {using std::string; }
-using std::unique_ptr;
-using std::vector;
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
 #include "supersonic/expression/base/expression.h"
@@ -37,8 +31,8 @@ namespace {
 class InputAttributeProjectionExpression : public Expression {
  public:
   explicit InputAttributeProjectionExpression(
-      const SingleSourceProjector* projector)
-      : projector_(projector) {}
+      unique_ptr<const SingleSourceProjector> projector)
+      : projector_(std::move(projector)) {}
   virtual FailureOrOwned<BoundExpression> DoBind(
       const TupleSchema& input_schema,
       BufferAllocator* allocator,
@@ -73,18 +67,19 @@ FailureOrOwned<BoundExpression> CreateBoundProjection(
   FailureOrOwned<const BoundMultiSourceProjector> bound_projector(
       projector->Bind(schemata));
   PROPAGATE_ON_FAILURE(bound_projector);
-  return BoundProjection(bound_projector.release(),
-                         bound_arguments.release());
+  return BoundProjection(bound_projector.move(),
+                         bound_arguments.move());
 }
 
 // Similar to CompoundExpression, but CompoundExpression supports
 // CompoundMultiSourceProjector only, while having a convenient build API.
 class ProjectionExpression : public Expression {
  public:
-  explicit ProjectionExpression(const ExpressionList* arguments,
-                                const MultiSourceProjector* projector)
-      : arguments_(arguments),
-        projector_(projector) {}
+  explicit ProjectionExpression(
+      unique_ptr<const ExpressionList> arguments,
+      unique_ptr<const MultiSourceProjector> projector)
+      : arguments_(std::move(arguments)),
+        projector_(std::move(projector)) {}
   virtual FailureOrOwned<BoundExpression> DoBind(
       const TupleSchema& input_schema,
       BufferAllocator* allocator,
@@ -113,14 +108,16 @@ class ProjectionExpression : public Expression {
 
 // ------------------------ Expression instantiations --------------------------
 
-const Expression* InputAttributeProjection(
-    const SingleSourceProjector* const projector) {
-  return new InputAttributeProjectionExpression(projector);
+unique_ptr<const Expression> InputAttributeProjection(
+    unique_ptr<const SingleSourceProjector> projector) {
+  return make_unique<InputAttributeProjectionExpression>(std::move(projector));
 }
 
-const Expression* Projection(const ExpressionList* inputs,
-                             const MultiSourceProjector* projector) {
-  return new ProjectionExpression(inputs, projector);
+unique_ptr<const Expression> Projection(
+    unique_ptr<const ExpressionList> inputs,
+    unique_ptr<const MultiSourceProjector> projector) {
+  return make_unique<ProjectionExpression>(std::move(inputs),
+                                           std::move(projector));
 }
 
 // NOTE(onufry): This implementation runs through CompoundExpression, which has
@@ -128,30 +125,32 @@ const Expression* Projection(const ExpressionList* inputs,
 // (mostly tied to short circuit, which in the case of Alias is trivial). If the
 // performance ever becomes a problem here, we should write a specialized
 // expresion for this.
-const Expression* Alias(const string& new_name,
-                        const Expression* const argument) {
-  return (new CompoundExpression())->AddAs(new_name, argument);
+unique_ptr<const Expression> Alias(const string& new_name,
+                        unique_ptr<const Expression> argument) {
+  auto out = make_unique<CompoundExpression>();
+  out->AddAs(new_name, std::move(argument));
+  return out;
 }
 
 // ------------------------ Implementation details -----------------------------
 
-CompoundExpression* CompoundExpression::Add(const Expression* argument) {
+CompoundExpression* CompoundExpression::Add(unique_ptr<const Expression> argument) {
   size_t argument_index = arguments_->size();
-  arguments_->add(argument);
+  arguments_->add(std::move(argument));
   projector_->add(argument_index, ProjectAllAttributes());
   return this;
 }
 
 CompoundExpression* CompoundExpression::AddAs(const StringPiece& alias,
-                                              const Expression* argument) {
-  return AddAsMulti(vector<string>(1, alias.ToString()), argument);
+                                              unique_ptr<const Expression> argument) {
+  return AddAsMulti(vector<string>(1, alias.ToString()), std::move(argument));
 }
 
 CompoundExpression* CompoundExpression::AddAsMulti(
     const vector<string>& aliases,
-    const Expression* argument) {
+    unique_ptr<const Expression> argument) {
   size_t argument_index = arguments_->size();
-  arguments_->add(argument);
+  arguments_->add(std::move(argument));
   projector_->add(argument_index,
                   ProjectRename(aliases, ProjectAllAttributes()));
   return this;

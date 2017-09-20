@@ -88,8 +88,8 @@ TEST(CalculateCommonTypeTest, CorrectOutputTypesForUInt64) {
 // ------------------------------ Unary Expressions ----------------------------
 
 template<DataType to_type>
-const Expression* TypedCast(const Expression* const e) {
-  return CastTo(to_type, e);
+unique_ptr<const Expression> TypedCast(unique_ptr<const Expression> e) {
+  return CastTo(to_type, std::move(e));
 }
 
 TEST(UnaryExpressionTest, Cast) {
@@ -111,13 +111,15 @@ TEST(UnaryExpressionTest, Cast) {
 // Template helpers, to fit the ParseString functions (which take one additional
 // argument) fit into the factory testing scheme.
 template<DataType type>
-const Expression* TypedParseStringQuiet(const Expression* const e) {
-  return ParseStringQuiet(type, e);
+unique_ptr<const Expression> TypedParseStringQuiet(
+    unique_ptr<const Expression> e) {
+  return ParseStringQuiet(type, std::move(e));
 }
 
 template<DataType type>
-const Expression* TypedParseStringNulling(const Expression* const e) {
-  return ParseStringNulling(type, e);
+unique_ptr<const Expression> TypedParseStringNulling(
+    unique_ptr<const Expression> e) {
+  return ParseStringNulling(type, std::move(e));
 }
 
 // We do not test for the behaviour of ParseStringQuiet on invalid inputs, as

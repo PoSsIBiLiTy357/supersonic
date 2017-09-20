@@ -13,12 +13,10 @@
 // limitations under the License.
 //
 
-#include <memory>
-using std::unique_ptr;
-
 #include "supersonic/expression/core/projecting_expressions.h"
 
 #include <glog/logging.h>
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/base/infrastructure/bit_pointers.h"
 #include "supersonic/base/infrastructure/block.h"
@@ -61,7 +59,8 @@ class ProjectingExpressionTest : public testing::Test {
   const size_t rows() { return input().row_count(); }
 
  private:
-  static Block* CreateBlock() {
+  static
+  unique_ptr<Block> CreateBlock() {
     return BlockBuilder<STRING, INT32, DOUBLE, INT32>()
         .AddRow("1", 12, 5.1, 22)
         .AddRow("2", 13, 6.2, 23)
@@ -104,7 +103,7 @@ TEST_F(ProjectingExpressionTest, SingleColumnInputAttributeProjection) {
     unique_ptr<BoundExpressionTree> projected(DefaultBind(
         input().schema(),
         100,
-        InputAttributeProjection(projector.release())));
+        InputAttributeProjection(std::move(projector))));
     const View& result = DefaultEvaluate(projected.get(), input());
     EXPECT_EQ(1, result.schema().attribute_count());
     EXPECT_COLUMNS_EQUAL(input().column(i), result.column(0), rows());
@@ -120,7 +119,7 @@ TEST_F(ProjectingExpressionTest, TwoColumnInputAttributeProjection) {
   unique_ptr<BoundExpressionTree> projected(DefaultBind(
       input().schema(),
       100,
-      InputAttributeProjection(projector.release())));
+      InputAttributeProjection(std::move(projector))));
   const View& result = DefaultEvaluate(projected.get(), input());
   EXPECT_EQ(2, result.schema().attribute_count());
   EXPECT_COLUMNS_EQUAL(input().column(3), result.column(0), rows());
@@ -136,7 +135,7 @@ TEST_F(ProjectingExpressionTest, TwoColumnInputProjectionShortCircuit) {
   unique_ptr<BoundExpression> projected(DefaultDoBind(
       input().schema(),
       100,
-      InputAttributeProjection(projector.release())));
+      InputAttributeProjection(std::move(projector))));
   BoolBlock skip_vectors(2, HeapBufferAllocator::Get());
   ASSERT_TRUE(skip_vectors.TryReallocate(5).is_success());
   bool left_skip[5] = { true, false, false, true, false };
@@ -159,7 +158,7 @@ TEST_F(ProjectingExpressionTest, Flat) {
   unique_ptr<BoundExpressionTree> projected(DefaultBind(
       input().schema(),
       100,
-      Flat((new ExpressionList())->add(AttributeAt(0))->add(AttributeAt(3)))));
+      Flat(make_unique<ExpressionList>(AttributeAt(0),AttributeAt(3)))));
   const View& result = DefaultEvaluate(projected.get(), input());
   EXPECT_EQ(2, result.schema().attribute_count());
   EXPECT_COLUMNS_EQUAL(input().column(0), result.column(0), rows());
@@ -168,7 +167,7 @@ TEST_F(ProjectingExpressionTest, Flat) {
 
 TEST_F(ProjectingExpressionTest, FlattenEmptyList) {
   unique_ptr<BoundExpressionTree> projected(DefaultBind(
-      input().schema(), 100, Flat(new ExpressionList())));
+      input().schema(), 100, Flat(make_unique<ExpressionList>())));
   const View& result = DefaultEvaluate(projected.get(), input());
   EXPECT_EQ(0, result.schema().attribute_count());
 }
@@ -186,18 +185,18 @@ TEST_F(ProjectingExpressionTest, Alias) {
 
 TEST_F(ProjectingExpressionTest, AliasFailsOnTooManyColumns) {
   unique_ptr<const Expression> two_columns(
-      Flat((new ExpressionList())->add(AttributeAt(0))->add(AttributeAt(1))));
+      Flat(make_unique<ExpressionList>(AttributeAt(0), AttributeAt(1))));
   unique_ptr<const Expression> alias(
-      Alias(string("Some other alias"), two_columns.release()));
+      Alias(string("Some other alias"), std::move(two_columns)));
   FailureOrOwned<BoundExpressionTree> bound_alias =
       alias->Bind(input().schema(), HeapBufferAllocator::Get(), 100);
   EXPECT_TRUE(bound_alias.is_failure());
 }
 
 TEST_F(ProjectingExpressionTest, AliasFailsOnNoColumns) {
-  unique_ptr<const Expression> no_columns(Flat((new ExpressionList())));
+  unique_ptr<const Expression> no_columns(Flat((make_unique<ExpressionList>())));
   unique_ptr<const Expression> alias(
-      Alias(string("Yet another alias"), no_columns.release()));
+      Alias(string("Yet another alias"), std::move(no_columns)));
   FailureOrOwned<BoundExpressionTree> bound_alias =
       alias->Bind(input().schema(), HeapBufferAllocator::Get(), 100);
   EXPECT_TRUE(bound_alias.is_failure());

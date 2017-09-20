@@ -46,12 +46,13 @@ FailureOrVoid BoundExpressionTree::Init(BufferAllocator* allocator,
 }
 
 FailureOrOwned<BoundExpressionTree>
-    CreateBoundExpressionTree(BoundExpression* expression,
+    CreateBoundExpressionTree(unique_ptr<BoundExpression> expression,
                               BufferAllocator* allocator,
                               rowcount_t max_row_count) {
-  auto expression_tree = make_unique<BoundExpressionTree>(expression, allocator);
+  auto expression_tree = make_unique<BoundExpressionTree>(
+      std::move(expression), allocator);
   PROPAGATE_ON_FAILURE(expression_tree->Init(allocator, max_row_count));
-  return Success(expression_tree.release());
+  return Success(std::move(expression_tree));
 }
 
 EvaluationResult BoundExpressionTree::Evaluate(const View& input) {
@@ -88,7 +89,7 @@ FailureOrOwned<BoundExpressionTree> Expression::Bind(
   FailureOrOwned<BoundExpression> bound_root = DoBind(input_schema, allocator,
                                                       max_row_count);
   PROPAGATE_ON_FAILURE(bound_root);
-  return CreateBoundExpressionTree(bound_root.release(),
+  return CreateBoundExpressionTree(bound_root.move(),
                                    allocator,
                                    max_row_count);
 }
@@ -101,23 +102,25 @@ FailureOrOwned<BoundExpressionList> ExpressionList::DoBind(
     rowcount_t max_row_count) const {
   auto bound_list = make_unique<BoundExpressionList>();
 
-  for (int i = 0; i < expressions_.size(); ++i) {
+  for (auto& expr: expressions_) {
     FailureOrOwned<BoundExpression> result =
-        expressions_[i]->DoBind(input_schema, allocator, max_row_count);
+        expr->DoBind(input_schema, allocator, max_row_count);
     PROPAGATE_ON_FAILURE(result);
-    bound_list->add(result.release());
+    bound_list->add(result.move());
   }
-  return Success(bound_list.release());
+  return Success(std::move(bound_list));
 }
 
 const string BoundExpressionList::ToString(bool verbose) const {
   string result_description;
-  for (vector<linked_ptr<BoundExpression> >::const_iterator it =
-      expressions_.begin(); it < expressions_.end(); ++it) {
-    if (it != expressions_.begin()) result_description.append(", ");
+  size_t count = 0;
+
+  for (const auto& expr: *this) {
+    if (count != 0) result_description.append(", ");
+    count++;
     // The next for lines could be replaced by GetMultiExpressionName, but I
     // want to avoid a dependency on expression_utils.
-    const TupleSchema& subexpression_schema = it->get()->result_schema();
+    const TupleSchema& subexpression_schema = expr->result_schema();
     for (int i = 0; i < subexpression_schema.attribute_count(); ++i) {
       result_description.append(subexpression_schema.attribute(i).name());
     }
@@ -127,18 +130,15 @@ const string BoundExpressionList::ToString(bool verbose) const {
 
 void BoundExpressionList::CollectReferredAttributeNames(
     set<string>* referred_attribute_names) const {
-  for (vector<linked_ptr<BoundExpression> >::const_iterator it =
-      expressions_.begin(); it < expressions_.end(); ++it) {
-    (*it)->CollectReferredAttributeNames(referred_attribute_names);
+  for (const auto& expr: *this) {
+    expr->CollectReferredAttributeNames(referred_attribute_names);
   }
 }
 
 const string ExpressionList::ToString(bool verbose) const {
   string result_description;
-  for (vector<linked_ptr<const Expression> >::const_iterator it =
-      expressions_.begin(); it < expressions_.end(); ++it) {
-    if (it != expressions_.begin()) result_description.append(", ");
-    result_description.append((*it)->ToString(verbose));
+  for (const auto& expr: expressions_) {
+    result_description.append(expr->ToString(verbose));
   }
   return result_description;
 }

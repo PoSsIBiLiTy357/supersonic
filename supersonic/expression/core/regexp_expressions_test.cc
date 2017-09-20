@@ -14,11 +14,9 @@
 //
 //
 
-#include <memory>
-using std::unique_ptr;
-
 #include "supersonic/expression/core/regexp_expressions.h"
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/infrastructure/block.h"
 #include "supersonic/base/infrastructure/types.h"
 #include "supersonic/cursor/infrastructure/value_ref.h"
@@ -65,24 +63,27 @@ StringPiece ResolvePattern(PatternType pattern) {
 }
 
 template<PatternType pattern>
-const Expression* RegexpFullPatterned(const Expression* str) {
-  return RegexpFullMatch(str, ResolvePattern(pattern));
+unique_ptr<const Expression> RegexpFullPatterned(unique_ptr<const Expression> str) {
+  return RegexpFullMatch(std::move(str), ResolvePattern(pattern));
 }
 
 template<PatternType pattern>
-const Expression* RegexpPartialPatterned(const Expression* str) {
-  return RegexpPartialMatch(str, ResolvePattern(pattern));
+unique_ptr<const Expression> RegexpPartialPatterned(
+    unique_ptr<const Expression> str) {
+  return RegexpPartialMatch(std::move(str), ResolvePattern(pattern));
 }
 
 template<PatternType pattern>
-const Expression* RegexpExtractPatterned(const Expression* str) {
-  return RegexpExtract(str, ResolvePattern(pattern));
+unique_ptr<const Expression> RegexpExtractPatterned(
+    unique_ptr<const Expression> str) {
+  return RegexpExtract(std::move(str), ResolvePattern(pattern));
 }
 
 template<PatternType pattern>
-const Expression* RegexpReplacePatterned(const Expression* str,
-                                         const Expression* sub) {
-  return RegexpReplace(str, ResolvePattern(pattern), sub);
+unique_ptr<const Expression> RegexpReplacePatterned(
+    unique_ptr<const Expression> str,
+    unique_ptr<const Expression> sub) {
+  return RegexpReplace(std::move(str), ResolvePattern(pattern), std::move(sub));
 }
 
 TEST(StringExpressionTest, RegexpBinding) {
@@ -181,9 +182,9 @@ TEST(StringExpressionTest, RegexpExtract) {
 // returned by RE2::PartialMatch into the arena.
 TEST(StringExpressionTest, RegexpExtractDoesNotRewrite) {
   unique_ptr<Block> block(BlockBuilder<STRING>().AddRow("SuperSonic").Build());
-  const Expression* child = AttributeAt(0);
+  auto child = AttributeAt(0);
   unique_ptr<BoundExpressionTree> extract(DefaultBind(
-      block->view().schema(), 100, RegexpExtract(child, "u(\\w+)i")));
+      block->view().schema(), 100, RegexpExtract(std::move(child), "u(\\w+)i")));
   const View& result_view = DefaultEvaluate(extract.get(), block->view());
   unique_ptr<Block> expected(BlockBuilder<STRING>().AddRow("perSon").Build());
   EXPECT_VIEWS_EQUAL(expected->view(), result_view);

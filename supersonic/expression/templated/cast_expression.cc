@@ -39,9 +39,9 @@ namespace {
 class CastExpression : public UnaryExpression {
  public:
   CastExpression(DataType to_type,
-                 const Expression* const source,
+                 unique_ptr<const Expression> source,
                  bool is_implicit)
-      : UnaryExpression(source),
+      : UnaryExpression(std::move(source)),
         to_type_(to_type),
         is_implicit_(is_implicit) {}
 
@@ -65,8 +65,8 @@ class CastExpression : public UnaryExpression {
       const TupleSchema& input_schema,
       BufferAllocator* const allocator,
       rowcount_t row_capacity,
-      BoundExpression* bound_child) const {
-    return BoundInternalCast(allocator, row_capacity, bound_child,
+      unique_ptr<BoundExpression> child) const {
+    return BoundInternalCast(allocator, row_capacity, std::move(child),
                              to_type_, is_implicit_);
   }
 
@@ -77,10 +77,10 @@ class CastExpression : public UnaryExpression {
 
 }  // namespace
 
-const Expression* InternalCast(DataType to_type,
-                               const Expression* const source,
-                               bool is_implicit) {
-  return new CastExpression(to_type, source, is_implicit);
+unique_ptr<const Expression>
+InternalCast(DataType to_type, unique_ptr<const Expression> source,
+             bool is_implicit) {
+  return make_unique<CastExpression>(to_type, std::move(source), is_implicit);
 }
 
 }  // namespace supersonic

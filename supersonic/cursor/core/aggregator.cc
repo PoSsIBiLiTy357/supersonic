@@ -41,21 +41,19 @@ FailureOrOwned<Aggregator> Aggregator::Create(
     const TupleSchema& input_schema,
     BufferAllocator* allocator,
     rowcount_t result_initial_row_capacity) {
-  std::unique_ptr<Aggregator> aggregator(new Aggregator());
+  unique_ptr<Aggregator> aggregator(new Aggregator);
   PROPAGATE_ON_FAILURE(aggregator->Init(
       aggregation_specification, input_schema, allocator,
       result_initial_row_capacity));
-  return Success(aggregator.release());
+  return Success(std::move(aggregator));
 }
 
 bool Aggregator::Reallocate(rowcount_t new_capacity) {
   rowcount_t old_capacity = capacity();
   bool success = data_->Reallocate(new_capacity);
   // Rebind even if the realloc failed, as it might have updated some columns.
-  vector<pair<int, linked_ptr<aggregations::ColumnAggregator> > >::iterator
-      it;
-  for (it = column_aggregator_.begin(); it != column_aggregator_.end(); ++it) {
-    it->second->Rebind(old_capacity, data_->row_capacity());
+  for (auto& it: column_aggregator_) {
+    it.second->Rebind(old_capacity, data_->row_capacity());
   }
   return success;
 }
@@ -182,9 +180,7 @@ FailureOrVoid Aggregator::Init(
                                data_.get(),
                                i);
     PROPAGATE_ON_FAILURE(create_aggregator_result);
-    column_aggregator_.push_back(
-        make_pair(input_position_vector[i],
-                  make_linked_ptr(create_aggregator_result.release())));
+    column_aggregator_.emplace_back(input_position_vector[i], create_aggregator_result.move());
   }
   return Success();
 }
@@ -210,21 +206,16 @@ FailureOrVoid Aggregator::UpdateAggregations(const View& view,
     DCHECK_LT(result_index_map[i], data_->view().row_count());
   }
 #endif
-  vector<pair<int, linked_ptr<aggregations::ColumnAggregator> > >::iterator it;
-  for (it = column_aggregator_.begin(); it != column_aggregator_.end(); ++it) {
-    PROPAGATE_ON_FAILURE(UpdateAggregation(it->first,
-                                           it->second.get(),
-                                           view,
-                                           result_index_map));
+  for (auto& it: column_aggregator_) {
+    PROPAGATE_ON_FAILURE(UpdateAggregation(
+        it.first, it.second.get(), view, result_index_map));
   }
   return Success();
 }
 
 void Aggregator::Reset() {
-  vector<pair<int, linked_ptr<aggregations::ColumnAggregator> > >::iterator
-      it;
-  for (it = column_aggregator_.begin(); it != column_aggregator_.end(); ++it) {
-    it->second->Reset();
+  for (auto& it: column_aggregator_) {
+    it.second->Reset();
   }
 }
 

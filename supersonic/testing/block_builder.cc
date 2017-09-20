@@ -60,17 +60,16 @@ TupleSchema GetSchemaWithOptimizedNullabilityWithSomeForcedNullable(
 
 namespace internal {
 
-Block* CloneView(const View& view) {
-  std::unique_ptr<Block> copy(
-      new Block(view.schema(), HeapBufferAllocator::Get()));
+unique_ptr<Block> CloneView(const View& view) {
+  auto copy = make_unique<Block>(view.schema(), HeapBufferAllocator::Get());
   CHECK(copy->Reallocate(view.row_count()));
   const ViewCopier block_copier(view.schema(), true);
   CHECK_EQ(view.row_count(),
            block_copier.Copy(view.row_count(), view, 0, copy.get()));
-  return copy.release();
+  return copy;
 }
 
-Block* CloneViewAndOptimizeNullability(
+unique_ptr<Block> CloneViewAndOptimizeNullability(
     const View& view,
     const vector<bool>& is_column_forced_nullable) {
   // TODO(user): we might need some more systematic way to remove

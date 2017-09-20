@@ -45,8 +45,8 @@ TEST_F(BarrierSplitterTest, UnclaimedSplitterDoesntLeak) {
 
 class SingleSourceBufferedSplitter : public BasicOperation {
  public:
-  explicit SingleSourceBufferedSplitter(Operation* child) :
-      BasicOperation(child) {}
+  explicit SingleSourceBufferedSplitter(unique_ptr<Operation> child) :
+      BasicOperation(std::move(child)) {}
   virtual FailureOrOwned<Cursor> CreateCursor() const {
     return Success(
         (new BufferedSplitter(
@@ -60,13 +60,13 @@ class SingleSourceBufferedSplitter : public BasicOperation {
 // This is an evil operation to test BufferedSplitter.
 class CursorToOperation : public BasicOperation {
  public:
-  CursorToOperation(Cursor* child,
+  CursorToOperation(unique_ptr<Cursor> child,
                     int copies_count,
                     rowcount_t max_row_count) :
         BasicOperation() {
     CHECK_GT(copies_count, 0);
     SplitterInterface* splitter = new BufferedSplitter(
-        child, HeapBufferAllocator::Get(), max_row_count);
+        std::move(child), HeapBufferAllocator::Get(), max_row_count);
     for (int i = 0; i < copies_count; ++i) {
       cursors_.emplace_back(splitter->AddReader());
     }
@@ -84,12 +84,12 @@ class CursorToOperation : public BasicOperation {
 
 class SingleSourceBarrierSplitter : public BasicOperation {
  public:
-  explicit SingleSourceBarrierSplitter(Operation* child) :
-      BasicOperation(child) {}
+  explicit SingleSourceBarrierSplitter(unique_ptr<Operation> child) :
+      BasicOperation(std::move(child)) {}
   virtual FailureOrOwned<Cursor> CreateCursor() const {
     return Success(
-        (new BarrierSplitter(
-            SucceedOrDie(child()->CreateCursor())))->AddReader());
+        (new BarrierSplitter(unique_ptr<Cursor>(
+            SucceedOrDie(child()->CreateCursor()))))->AddReader());
   }
 };
 
@@ -108,7 +108,7 @@ TEST_F(BarrierSplitterTest, SingleReaderSplitterNeverBlocks) {
          .AddRow(10);
   test.SetInput(builder.Build());
   test.SetExpectedResult(builder.Build());
-  test.Execute(new SingleSourceBarrierSplitter(test.input()));
+  test.Execute(make_unique<SingleSourceBarrierSplitter>(test.input()));
 }
 
 TEST_F(BarrierSplitterTest, DualSplitterAlternates) {
@@ -181,32 +181,35 @@ TEST_P(BarrierSplitterSpyTest, LateJoin) {
          .AddRow(7)
          .AddRow(8)
          .AddRow(9);
-  Cursor* input = CreateViewLimiter(3, builder.BuildCursor());
+  auto input = CreateViewLimiter(3, builder.BuildCursor());
+  auto input_saved = input.get();
 
-  SplitterInterface* splitter(new BarrierSplitter(input));
+  SplitterInterface* splitter(new BarrierSplitter(std::move(input)));
 
   std::unique_ptr<CursorTransformerWithSimpleHistory> spy_transformer(
       PrintingSpyTransformer());
 
-  Cursor* reader_cursor1 = splitter->AddReader();
-  Cursor* reader_cursor_spy1 = NULL;
+  auto reader_cursor1 = splitter->AddReader();
+  auto old_reader_cursor1 = reader_cursor1.get();
+  unique_ptr<Cursor> reader_cursor_spy1;
   if (GetParam()) {
     reader_cursor1->ApplyToChildren(spy_transformer.get());
-    reader_cursor_spy1 = spy_transformer->Transform(reader_cursor1);
+    reader_cursor_spy1 = spy_transformer->Transform(std::move(reader_cursor1));
   }
 
-  CursorIterator reader_1(GetParam() ? reader_cursor_spy1 : reader_cursor1);
+  CursorIterator reader_1(GetParam() ? std::move(reader_cursor_spy1) : std::move(reader_cursor1));
   ASSERT_TRUE(reader_1.Next(2, true));
   EXPECT_EQ(2, reader_1.view().row_count());
 
-  Cursor* reader_cursor2 = splitter->AddReader();
-  Cursor* reader_cursor_spy2 = NULL;
+  auto reader_cursor2 = splitter->AddReader();
+  auto old_reader_cursor2 = reader_cursor2.get();
+  unique_ptr<Cursor> reader_cursor_spy2;
   if (GetParam()) {
     reader_cursor2->ApplyToChildren(spy_transformer.get());
-    reader_cursor_spy2 = spy_transformer->Transform(reader_cursor2);
+    reader_cursor_spy2 = spy_transformer->Transform(std::move(reader_cursor2));
   }
 
-  CursorIterator reader_2(GetParam() ? reader_cursor_spy2 : reader_cursor2);
+  CursorIterator reader_2(GetParam() ? std::move(reader_cursor_spy2) : std::move(reader_cursor2));
   ASSERT_FALSE(reader_2.Next(1, true));
   EXPECT_TRUE(reader_2.is_waiting_on_barrier());
   ASSERT_TRUE(reader_1.Next(2, true));
@@ -224,9 +227,11 @@ TEST_P(BarrierSplitterSpyTest, LateJoin) {
     // implementation for readers will only propagate to children if the
     // reader it is called by is the owner of the splitter.
     ASSERT_EQ(3, spy_transformer->GetHistoryLength());
-    EXPECT_EQ(input, spy_transformer->GetEntryAt(0)->original());
-    EXPECT_EQ(reader_cursor1, spy_transformer->GetEntryAt(1)->original());
-    EXPECT_EQ(reader_cursor2, spy_transformer->GetEntryAt(2)->original());
+    EXPECT_EQ(input_saved, spy_transformer->GetEntryAt(0)->original());
+
+    // Testing old save cursor pointers. This is fugly
+    EXPECT_EQ(old_reader_cursor1, spy_transformer->GetEntryAt(1)->original());
+    EXPECT_EQ(old_reader_cursor2, spy_transformer->GetEntryAt(2)->original());
   }
 }
 
@@ -290,7 +295,7 @@ TEST_P(BufferedSplitterTest, SingleReaderSplitterNeverBlocks) {
   }
   test.SetInput(builder.Build());
   test.SetExpectedResult(builder.Build());
-  test.Execute(new SingleSourceBufferedSplitter(test.input()));
+  test.Execute(make_unique<SingleSourceBufferedSplitter>(test.input()));
 }
 
 TEST_P(BufferedSplitterTest, SplitterCopiesCursorTest) {
@@ -301,9 +306,9 @@ TEST_P(BufferedSplitterTest, SplitterCopiesCursorTest) {
       builder.AddRow(k);
     }
     test.SetExpectedResult(builder.Build());
-    test.Execute(new CursorToOperation(builder.BuildCursor(),
-                                       /* copies count = */ 100,
-                                       max_row_counts[j]));
+    test.Execute(make_unique<CursorToOperation>(builder.BuildCursor(),
+                                                /* copies count = */ 100,
+                                                max_row_counts[j]));
   }
 }
 
@@ -325,9 +330,9 @@ TEST_P(BufferedSplitterTest, SplitterCopiesCursorStringDataTest) {
       }
     }
     test.SetExpectedResult(builder.Build());
-    test.Execute(new CursorToOperation(builder.BuildCursor(),
-                                       /* copies count = */ 100,
-                                       max_row_counts[j]));
+    test.Execute(make_unique<CursorToOperation>(builder.BuildCursor(),
+                                                /* copies count = */ 100,
+                                                max_row_counts[j]));
   }
 }
 

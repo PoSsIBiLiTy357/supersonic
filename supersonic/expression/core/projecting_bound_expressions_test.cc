@@ -19,13 +19,7 @@
 // is tested via the projecting_expressions tests.
 
 #include "supersonic/expression/core/projecting_bound_expressions.h"
-
-#include <memory>
-#include <set>
-#include <string>
 #include "supersonic/utils/std_namespace.h"
-namespace supersonic {using std::string; }
-using std::unique_ptr;
 
 #include "supersonic/base/infrastructure/block.h"
 #include "supersonic/base/infrastructure/projector.h"
@@ -61,7 +55,7 @@ class ProjectingBoundExpressionsTest : public ::testing::Test {
   }
 
  private:
-  static Block* CreateBlock() {
+  static unique_ptr<Block> CreateBlock() {
     return BlockBuilder<STRING, INT32, DOUBLE, INT32>()
         .AddRow("1", 12, 5.1, 22)
         .AddRow("2", 13, 6.2, 23)
@@ -82,7 +76,7 @@ TEST_F(ProjectingBoundExpressionsTest, BoundAttributeAt) {
   EXPECT_EQ(Container("col2").As<set<string> >(),
             attribute_at->referred_attribute_names());
   FailureOrOwned<BoundExpressionTree> tree_attribute_at =
-      CreateBoundExpressionTree(attribute_at.release(),
+      CreateBoundExpressionTree(attribute_at.move(),
                                 HeapBufferAllocator::Get(), 10);
   ASSERT_TRUE(tree_attribute_at.is_success());
   EvaluationResult result = tree_attribute_at->Evaluate(view());
@@ -98,7 +92,7 @@ TEST_F(ProjectingBoundExpressionsTest, BoundNamedAttribute) {
   EXPECT_EQ(Container("col3").As<set<string> >(),
             named_attribute->referred_attribute_names());
   FailureOrOwned<BoundExpressionTree> tree_named_attribute =
-      CreateBoundExpressionTree(named_attribute.release(),
+      CreateBoundExpressionTree(named_attribute.move(),
                                 HeapBufferAllocator::Get(), 10);
   ASSERT_TRUE(tree_named_attribute.is_success());
   EvaluationResult result = tree_named_attribute->Evaluate(view());
@@ -112,11 +106,11 @@ TEST_F(ProjectingBoundExpressionsTest, BoundAlias) {
       BoundNamedAttribute(schema(), "col3");
   ASSERT_TRUE(named_attribute.is_success());
   FailureOrOwned<BoundExpression> alias =
-      BoundAlias("Brand New Name", named_attribute.release(),
+      BoundAlias("Brand New Name", named_attribute.move(),
                  HeapBufferAllocator::Get(), 4);
   ASSERT_TRUE(alias.is_success());
   FailureOrOwned<BoundExpressionTree> tree_alias =
-      CreateBoundExpressionTree(alias.release(),
+      CreateBoundExpressionTree(alias.move(),
                                 HeapBufferAllocator::Get(), 10);
   ASSERT_TRUE(tree_alias.is_success());
   EvaluationResult result = tree_alias->Evaluate(view());
@@ -128,7 +122,7 @@ TEST_F(ProjectingBoundExpressionsTest, BoundAlias) {
 TEST_F(ProjectingBoundExpressionsTest,
        ProjectionExpressionCollectReferredAttributeNames) {
   vector<const TupleSchema*> schemas;
-  unique_ptr<BoundExpressionList> expression_list(new BoundExpressionList());
+  auto expression_list = make_unique<BoundExpressionList>();
   expression_list->add(SucceedOrDie(BoundNamedAttribute(schema(), "col0")));
   schemas.push_back(&expression_list->get(0)->result_schema());
   expression_list->add(SucceedOrDie(BoundNamedAttribute(schema(), "col1")));
@@ -138,8 +132,7 @@ TEST_F(ProjectingBoundExpressionsTest,
   expression_list->add(SucceedOrDie(BoundNamedAttribute(schema(), "col3")));
   schemas.push_back(&expression_list->get(3)->result_schema());
 
-  unique_ptr<BoundMultiSourceProjector> projector(
-      new BoundMultiSourceProjector(schemas));
+  auto projector = make_unique<BoundMultiSourceProjector>(schemas);
   projector->Add(3, 0);
   projector->Add(0, 0);
   projector->Add(1, 0);
@@ -147,7 +140,7 @@ TEST_F(ProjectingBoundExpressionsTest,
   projector->Add(1, 0);
 
   FailureOrOwned<BoundExpression> projection_expression =
-      BoundProjection(projector.release(), expression_list.release());
+      BoundProjection(std::move(projector), std::move(expression_list));
   ASSERT_TRUE(projection_expression.is_success())
       << projection_expression.exception().PrintStackTrace();
   EXPECT_EQ(Container("col3", "col0", "col1", "col2").As<set<string> >(),
@@ -156,36 +149,35 @@ TEST_F(ProjectingBoundExpressionsTest,
 
 TEST_F(ProjectingBoundExpressionsTest,
        ProjectionExpressionPartialCollectReferredAttributeNames) {
-  unique_ptr<BoundExpressionList> source_list_1(new BoundExpressionList());
+  auto source_list_1 = make_unique<BoundExpressionList>();
   source_list_1->add(SucceedOrDie(BoundNamedAttribute(schema(), "col0")));
   source_list_1->add(SucceedOrDie(BoundNamedAttribute(schema(), "col1")));
   FailureOrOwned<BoundExpression> source_1(
-      BoundCompoundExpression(source_list_1.release()));
+      BoundCompoundExpression(std::move(source_list_1)));
   ASSERT_TRUE(source_1.is_success())
       << source_1.exception().PrintStackTrace();
 
-  unique_ptr<BoundExpressionList> source_list_2(new BoundExpressionList());
+  auto source_list_2 = make_unique<BoundExpressionList>();
   source_list_2->add(SucceedOrDie(BoundNamedAttribute(schema(), "col2")));
   source_list_2->add(SucceedOrDie(BoundNamedAttribute(schema(), "col3")));
   FailureOrOwned<BoundExpression> source_2(
-      BoundCompoundExpression(source_list_2.release()));
+      BoundCompoundExpression(std::move(source_list_2)));
   ASSERT_TRUE(source_2.is_success())
       << source_2.exception().PrintStackTrace();
 
-  unique_ptr<BoundExpressionList> expression_list(new BoundExpressionList());
+  auto expression_list = make_unique<BoundExpressionList>();
   vector<const TupleSchema*> schemas;
   schemas.push_back(&source_1->result_schema());
-  expression_list->add(source_1.release());
+  expression_list->add(source_1.move());
   schemas.push_back(&source_2->result_schema());
-  expression_list->add(source_2.release());
+  expression_list->add(source_2.move());
 
-  unique_ptr<BoundMultiSourceProjector> projector(
-      new BoundMultiSourceProjector(schemas));
+  auto projector = make_unique<BoundMultiSourceProjector>(schemas);
   projector->Add(0, 1);
   projector->Add(1, 0);
 
   FailureOrOwned<BoundExpression> projection_expression =
-      BoundProjection(projector.release(), expression_list.release());
+      BoundProjection(std::move(projector), std::move(expression_list));
   ASSERT_TRUE(projection_expression.is_success())
       << projection_expression.exception().PrintStackTrace();
   EXPECT_EQ(Container("col0", "col1", "col2", "col3").As<set<string> >(),

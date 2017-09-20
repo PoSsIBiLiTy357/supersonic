@@ -27,64 +27,64 @@ namespace supersonic {
 class BoundExpression;
 class BufferAllocator;
 
-FailureOrOwned<BoundExpression> BoundNegate(BoundExpression* source,
+FailureOrOwned<BoundExpression> BoundNegate(unique_ptr<BoundExpression> source,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundPlus(BoundExpression* left,
-                                          BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundPlus(unique_ptr<BoundExpression> left,
+                                          unique_ptr<BoundExpression> right,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundMultiply(BoundExpression* left,
-                                              BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundMultiply(unique_ptr<BoundExpression> left,
+                                              unique_ptr<BoundExpression> right,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundMinus(BoundExpression* left,
-                                           BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundMinus(unique_ptr<BoundExpression> left,
+                                           unique_ptr<BoundExpression> right,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundDivideSignaling(
-    BoundExpression* left,
-    BoundExpression* right,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundDivideNulling(
-    BoundExpression* left,
-    BoundExpression* right,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundDivideQuiet(
-    BoundExpression* left,
-    BoundExpression* right,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundCppDivideSignaling(
-    BoundExpression* left,
-    BoundExpression* right,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundCppDivideNulling(
-    BoundExpression* left,
-    BoundExpression* right,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundModulusSignaling(
-    BoundExpression* left,
-    BoundExpression* right,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundModulusNulling(
-    BoundExpression* left,
-    BoundExpression* right,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 

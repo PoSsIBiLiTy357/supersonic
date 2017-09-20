@@ -48,8 +48,7 @@ class HybridAggregateLargeTest : public testing::Test {
 FailureOrOwned<Cursor> CreateHybridGroupAggregate(
     const SingleSourceProjector& group_by,
     const AggregationSpecification& aggregation,
-    Cursor* input) {
-  std::unique_ptr<Cursor> input_owner(input);
+    unique_ptr<Cursor> input) {
   return BoundHybridGroupAggregate(
       group_by.Clone(),
       aggregation,
@@ -57,7 +56,7 @@ FailureOrOwned<Cursor> CreateHybridGroupAggregate(
       HeapBufferAllocator::Get(),
       16,
       NULL,
-      input_owner.release());
+      std::move(input));
 }
 
 TEST_F(HybridAggregateLargeTest, LargeInputWithManyDistinctKeys) {
@@ -92,13 +91,12 @@ TEST_F(HybridAggregateLargeTest, LargeInputWithManyDistinctKeys) {
   test.SetIgnoreRowOrder(true);
   std::unique_ptr<const SingleSourceProjector> group_by_columns(
       ProjectNamedAttribute("col0"));
-  std::unique_ptr<AggregationSpecification> aggregation(
-      new AggregationSpecification);
+  auto aggregation = make_unique<AggregationSpecification>();
   aggregation->AddAggregation(SUM, "col1", "sum");
   aggregation->AddDistinctAggregation(COUNT, "col1", "cnt");
   test.Execute(HybridGroupAggregate(
-      group_by_columns.release(),
-      aggregation.release(),
+      std::move(group_by_columns),
+      std::move(aggregation),
       320000,
       "",
       test.input()));
@@ -115,7 +113,7 @@ TEST_F(HybridAggregateLargeTest, NonDistinctAndDistinctAggregationsLargeInput) {
   test.SkipBarrierHandlingChecks(true);
   const int reps = 4000;
   test.SetInput(
-      new RepeatingBlockOperation(
+      make_unique<RepeatingBlockOperation>(
         BlockBuilder<INT32, INT32>()
         .AddRow(1, 3)
         .AddRow(1, 4)
@@ -135,8 +133,7 @@ TEST_F(HybridAggregateLargeTest, NonDistinctAndDistinctAggregationsLargeInput) {
                          .Build());
   std::unique_ptr<const SingleSourceProjector> group_by_columns(
       ProjectNamedAttribute("col0"));
-  std::unique_ptr<AggregationSpecification> aggregation(
-      new AggregationSpecification);
+  auto aggregation = make_unique<AggregationSpecification>();
   aggregation->AddDistinctAggregation(SUM, "col1", "sum");
   aggregation->AddDistinctAggregation(COUNT, "col1", "cnt");
   aggregation->AddAggregation(SUM, "col1", "sum2");
@@ -144,8 +141,8 @@ TEST_F(HybridAggregateLargeTest, NonDistinctAndDistinctAggregationsLargeInput) {
   aggregation->AddAggregation(COUNT, "", "cnt3");
 
   test.Execute(HybridGroupAggregate(
-      group_by_columns.release(),
-      aggregation.release(),
+      std::move(group_by_columns),
+      std::move(aggregation),
       8000,
       "",
       test.input()));

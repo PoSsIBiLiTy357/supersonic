@@ -31,48 +31,48 @@ class BoundExpression;
 class BoundExpressionList;
 class BufferAllocator;
 
-FailureOrOwned<BoundExpression> BoundEqual(BoundExpression* left,
-                                           BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundEqual(unique_ptr<BoundExpression> left,
+                                           unique_ptr<BoundExpression> right,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundNotEqual(BoundExpression* left,
-                                              BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundNotEqual(unique_ptr<BoundExpression> left,
+                                              unique_ptr<BoundExpression> right,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundLess(BoundExpression* left,
-                                          BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundLess(unique_ptr<BoundExpression> left,
+                                          unique_ptr<BoundExpression> right,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundLessOrEqual(BoundExpression* left,
-                                                 BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundLessOrEqual(unique_ptr<BoundExpression> left,
+                                                 unique_ptr<BoundExpression> right,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count);
 
 
-FailureOrOwned<BoundExpression> BoundGreater(BoundExpression* left,
-                                             BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundGreater(unique_ptr<BoundExpression> left,
+                                             unique_ptr<BoundExpression> right,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundGreaterOrEqual(BoundExpression* left,
-                                                    BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundGreaterOrEqual(unique_ptr<BoundExpression> left,
+                                                    unique_ptr<BoundExpression> right,
                                                     BufferAllocator* allocator,
                                                     rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundIsOdd(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundIsOdd(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundIsEven(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundIsEven(unique_ptr<BoundExpression> arg,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundInSet(
-    BoundExpression* needle_expression,
-    BoundExpressionList* haystack_arguments,
+    unique_ptr<BoundExpression> needle_expression,
+    unique_ptr<BoundExpressionList> haystack_arguments,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 

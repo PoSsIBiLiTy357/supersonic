@@ -41,7 +41,7 @@ namespace supersonic {using std::string; }
 // The exception is evaluated exactly once.
 #define THROW(exception)                                                       \
   do {                                                                         \
-    return ::supersonic::Failure((exception)->            \
+    return ::supersonic::Failure((exception)->                                 \
         AddStackTraceElement(__FUNCTION__, __FILE__, __LINE__,                 \
                              "(thrown here)"));                                \
   } while (false)
@@ -57,18 +57,17 @@ namespace supersonic {using std::string; }
                                           message_prefix,                      \
                                           stack_frame_context)                 \
   do {                                                                         \
-    ::supersonic::Exception* for_type_matching = NULL;    \
-    ::supersonic::Exception* exception =                  \
-        ::common::ConvertException(                              \
-             for_type_matching, (result).release_exception());                 \
+    unique_ptr<::supersonic::Exception> for_type_matching = nullptr;           \
+    auto exception = ::common::ConvertException(                               \
+             std::move(for_type_matching), (result).move_exception());         \
     if (exception != NULL) {                                                   \
       string prefix(message_prefix);                                           \
       if (!prefix.empty()) {                                                   \
         exception->set_message(StrCat(prefix, ": ", exception->message()));    \
       }                                                                        \
-      return ::supersonic::Failure((exception)->          \
-          AddStackTraceElement(__FUNCTION__, __FILE__, __LINE__,               \
-                               (stack_frame_context)));                        \
+      (exception)->AddStackTraceElement(__FUNCTION__, __FILE__, __LINE__,      \
+                                        (stack_frame_context));                \
+      return ::supersonic::Failure(std::move(exception));                      \
     }                                                                          \
   } while (false)
 

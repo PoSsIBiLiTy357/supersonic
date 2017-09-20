@@ -73,14 +73,15 @@ class GroupKeySet {
   // rows are considered equal and are grouped together. Set is pre-allocated
   // to store initial_row_capacity unique keys, and it can grow as needed.
   static FailureOrOwned<GroupKeySet> Create(
-      const BoundSingleSourceProjector* group_by,
+      unique_ptr<const BoundSingleSourceProjector> group_by,
       BufferAllocator* allocator,
       rowcount_t initial_row_capacity,
       const int64 max_unique_keys_in_result) {
-    std::unique_ptr<GroupKeySet> group_key_set(
-        new GroupKeySet(group_by, allocator, max_unique_keys_in_result));
+    unique_ptr<GroupKeySet> group_key_set(
+        new GroupKeySet(std::move(group_by), allocator,
+                        max_unique_keys_in_result));
     PROPAGATE_ON_FAILURE(group_key_set->Init(initial_row_capacity));
-    return Success(group_key_set.release());
+    return Success(std::move(group_key_set));
   }
 
   const TupleSchema& key_schema() const {
@@ -121,10 +122,10 @@ class GroupKeySet {
   void Compact() { key_row_set_.Compact(); }
 
  private:
-  GroupKeySet(const BoundSingleSourceProjector* group_by,
+  GroupKeySet(unique_ptr<const BoundSingleSourceProjector> group_by,
               BufferAllocator* allocator,
               const int64 max_unique_keys_in_result)
-      : key_projector_(group_by),
+      : key_projector_(std::move(group_by)),
         child_key_view_(key_projector_->result_schema()),
         key_row_set_(key_projector_->result_schema(), allocator,
                      max_unique_keys_in_result) {}
@@ -163,18 +164,16 @@ class GroupAggregateCursor : public BasicCursor {
  public:
   // Creates the cursor. Returns immediately (w/o processing any input).
   static FailureOrOwned<GroupAggregateCursor> Create(
-      const BoundSingleSourceProjector* group_by,
-      Aggregator* aggregator,
-      BufferAllocator* allocator,           // Takes ownership
+      unique_ptr<const BoundSingleSourceProjector> group_by,
+      unique_ptr<Aggregator> aggregator,
+      unique_ptr<BufferAllocator> allocator,// Takes ownership
       BufferAllocator* original_allocator,  // Doesn't take ownership.
       bool best_effort,
       const int64 max_unique_keys_in_result,
-      Cursor* child) {
-    std::unique_ptr<BufferAllocator> allocator_owned(CHECK_NOTNULL(allocator));
-    std::unique_ptr<Cursor> child_owner(child);
-    std::unique_ptr<Aggregator> aggregator_owner(aggregator);
+      unique_ptr<Cursor> child) {
+    CHECK_NOTNULL(allocator.get());
     FailureOrOwned<GroupKeySet> key = GroupKeySet::Create(
-         group_by, allocator_owned.get(), aggregator_owner->capacity(),
+         std::move(group_by), allocator.get(), aggregator->capacity(),
          max_unique_keys_in_result);
     PROPAGATE_ON_FAILURE(key);
     vector<const TupleSchema*> input_schemas(2);
@@ -188,16 +187,16 @@ class GroupAggregateCursor : public BasicCursor {
         result_projector->Bind(input_schemas));
     PROPAGATE_ON_FAILURE(bound_result_projector);
     TupleSchema result_schema = bound_result_projector->result_schema();
-    return Success(
-        new GroupAggregateCursor(result_schema,
-                                 allocator_owned.release(),  // Takes ownership.
-                                 original_allocator,
-                                 key.release(),
-                                 aggregator_owner.release(),
-                                 bound_result_projector.release(),
-                                 best_effort,
-                                 max_unique_keys_in_result,
-                                 child_owner.release()));
+    return Success(make_unique<GroupAggregateCursor>(
+        result_schema,
+         std::move(allocator),  // Takes ownership.
+         original_allocator,
+         key.move(),
+         std::move(aggregator),
+         bound_result_projector.move(),
+         best_effort,
+         max_unique_keys_in_result,
+         std::move(child)));
   }
 
   virtual ResultView Next(rowcount_t max_row_count) {
@@ -248,31 +247,31 @@ class GroupAggregateCursor : public BasicCursor {
            : GROUP_AGGREGATE;
   }
 
- private:
   // Takes ownership of the allocator, key, aggregator, and child.
   GroupAggregateCursor(const TupleSchema& result_schema,
-                       BufferAllocator* allocator,
+                       unique_ptr<BufferAllocator> allocator,
                        BufferAllocator* original_allocator,
-                       GroupKeySet* key,
-                       Aggregator* aggregator,
-                       const BoundMultiSourceProjector* result_projector,
+                       unique_ptr<GroupKeySet> key,
+                       unique_ptr<Aggregator> aggregator,
+                       unique_ptr<const BoundMultiSourceProjector> result_projector,
                        bool best_effort,
                        const int64 max_unique_keys_in_result,
-                       Cursor* child)
+                       unique_ptr<Cursor> child)
       : BasicCursor(result_schema),
-        allocator_(allocator),
+        allocator_(std::move(allocator)),
         original_allocator_(CHECK_NOTNULL(original_allocator)),
-        child_(child),
-        key_(key),
-        aggregator_(aggregator),
+        child_(std::move(child)),
+        key_(std::move(key)),
+        aggregator_(std::move(aggregator)),
         result_(result_schema),
-        result_projector_(result_projector),
+        result_projector_(std::move(result_projector)),
         inserted_keys_(Cursor::kDefaultRowCount),
         best_effort_(best_effort),
         input_exhausted_(false),
         reset_aggregator_in_processinput_(false),
         max_unique_keys_in_result_(max_unique_keys_in_result) {}
 
+ private:
   // Process as many rows from input as can fit into result block. If after the
   // first call to ProcessInput() input_exhausted_ is true, the result is fully
   // aggregated (there are no rows with equal group by columns).
@@ -282,7 +281,7 @@ class GroupAggregateCursor : public BasicCursor {
   // Owned allocator used to allocate the memory.
   // NOTE: it is used by other member objects created by GroupAggregateCursor so
   // it has to be destroyed last. Keep it as the first class member.
-  std::unique_ptr<const BufferAllocator> allocator_;
+  unique_ptr<const BufferAllocator> allocator_;
   // Non-owned allocator used to check whether we can allocate more memory or
   // not.
   const BufferAllocator* original_allocator_;
@@ -291,10 +290,10 @@ class GroupAggregateCursor : public BasicCursor {
   CursorIterator child_;
 
   // Holds key columns of the result. Wrapper around RowHashSet.
-  std::unique_ptr<GroupKeySet> key_;
+  unique_ptr<GroupKeySet> key_;
 
   // Holds 'aggregated' columns of the result.
-  std::unique_ptr<Aggregator> aggregator_;
+  unique_ptr<Aggregator> aggregator_;
 
   // Iterates over a result of last call to ProcessInput. If
   // cursor_over_result_->Next() returns EOS and input_exhausted() is false,
@@ -303,7 +302,7 @@ class GroupAggregateCursor : public BasicCursor {
   ViewIterator result_;
 
   // Projector to combine key & aggregated columns into the result.
-  std::unique_ptr<const BoundMultiSourceProjector> result_projector_;
+  unique_ptr<const BoundMultiSourceProjector> result_projector_;
 
   GroupKeySet::FindResult inserted_keys_;
 
@@ -434,16 +433,20 @@ class GroupAggregateOperation : public BasicOperation {
  public:
   // Takes ownership of SingleSourceProjector, AggregationSpecification and
   // child_operation.
-  GroupAggregateOperation(const SingleSourceProjector* group_by,
-                          const AggregationSpecification* aggregation,
-                          GroupAggregateOptions* options,
+  GroupAggregateOperation(unique_ptr<const SingleSourceProjector> group_by,
+                          unique_ptr<const AggregationSpecification> aggregation,
+                          unique_ptr<GroupAggregateOptions> options,
                           bool best_effort,
-                          Operation* child)
-      : BasicOperation(child),
-        group_by_(group_by),
-        aggregation_specification_(aggregation),
+                          unique_ptr<Operation> child)
+      : BasicOperation(std::move(child)),
+        group_by_(std::move(group_by)),
+        aggregation_specification_(std::move(aggregation)),
         best_effort_(best_effort),
-        options_(options != NULL ? options : new GroupAggregateOptions()) {}
+        options_(std::move(options)) {
+    if (options_ == nullptr) {
+      options_ = make_unique<GroupAggregateOptions>();
+    }
+  }
 
   virtual ~GroupAggregateOperation() {}
 
@@ -469,19 +472,19 @@ class GroupAggregateOperation : public BasicOperation {
         group_by_->Bind(child_cursor->schema());
     PROPAGATE_ON_FAILURE(bound_group_by);
     return BoundGroupAggregateWithLimit(
-        bound_group_by.release(), aggregator.release(),
-        allocator.release(),
+        bound_group_by.move(), aggregator.move(),
+        std::move(allocator),
         original_allocator,
         best_effort_,
         options_->max_unique_keys_in_result(),
-        child_cursor.release());
+        child_cursor.move());
   }
 
  private:
-  std::unique_ptr<const SingleSourceProjector> group_by_;
-  std::unique_ptr<const AggregationSpecification> aggregation_specification_;
+  unique_ptr<const SingleSourceProjector> group_by_;
+  unique_ptr<const AggregationSpecification> aggregation_specification_;
   const bool best_effort_;
-  std::unique_ptr<GroupAggregateOptions> options_;
+  unique_ptr<GroupAggregateOptions> options_;
   DISALLOW_COPY_AND_ASSIGN(GroupAggregateOperation);
 };
 
@@ -538,11 +541,11 @@ class HybridGroupSetup {
       const SingleSourceProjector& group_by_columns,
       const AggregationSpecification& aggregation_specification,
       const TupleSchema& input_schema) {
-    std::unique_ptr<HybridGroupSetup> setup(new HybridGroupSetup);
+    auto setup = make_unique<HybridGroupSetup>();
     PROPAGATE_ON_FAILURE(setup->Init(group_by_columns,
                                      aggregation_specification,
                                      input_schema));
-    return Success(setup.release());
+    return Success(std::move(setup));
   }
 
   // For restoring non-nullability of COUNT columns in hybrid group by. We
@@ -550,15 +553,15 @@ class HybridGroupSetup {
   // TODO(user): This would be unneccesary if we could specify that SUM's result
   // should be not nullable.
   FailureOrOwned<Cursor> MakeCountColumnsNotNullable(
-      Cursor* cursor,
+      unique_ptr<Cursor> cursor,
       BufferAllocator* allocator) const {
     CHECK(initialized_);
     vector<string> column_names(columns_to_make_not_nullable_.begin(),
                                 columns_to_make_not_nullable_.end());
     return column_names.empty()
-        ? Success(cursor)
+        ? Success(std::move(cursor))
         : MakeSelectedColumnsNotNullable(ProjectNamedAttributes(column_names),
-                                         allocator, cursor);
+                                         allocator, std::move(cursor));
   }
 
   // Computes the result schema for HybridGroupFinalAggregationCursor.
@@ -589,22 +592,21 @@ class HybridGroupSetup {
 
   // Returns a cursor with input transformed for hybrid group.
   FailureOrOwned<Cursor> TransformInput(BufferAllocator* allocator,
-                                        Cursor* input) const {
+                                        unique_ptr<Cursor> input) const {
     CHECK(initialized_);
-    std::unique_ptr<Cursor> input_owned(input);
     if (count_star_present_) {
       // Add a column with non-null values for implementing COUNT(*).
       FailureOrOwned<Cursor> input_with_count_star(
           ExtendByConstantColumn(count_star_column_name_, allocator,
-                                 input_owned.release()));
+                                 std::move(input)));
       PROPAGATE_ON_FAILURE(input_with_count_star);
-      input_owned.reset(input_with_count_star.release());
+      input = input_with_count_star.move();
     }
     return BoundHybridGroupTransform(
         group_by_columns_->Clone(),
         column_group_projectors_,
         allocator,
-        input_owned.release());
+        std::move(input));
   }
 
   const AggregationSpecification& pregroup_aggregation() const {
@@ -633,17 +635,17 @@ class HybridGroupSetup {
     return *group_by_columns_by_name_;
   }
 
- private:
   HybridGroupSetup()
       : initialized_(false),
         count_star_column_name_("$hybrid_group_count_star$") {}
 
+ private:
   FailureOrVoid Init(
       const SingleSourceProjector& group_by_columns,
       const AggregationSpecification& aggregation_specification,
       const TupleSchema& input_schema) {
     CHECK(!initialized_);
-    group_by_columns_.reset(group_by_columns.Clone());
+    group_by_columns_ = group_by_columns.Clone();
     has_distinct_aggregations_ = false;
     count_star_present_ = false;
     // Hybrid group-by may need to project group-by columns multiple times
@@ -654,7 +656,7 @@ class HybridGroupSetup {
     FailureOrOwned<const SingleSourceProjector> group_by_columns_by_name(
         ProjectUsingProjectorResultNames(group_by_columns, input_schema));
     PROPAGATE_ON_FAILURE(group_by_columns_by_name);
-    group_by_columns_by_name_.reset(group_by_columns_by_name.release());
+    group_by_columns_by_name_ = group_by_columns_by_name.move();
     // pregroup_group_by_columns_ will contain all the original group-by columns
     // plus all the distinct aggregated columns.
     pregroup_group_by_columns_.add(group_by_columns_by_name_->Clone());
@@ -801,21 +803,21 @@ class HybridGroupFinalAggregationCursor : public BasicCursor {
   // final_group_by_columns and pregroup_cursor.
   HybridGroupFinalAggregationCursor(
       const TupleSchema& result_schema,
-      const HybridGroupSetup* hybrid_group_setup,
-      Aggregator* final_aggregator,
-      const BoundSingleSourceProjector* final_group_by_columns,
+      unique_ptr<const HybridGroupSetup> hybrid_group_setup,
+      unique_ptr<Aggregator> final_aggregator,
+      unique_ptr<const BoundSingleSourceProjector> final_group_by_columns,
       StringPiece temporary_directory_prefix,
       BufferAllocator* allocator,
-      GroupAggregateCursor* pregroup_cursor)
+      unique_ptr<GroupAggregateCursor> pregroup_cursor)
       : BasicCursor(result_schema),
         is_waiting_on_barrier_supported_(
             pregroup_cursor->IsWaitingOnBarrierSupported()),
-        hybrid_group_setup_(hybrid_group_setup),
-        final_aggregator_(final_aggregator),
-        final_group_by_columns_(final_group_by_columns),
+        hybrid_group_setup_(std::move(hybrid_group_setup)),
+        final_aggregator_(std::move(final_aggregator)),
+        final_group_by_columns_(std::move(final_group_by_columns)),
         temporary_directory_prefix_(temporary_directory_prefix.ToString()),
         allocator_(allocator),
-        pregroup_cursor_(pregroup_cursor) {
+        pregroup_cursor_(std::move(pregroup_cursor)) {
   }
 
   virtual ResultView Next(rowcount_t max_row_count) {
@@ -832,7 +834,7 @@ class HybridGroupFinalAggregationCursor : public BasicCursor {
         // all the data (a single output block), its result can be returned as
         // final result.
         LOG(INFO) << "HybridGroupAggregate not using disk.";
-        PROPAGATE_ON_FAILURE(SetResultCursor(pregroup_cursor_.release()));
+        PROPAGATE_ON_FAILURE(SetResultCursor(std::move(pregroup_cursor_)));
       } else {
         // Pregroup best-effort didn't fully aggregate the data. Sorting data to
         // combine duplicate pregroup keys. The final aggregation will be
@@ -849,11 +851,11 @@ class HybridGroupFinalAggregationCursor : public BasicCursor {
             hybrid_group_setup_->pregroup_group_by_columns().Bind(
                 pregroup_cursor_->schema()));
         PROPAGATE_ON_FAILURE(bound_group_by_columns);
-        sorter_.reset(CreateUnbufferedSorter(
+        sorter_ = CreateUnbufferedSorter(
             pregroup_cursor_->schema(),
-            new BoundSortOrder(bound_group_by_columns.release()),
+            make_unique<BoundSortOrder>(bound_group_by_columns.move()),
             temporary_directory_prefix_,
-            allocator_));
+            allocator_);
       }
     }
     if (result_cursor_ == NULL && sorter_ != NULL) {
@@ -889,25 +891,25 @@ class HybridGroupFinalAggregationCursor : public BasicCursor {
       PROPAGATE_ON_FAILURE(sorted_group_by_columns);
       FailureOrOwned<Cursor> combine_cursor =
           BoundAggregateClusters(
-              sorted_group_by_columns.release(),
-              aggregator.release(),
+              sorted_group_by_columns.move(),
+              aggregator.move(),
               allocator_,
-              sorted.release());
+              sorted.move());
       PROPAGATE_ON_FAILURE(combine_cursor);
       // Restoring COUNT column nullability, so we have exactly the same schema
       // that final_aggregator was built for.
       FailureOrOwned<Cursor> combine_cursor_count_nonnullable =
           hybrid_group_setup_->MakeCountColumnsNotNullable(
-              combine_cursor.release(), allocator_);
+              combine_cursor.move(), allocator_);
       PROPAGATE_ON_FAILURE(combine_cursor_count_nonnullable);
       // Final aggregation on the original key using AggregateClusters.
       FailureOrOwned<Cursor> aggregated = BoundAggregateClusters(
-          final_group_by_columns_.release(),
-          final_aggregator_.release(),
+          std::move(final_group_by_columns_),
+          std::move(final_aggregator_),
           allocator_,
-          combine_cursor_count_nonnullable.release());
+          combine_cursor_count_nonnullable.move());
       PROPAGATE_ON_FAILURE(aggregated);
-      PROPAGATE_ON_FAILURE(SetResultCursor(aggregated.release()));
+      PROPAGATE_ON_FAILURE(SetResultCursor(aggregated.move()));
     }
     CHECK(sorter_ == NULL);
     CHECK(result_cursor_ != NULL);
@@ -946,12 +948,12 @@ class HybridGroupFinalAggregationCursor : public BasicCursor {
   }
 
  private:
-  FailureOrVoid SetResultCursor(Cursor* result_cursor) {
+  FailureOrVoid SetResultCursor(unique_ptr<Cursor> result_cursor) {
     FailureOrOwned<Cursor> result_cursor_fixed_nullability =
         hybrid_group_setup_->MakeCountColumnsNotNullable(
-            result_cursor, allocator_);
+            std::move(result_cursor), allocator_);
     PROPAGATE_ON_FAILURE(result_cursor_fixed_nullability);
-    result_cursor_.reset(result_cursor_fixed_nullability.release());
+    result_cursor_ = result_cursor_fixed_nullability.move();
     CHECK(TupleSchema::AreEqual(schema(), result_cursor_->schema(), true))
         << "schema(): "
         << schema().GetHumanReadableSpecification()
@@ -961,92 +963,94 @@ class HybridGroupFinalAggregationCursor : public BasicCursor {
   }
 
   bool is_waiting_on_barrier_supported_;
-  std::unique_ptr<const HybridGroupSetup> hybrid_group_setup_;
-  std::unique_ptr<Aggregator> final_aggregator_;
-  std::unique_ptr<const BoundSingleSourceProjector> final_group_by_columns_;
+  unique_ptr<const HybridGroupSetup> hybrid_group_setup_;
+  unique_ptr<Aggregator> final_aggregator_;
+  unique_ptr<const BoundSingleSourceProjector> final_group_by_columns_;
   size_t memory_quota_;
   string temporary_directory_prefix_;
   BufferAllocator* allocator_;
-  std::unique_ptr<GroupAggregateCursor> pregroup_cursor_;
-  std::unique_ptr<Sorter> sorter_;
-  std::unique_ptr<Cursor> result_cursor_;
+  unique_ptr<GroupAggregateCursor> pregroup_cursor_;
+  unique_ptr<Sorter> sorter_;
+  unique_ptr<Cursor> result_cursor_;
   DISALLOW_COPY_AND_ASSIGN(HybridGroupFinalAggregationCursor);
 };
 
 }  // namespace
 
-Operation* GroupAggregate(
-    const SingleSourceProjector* group_by,
-    const AggregationSpecification* aggregation,
-    GroupAggregateOptions* options,
-    Operation* child) {
-  return new GroupAggregateOperation(group_by, aggregation, options, false,
-                                     child);
+unique_ptr<Operation> GroupAggregate(
+    unique_ptr<const SingleSourceProjector> group_by,
+    unique_ptr<const AggregationSpecification> aggregation,
+    unique_ptr<GroupAggregateOptions> options,
+    unique_ptr<Operation> child) {
+  return make_unique<GroupAggregateOperation>(
+      std::move(group_by), std::move(aggregation), std::move(options),
+      false, std::move(child));
 }
 
-Operation* BestEffortGroupAggregate(
-    const SingleSourceProjector* group_by,
-    const AggregationSpecification* aggregation,
-    GroupAggregateOptions* options,
-    Operation* child) {
-  return new GroupAggregateOperation(group_by, aggregation, options, true,
-                                     child);
+unique_ptr<Operation> BestEffortGroupAggregate(
+    unique_ptr<const SingleSourceProjector> group_by,
+    unique_ptr<const AggregationSpecification> aggregation,
+    unique_ptr<GroupAggregateOptions> options,
+    unique_ptr<Operation> child) {
+  return make_unique<GroupAggregateOperation>(
+      std::move(group_by), std::move(aggregation), std::move(options),
+      true, std::move(child));
 }
 
 // TODO(user): Remove this variant in favor of BoundGroupAggregateWithLimit
 FailureOrOwned<Cursor> BoundGroupAggregate(
-    const BoundSingleSourceProjector* group_by,
-        Aggregator* aggregator,
-        BufferAllocator* allocator,
-        BufferAllocator* original_allocator,
-        bool best_effort,
-        Cursor* child) {
-  return BoundGroupAggregateWithLimit(group_by,
-                                      aggregator,
-                                      allocator,
-                                      original_allocator,
-                                      best_effort,
-                                      kint64max,
-                                      child);
+    unique_ptr<const BoundSingleSourceProjector> group_by,
+    unique_ptr<Aggregator> aggregator,
+    unique_ptr<BufferAllocator> allocator,
+    BufferAllocator* original_allocator,
+    bool best_effort,
+    unique_ptr<Cursor> child) {
+  return BoundGroupAggregateWithLimit(
+      std::move(group_by),
+      std::move(aggregator),
+      std::move(allocator),
+      original_allocator,
+      best_effort,
+      kint64max,
+      std::move(child));
 }
 
 FailureOrOwned<Cursor> BoundGroupAggregateWithLimit(
-    const BoundSingleSourceProjector* group_by,
-        Aggregator* aggregator,
-        BufferAllocator* allocator,
-        BufferAllocator* original_allocator,
-        bool best_effort,
-        const int64 max_unique_keys_in_result,
-        Cursor* child) {
+    unique_ptr<const BoundSingleSourceProjector> group_by,
+    unique_ptr<Aggregator> aggregator,
+    unique_ptr<BufferAllocator> allocator,
+    BufferAllocator* original_allocator,
+    bool best_effort,
+    const int64 max_unique_keys_in_result,
+    unique_ptr<Cursor> child) {
+  // UGLY: need to save it to pass it in after move
+  auto new_allocator = allocator.get();
   FailureOrOwned<GroupAggregateCursor> result =
       GroupAggregateCursor::Create(
-          group_by, aggregator, allocator,
-          original_allocator == NULL ? allocator : original_allocator,
-          best_effort, max_unique_keys_in_result, child);
+          std::move(group_by), std::move(aggregator), std::move(allocator),
+          original_allocator == NULL ? new_allocator : original_allocator,
+          best_effort, max_unique_keys_in_result, std::move(child));
   PROPAGATE_ON_FAILURE(result);
-  return Success(result.release());
+  return Success(result.move());
 }
 
 FailureOrOwned<Cursor> BoundHybridGroupAggregate(
-    const SingleSourceProjector* group_by_columns,
+    unique_ptr<const SingleSourceProjector> group_by_columns,
     const AggregationSpecification& aggregation_specification,
     StringPiece temporary_directory_prefix,
     BufferAllocator* allocator,
     size_t memory_quota,
     const HybridGroupDebugOptions* debug_options,
-    Cursor* child) {
-  std::unique_ptr<Cursor> child_owner(child);
-  std::unique_ptr<const SingleSourceProjector> group_by_columns_owner(
-      group_by_columns);
+    unique_ptr<Cursor> child) {
   std::unique_ptr<const HybridGroupDebugOptions> debug_options_owned(
       debug_options);
   FailureOrOwned<const HybridGroupSetup> hybrid_group_setup(
-      HybridGroupSetup::Create(*group_by_columns_owner,
+      HybridGroupSetup::Create(*group_by_columns,
                                aggregation_specification,
-                               child_owner->schema()));
+                               child->schema()));
   PROPAGATE_ON_FAILURE(hybrid_group_setup);
   FailureOrOwned<Cursor> transformed_input(
-      hybrid_group_setup->TransformInput(allocator, child_owner.release()));
+      hybrid_group_setup->TransformInput(allocator, std::move(child)));
   PROPAGATE_ON_FAILURE(transformed_input);
   if (debug_options_owned != NULL &&
       debug_options_owned->return_transformed_input()) {
@@ -1058,8 +1062,7 @@ FailureOrOwned<Cursor> BoundHybridGroupAggregate(
           transformed_input->schema()));
   PROPAGATE_ON_FAILURE(bound_pregroup_columns);
   // limit_allocator will be owned by 'pregroup_cursor'.
-  std::unique_ptr<BufferAllocator> limit_allocator(
-      new MemoryLimit(memory_quota, false, allocator));
+  auto limit_allocator = make_unique<MemoryLimit>(memory_quota, false, allocator);
 
   FailureOrOwned<Aggregator> pregroup_aggregator = Aggregator::Create(
       hybrid_group_setup->pregroup_aggregation(), transformed_input->schema(),
@@ -1068,13 +1071,13 @@ FailureOrOwned<Cursor> BoundHybridGroupAggregate(
   PROPAGATE_ON_FAILURE(pregroup_aggregator);
   FailureOrOwned<GroupAggregateCursor> pregroup_cursor =
       GroupAggregateCursor::Create(
-          bound_pregroup_columns.release(),
-          pregroup_aggregator.release(),
-          limit_allocator.release(),
+          bound_pregroup_columns.move(),
+          pregroup_aggregator.move(),
+          std::move(limit_allocator),
           allocator,
           true,  // best effort.
           kint64max,
-          transformed_input.release());
+          transformed_input.move());
   PROPAGATE_ON_FAILURE(pregroup_cursor);
   // Building final_aggregator and final_group_by_columns to compute the
   // result_schema for HybridGroupFinalAggregationCursor.
@@ -1094,27 +1097,27 @@ FailureOrOwned<Cursor> BoundHybridGroupAggregate(
           final_group_by_columns->result_schema(),
           final_aggregator->schema());
   PROPAGATE_ON_FAILURE(result_schema);
-  return Success(new HybridGroupFinalAggregationCursor(
+  return Success(make_unique<HybridGroupFinalAggregationCursor>(
       result_schema.get(),
-      hybrid_group_setup.release(),
-      final_aggregator.release(),
-      final_group_by_columns.release(),
+      hybrid_group_setup.move(),
+      final_aggregator.move(),
+      final_group_by_columns.move(),
       temporary_directory_prefix,
       allocator,
-      pregroup_cursor.release()));
+      pregroup_cursor.move()));
 }
 
 class HybridGroupAggregateOperation : public BasicOperation {
  public:
   HybridGroupAggregateOperation(
-      const SingleSourceProjector* group_by_columns,
-      const AggregationSpecification* aggregation_specification,
+      unique_ptr<const SingleSourceProjector> group_by_columns,
+      unique_ptr<const AggregationSpecification> aggregation_specification,
       size_t memory_quota,
       StringPiece temporary_directory_prefix,
-      Operation* child)
-      : BasicOperation(child),
-        group_by_columns_(group_by_columns),
-        aggregation_specification_(aggregation_specification),
+      unique_ptr<Operation> child)
+      : BasicOperation(std::move(child)),
+        group_by_columns_(std::move(group_by_columns)),
+        aggregation_specification_(std::move(aggregation_specification)),
         memory_quota_(memory_quota),
         temporary_directory_prefix_(temporary_directory_prefix.ToString()) {}
 
@@ -1130,7 +1133,7 @@ class HybridGroupAggregateOperation : public BasicOperation {
         buffer_allocator(),
         memory_quota_,
         NULL,
-        child_cursor.release());
+        child_cursor.move());
   }
 
  private:
@@ -1141,17 +1144,16 @@ class HybridGroupAggregateOperation : public BasicOperation {
   DISALLOW_COPY_AND_ASSIGN(HybridGroupAggregateOperation);
 };
 
-Operation* HybridGroupAggregate(
-    const SingleSourceProjector* group_by_columns,
-    const AggregationSpecification* aggregation_specification,
+unique_ptr<Operation>
+HybridGroupAggregate(
+    unique_ptr<const SingleSourceProjector> group_by_columns,
+    unique_ptr<const AggregationSpecification> aggregation_specification,
     size_t memory_quota,
     StringPiece temporary_directory_prefix,
-    Operation* child) {
-  return new HybridGroupAggregateOperation(group_by_columns,
-                                           aggregation_specification,
-                                           memory_quota,
-                                           temporary_directory_prefix,
-                                           child);
+    unique_ptr<Operation> child) {
+  return make_unique<HybridGroupAggregateOperation>(
+      std::move(group_by_columns), std::move(aggregation_specification),
+      memory_quota, temporary_directory_prefix, std::move(child));
 }
 
 }  // namespace supersonic

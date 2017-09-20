@@ -17,9 +17,8 @@
 #ifndef SUPERSONIC_TESTING_EXPRESSION_TEST_HELPER_H_
 #define SUPERSONIC_TESTING_EXPRESSION_TEST_HELPER_H_
 
-#include <vector>
-using std::vector;
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/types.h"
 #include "supersonic/expression/infrastructure/bound_expression_creators.h"
@@ -40,24 +39,21 @@ class BoundExpressionTree;
 // Deletes the original Expression, returns the Bound version (or failure).
 FailureOrOwned<BoundExpressionTree> StandardBind(const TupleSchema& schema,
                                                  rowcount_t max_row_count,
-                                                 const Expression* expression);
+                                                 unique_ptr<const Expression> expression);
 
 // Assumes (and checks for) success, and deletes the original Expression.
-BoundExpressionTree* DefaultBind(const TupleSchema& schema,
-                                 rowcount_t max_row_count,
-                                 const Expression* expression);
+unique_ptr<BoundExpressionTree> DefaultBind(
+    const TupleSchema &schema, rowcount_t max_row_count,
+    unique_ptr<const Expression> expression);
 
 // Assumes (and checks for) success, and deletes the original Expression.
-BoundExpression* DefaultDoBind(const TupleSchema& schema,
-                               rowcount_t max_row_count,
-                               const Expression* expression);
+unique_ptr<BoundExpression> DefaultDoBind(
+    const TupleSchema &schema, rowcount_t max_row_count,
+    unique_ptr<const Expression> expression);
 
 // Assumes (and checks for) success, and verifies the number of result rows.
 const View& DefaultEvaluate(BoundExpressionTree* expression, const View& input);
 
-// Creates ExpressionList from vector of expressions.
-ExpressionList* MakeExpressionList(
-    const vector<const Expression*>& expressions);
 
 // DEPRECATED. Use TupleSchema::AreEqual instead.
 void ExpectResultType(const TupleSchema& schema,
@@ -86,36 +82,36 @@ void ExpectResultType(const TupleSchema& schema,
 // - the block split into 1-row views
 // - the original block's rows replicated to form a bigger block (16 and 1024
 //   rows).
-void TestEvaluation(const Block* block, ConstExpressionCreator factory);
-void TestEvaluation(const Block* block, UnaryExpressionCreator factory);
-void TestEvaluation(const Block* block, BinaryExpressionCreator factory);
-void TestEvaluation(const Block* block, TernaryExpressionCreator factory);
-void TestEvaluation(const Block* block, QuaternaryExpressionCreator factory);
-void TestEvaluation(const Block* block, QuinaryExpressionCreator factory);
-void TestEvaluation(const Block* block, SenaryExpressionCreator factory);
+void TestEvaluation(unique_ptr<const Block> block, ConstExpressionCreator factory);
+void TestEvaluation(unique_ptr<const Block> block, UnaryExpressionCreator factory);
+void TestEvaluation(unique_ptr<const Block> block, BinaryExpressionCreator factory);
+void TestEvaluation(unique_ptr<const Block> block, TernaryExpressionCreator factory);
+void TestEvaluation(unique_ptr<const Block> block, QuaternaryExpressionCreator factory);
+void TestEvaluation(unique_ptr<const Block> block, QuinaryExpressionCreator factory);
+void TestEvaluation(unique_ptr<const Block> block, SenaryExpressionCreator factory);
 
 // Testers for evaluation of stateful expressions. Unlike TestEvaluation they
 // don't replicate or reorder rows in the block. It still tests the expression
 // over block boundaries, which can be very useful for stateful expressions.
-void TestStatefulEvaluation(const Block* block, ConstExpressionCreator factory);
-void TestStatefulEvaluation(const Block* block, UnaryExpressionCreator factory);
-void TestStatefulEvaluation(const Block* block,
+void TestStatefulEvaluation(unique_ptr<const Block>, ConstExpressionCreator factory);
+void TestStatefulEvaluation(unique_ptr<const Block>, UnaryExpressionCreator factory);
+void TestStatefulEvaluation(unique_ptr<const Block>,
                             BinaryExpressionCreator factory);
-void TestStatefulEvaluation(const Block* block,
+void TestStatefulEvaluation(unique_ptr<const Block>,
                             TernaryExpressionCreator factory);
-void TestStatefulEvaluation(const Block* block,
+void TestStatefulEvaluation(unique_ptr<const Block>,
                             QuaternaryExpressionCreator factory);
-void TestStatefulEvaluation(const Block* block,
+void TestStatefulEvaluation(unique_ptr<const Block>,
                             QuinaryExpressionCreator factory);
-void TestStatefulEvaluation(const Block* block,
+void TestStatefulEvaluation(unique_ptr<const Block>,
                             SenaryExpressionCreator factory);
 
 // A tester that takes an expression instead of an expression factory. This is
 // expected to be used in other testing functions, not in tests themselves.
 // TODO(user): transform Creators to functors (so that they can be nested),
 // and then remove this function from the header file.
-void TestEvaluationCommon(const Block* block, bool stateful_expression,
-                          const Expression* expression_ptr);
+void TestEvaluationCommon(const Block& block, bool stateful_expression,
+                          unique_ptr<const Expression> expression);
 
 // Testers for failure scenarios (we expect binding to succeed and evaluation
 // to fail). The format is same as above, except that the block is one column
@@ -131,16 +127,16 @@ void TestEvaluationCommon(const Block* block, bool stateful_expression,
 //    .Build(), &Divide);
 // This code checks that the Divide operation indeed fails on all three of
 // the given divisions (1/0, 0/0, -1/0).
-void TestEvaluationFailure(const Block* block, ConstExpressionCreator factory);
-void TestEvaluationFailure(const Block* block, UnaryExpressionCreator factory);
-void TestEvaluationFailure(const Block* block, BinaryExpressionCreator factory);
-void TestEvaluationFailure(const Block* block,
+void TestEvaluationFailure(unique_ptr<const Block>, ConstExpressionCreator factory);
+void TestEvaluationFailure(unique_ptr<const Block>, UnaryExpressionCreator factory);
+void TestEvaluationFailure(unique_ptr<const Block>, BinaryExpressionCreator factory);
+void TestEvaluationFailure(unique_ptr<const Block>,
                            TernaryExpressionCreator factory);
-void TestEvaluationFailure(const Block* block,
+void TestEvaluationFailure(unique_ptr<const Block>,
                            QuaternaryExpressionCreator factory);
-void TestEvaluationFailure(const Block* block,
+void TestEvaluationFailure(unique_ptr<const Block>,
                            QuinaryExpressionCreator factory);
-void TestEvaluationFailure(const Block* block, SenaryExpressionCreator factory);
+void TestEvaluationFailure(unique_ptr<const Block>, SenaryExpressionCreator factory);
 
 // ------------------------- Binding Tests -------------------------------
 

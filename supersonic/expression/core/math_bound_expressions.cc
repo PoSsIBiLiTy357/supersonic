@@ -18,11 +18,7 @@
 
 #include "supersonic/expression/core/math_bound_expressions.h"
 
-#include <cmath>
-#include <cstddef>
-#include <memory>
-using std::unique_ptr;
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -43,268 +39,263 @@ namespace supersonic {
 
 class BufferAllocator;
 
-FailureOrOwned<BoundExpression> BoundExp(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundExp(unique_ptr<BoundExpression> arg,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_EXP, DOUBLE, DOUBLE>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundLnNulling(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundLnNulling(unique_ptr<BoundExpression> arg,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_LN_NULLING, DOUBLE, DOUBLE>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundLnQuiet(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundLnQuiet(unique_ptr<BoundExpression> arg,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_LN_QUIET, DOUBLE, DOUBLE>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundLog10Nulling(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundLog10Nulling(unique_ptr<BoundExpression> arg,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_LOG10_NULLING, DOUBLE,
-      DOUBLE>(allocator, max_row_count, arg);
+      DOUBLE>(allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundLog10Quiet(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundLog10Quiet(unique_ptr<BoundExpression> arg,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_LOG10_QUIET, DOUBLE, DOUBLE>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundLog2Nulling(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundLog2Nulling(unique_ptr<BoundExpression> arg,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_LOG2_NULLING, DOUBLE, DOUBLE>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundLog2Quiet(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundLog2Quiet(unique_ptr<BoundExpression> arg,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_LOG2_QUIET, DOUBLE, DOUBLE>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundLogNulling(BoundExpression* base_ptr,
-                                                BoundExpression* argument_ptr,
+FailureOrOwned<BoundExpression> BoundLogNulling(unique_ptr<BoundExpression> base,
+                                                unique_ptr<BoundExpression> argument,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> base(base_ptr);
-  unique_ptr<BoundExpression> argument(argument_ptr);
   FailureOrOwned<BoundExpression> ln_argument =
-      BoundLnNulling(argument.release(), allocator, max_row_count);
+      BoundLnNulling(std::move(argument), allocator, max_row_count);
   PROPAGATE_ON_FAILURE(ln_argument);
   FailureOrOwned<BoundExpression> ln_base =
-      BoundLnNulling(base.release(), allocator, max_row_count);
+      BoundLnNulling(std::move(base), allocator, max_row_count);
   PROPAGATE_ON_FAILURE(ln_base);
-  return BoundDivideNulling(ln_argument.release(), ln_base.release(),
+  return BoundDivideNulling(ln_argument.move(), ln_base.move(),
                             allocator, max_row_count);
 }
 
-FailureOrOwned<BoundExpression> BoundLogQuiet(BoundExpression* base_ptr,
-                                              BoundExpression* argument_ptr,
+FailureOrOwned<BoundExpression> BoundLogQuiet(unique_ptr<BoundExpression> base,
+                                              unique_ptr<BoundExpression> argument,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> base(base_ptr);
-  unique_ptr<BoundExpression> argument(argument_ptr);
   FailureOrOwned<BoundExpression> ln_argument =
-      BoundLnQuiet(argument.release(), allocator, max_row_count);
+      BoundLnQuiet(std::move(argument), allocator, max_row_count);
   PROPAGATE_ON_FAILURE(ln_argument);
   FailureOrOwned<BoundExpression> ln_base =
-      BoundLnQuiet(base.release(), allocator, max_row_count);
+      BoundLnQuiet(std::move(base), allocator, max_row_count);
   PROPAGATE_ON_FAILURE(ln_base);
-  return BoundDivideQuiet(ln_argument.release(), ln_base.release(),
+  return BoundDivideQuiet(ln_argument.move(), ln_base.move(),
                           allocator, max_row_count);
 }
 
-FailureOrOwned<BoundExpression> BoundPowerSignaling(BoundExpression* base,
-                                                    BoundExpression* exponent,
+FailureOrOwned<BoundExpression> BoundPowerSignaling(unique_ptr<BoundExpression> base,
+                                                    unique_ptr<BoundExpression> exponent,
                                                     BufferAllocator* allocator,
                                                     rowcount_t max_row_count) {
   return CreateTypedBoundBinaryExpression<OPERATOR_POW_SIGNALING, DOUBLE,
-      DOUBLE, DOUBLE>(allocator, max_row_count, base, exponent);
+      DOUBLE, DOUBLE>(allocator, max_row_count, std::move(base), std::move(exponent));
 }
 
-FailureOrOwned<BoundExpression> BoundPowerNulling(BoundExpression* base,
-                                                  BoundExpression* exponent,
+FailureOrOwned<BoundExpression> BoundPowerNulling(unique_ptr<BoundExpression> base,
+                                                  unique_ptr<BoundExpression> exponent,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count) {
   return CreateTypedBoundBinaryExpression<OPERATOR_POW_NULLING, DOUBLE,
-      DOUBLE, DOUBLE>(allocator, max_row_count, base, exponent);
+      DOUBLE, DOUBLE>(allocator, max_row_count, std::move(base), std::move(exponent));
 }
 
-FailureOrOwned<BoundExpression> BoundPowerQuiet(BoundExpression* base,
-                                                BoundExpression* exponent,
+FailureOrOwned<BoundExpression> BoundPowerQuiet(unique_ptr<BoundExpression> base,
+                                                unique_ptr<BoundExpression> exponent,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
   return CreateTypedBoundBinaryExpression<OPERATOR_POW_QUIET, DOUBLE,
-      DOUBLE, DOUBLE>(allocator, max_row_count, base, exponent);
+      DOUBLE, DOUBLE>(allocator, max_row_count, std::move(base), std::move(exponent));
 }
 
-FailureOrOwned<BoundExpression> BoundSqrtSignaling(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundSqrtSignaling(unique_ptr<BoundExpression> arg,
                                                    BufferAllocator* allocator,
                                                    rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_SQRT_SIGNALING, DOUBLE,
-      DOUBLE>(allocator, max_row_count, arg);
+      DOUBLE>(allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundSqrtNulling(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundSqrtNulling(unique_ptr<BoundExpression> arg,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_SQRT_NULLING, DOUBLE,
-      DOUBLE>(allocator, max_row_count, arg);
+      DOUBLE>(allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundSqrtQuiet(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundSqrtQuiet(unique_ptr<BoundExpression> arg,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_SQRT_QUIET, DOUBLE, DOUBLE>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
 // ----------------------------- Trigonometry ----------------------------------
 
-FailureOrOwned<BoundExpression> BoundSin(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundSin(unique_ptr<BoundExpression> argument,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_SIN, DOUBLE, DOUBLE>(
-      allocator, max_row_count, argument);
+      allocator, max_row_count, std::move(argument));
 }
 
-FailureOrOwned<BoundExpression> BoundCos(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundCos(unique_ptr<BoundExpression> argument,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_COS, DOUBLE, DOUBLE>(
-      allocator, max_row_count, argument);
+      allocator, max_row_count, std::move(argument));
 }
 
-FailureOrOwned<BoundExpression> BoundTanQuiet(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundTanQuiet(unique_ptr<BoundExpression> argument,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_TAN, DOUBLE, DOUBLE>(
-      allocator, max_row_count, argument);
+      allocator, max_row_count, std::move(argument));
 }
 
 // This is slightly suboptimal, but it avoids adding yet another expression to
 // the giant (templated) set.
-FailureOrOwned<BoundExpression> BoundCot(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundCot(unique_ptr<BoundExpression> argument,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count) {
   FailureOrOwned<BoundExpression> tangent =
-      BoundTanQuiet(argument, allocator, max_row_count);
+      BoundTanQuiet(std::move(argument), allocator, max_row_count);
   PROPAGATE_ON_FAILURE(tangent);
 
   FailureOrOwned<BoundExpression> one =
       BoundConstDouble(1., allocator, max_row_count);
   PROPAGATE_ON_FAILURE(one);
 
-  return BoundDivideQuiet(one.release(),
-                          tangent.release(),
+  return BoundDivideQuiet(one.move(),
+                          tangent.move(),
                           allocator,
                           max_row_count);
 }
 
-FailureOrOwned<BoundExpression> BoundAsin(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundAsin(unique_ptr<BoundExpression> argument,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_ASIN, DOUBLE, DOUBLE>(
-      allocator, max_row_count, argument);
+      allocator, max_row_count, std::move(argument));
 }
 
-FailureOrOwned<BoundExpression> BoundAcos(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundAcos(unique_ptr<BoundExpression> argument,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_ACOS, DOUBLE, DOUBLE>(
-      allocator, max_row_count, argument);
+      allocator, max_row_count, std::move(argument));
 }
 
-FailureOrOwned<BoundExpression> BoundAtan(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundAtan(unique_ptr<BoundExpression> argument,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_ATAN, DOUBLE, DOUBLE>(
-      allocator, max_row_count, argument);
+      allocator, max_row_count, std::move(argument));
 }
 
-FailureOrOwned<BoundExpression> BoundAtan2(BoundExpression* x,
-                                           BoundExpression* y,
+FailureOrOwned<BoundExpression> BoundAtan2(unique_ptr<BoundExpression> x,
+                                           unique_ptr<BoundExpression> y,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count) {
-  return CreateTypedBoundBinaryExpression<
-      OPERATOR_ATAN2, DOUBLE, DOUBLE, DOUBLE>(allocator, max_row_count, x, y);
+  return CreateTypedBoundBinaryExpression<OPERATOR_ATAN2, DOUBLE, DOUBLE,
+                                          DOUBLE>(allocator, max_row_count,
+                                                  std::move(x), std::move(y));
 }
 
-FailureOrOwned<BoundExpression> BoundSinh(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundSinh(unique_ptr<BoundExpression> argument,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_SINH, DOUBLE, DOUBLE>(
-      allocator, max_row_count, argument);
+      allocator, max_row_count, std::move(argument));
 }
 
-FailureOrOwned<BoundExpression> BoundCosh(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundCosh(unique_ptr<BoundExpression> argument,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_COSH, DOUBLE, DOUBLE>(
-      allocator, max_row_count, argument);
+      allocator, max_row_count, std::move(argument));
 }
 
-FailureOrOwned<BoundExpression> BoundTanh(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundTanh(unique_ptr<BoundExpression> argument,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_TANH, DOUBLE, DOUBLE>(
-      allocator, max_row_count, argument);
+      allocator, max_row_count, std::move(argument));
 }
 
-FailureOrOwned<BoundExpression> BoundAsinh(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundAsinh(unique_ptr<BoundExpression> argument,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_ASINH, DOUBLE, DOUBLE>(
-      allocator, max_row_count, argument);
+      allocator, max_row_count, std::move(argument));
 }
 
 
-FailureOrOwned<BoundExpression> BoundAcosh(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundAcosh(unique_ptr<BoundExpression> argument,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_ACOSH, DOUBLE, DOUBLE>(
-      allocator, max_row_count, argument);
+      allocator, max_row_count, std::move(argument));
 }
 
-FailureOrOwned<BoundExpression> BoundAtanh(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundAtanh(unique_ptr<BoundExpression> argument,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_ATANH, DOUBLE, DOUBLE>(
-      allocator, max_row_count, argument);
+      allocator, max_row_count, std::move(argument));
 }
 
-FailureOrOwned<BoundExpression> BoundToDegrees(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundToDegrees(unique_ptr<BoundExpression> argument,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> argument_ptr(argument);
   FailureOrOwned<BoundExpression> scale =
       BoundConstDouble(180. / M_PI, allocator, max_row_count);
   PROPAGATE_ON_FAILURE(scale);
-  return BoundMultiply(argument_ptr.release(),
-                       scale.release(),
+  return BoundMultiply(std::move(argument),
+                       scale.move(),
                        allocator,
                        max_row_count);
 }
 
-FailureOrOwned<BoundExpression> BoundToRadians(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundToRadians(unique_ptr<BoundExpression> argument,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> argument_ptr(argument);
   FailureOrOwned<BoundExpression> scale =
       BoundConstDouble(M_PI / 180., allocator, max_row_count);
   PROPAGATE_ON_FAILURE(scale);
-  return BoundMultiply(argument_ptr.release(),
-                       scale.release(),
+  return BoundMultiply(std::move(argument),
+                       scale.move(),
                        allocator,
                        max_row_count);
 }
@@ -316,36 +307,34 @@ FailureOrOwned<BoundExpression> BoundPi(BufferAllocator* allocator,
 
 // ------------------------------------ Rounding -------------------------------
 
-FailureOrOwned<BoundExpression> BoundRound(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundRound(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count) {
-  if (GetTypeInfo(GetExpressionType(arg)).is_integer())
-    return Success(arg);
+  if (GetTypeInfo(GetExpressionType(arg.get())).is_integer())
+    return Success(std::move(arg));
   return CreateUnaryFloatingExpression<OPERATOR_ROUND>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundRoundToInt(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundRoundToInt(unique_ptr<BoundExpression> arg,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
-  if (GetTypeInfo(GetExpressionType(arg)).is_integer())
-     return Success(arg);
+  if (GetTypeInfo(GetExpressionType(arg.get())).is_integer())
+     return Success(std::move(arg));
   FailureOrOwned<BoundExpression> bound_round =
-      BoundRound(arg, allocator, max_row_count);
+      BoundRound(std::move(arg), allocator, max_row_count);
   PROPAGATE_ON_FAILURE(bound_round);
-  return BoundCeilToInt(bound_round.release(), allocator, max_row_count);
+  return BoundCeilToInt(bound_round.move(), allocator, max_row_count);
   // TODO(ptab): Revert to the version below, when b/5183960 is fixed.
   //  return CreateUnaryFloatingInputExpression<OPERATOR_ROUND_TO_INT, INT64>(
   //      allocator, max_row_count, arg);
 }
 
 FailureOrOwned<BoundExpression> BoundRoundWithPrecision(
-    BoundExpression* argument_ptr,
-    BoundExpression* precision_ptr,
+    unique_ptr<BoundExpression> argument,
+    unique_ptr<BoundExpression> precision,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> argument(argument_ptr);
-  unique_ptr<BoundExpression> precision(precision_ptr);
   // We expect the precision to be an integer.
   PROPAGATE_ON_FAILURE(CheckAttributeCount("ROUND_WITH_PRECISION",
                                            precision->result_schema(), 1));
@@ -373,88 +362,88 @@ FailureOrOwned<BoundExpression> BoundRoundWithPrecision(
   // The arguments are always correct - ten and an integer - so we can safely
   // use POWER_QUIET for efficiency here.
   FailureOrOwned<BoundExpression> multiplier =
-      BoundPowerQuiet(ten.release(), precision.release(),
+      BoundPowerQuiet(ten.move(), std::move(precision),
                       allocator, max_row_count);
   PROPAGATE_ON_FAILURE(multiplier);
 
   return CreateTypedBoundBinaryExpression<OPERATOR_ROUND_WITH_MULTIPLIER,
          DOUBLE, DOUBLE, DOUBLE>(allocator, max_row_count,
-                                 argument.release(), multiplier.release());
+                                 std::move(argument), multiplier.move());
 }
 
-FailureOrOwned<BoundExpression> BoundFloor(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundFloor(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count) {
-  if (GetTypeInfo(GetExpressionType(arg)).is_integer())
-    return Success(arg);
+  if (GetTypeInfo(GetExpressionType(arg.get())).is_integer())
+    return Success(std::move(arg));
   return CreateUnaryFloatingExpression<OPERATOR_FLOOR>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundFloorToInt(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundFloorToInt(unique_ptr<BoundExpression> arg,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
-  if (GetTypeInfo(GetExpressionType(arg)).is_integer())
-     return Success(arg);
+  if (GetTypeInfo(GetExpressionType(arg.get())).is_integer())
+     return Success(std::move(arg));
   return CreateUnaryFloatingInputExpression<OPERATOR_FLOOR_TO_INT, INT64>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundCeil(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundCeil(unique_ptr<BoundExpression> arg,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count) {
-  if (GetTypeInfo(GetExpressionType(arg)).is_integer())
-    return Success(arg);
+  if (GetTypeInfo(GetExpressionType(arg.get())).is_integer())
+    return Success(std::move(arg));
   return CreateUnaryFloatingExpression<OPERATOR_CEIL>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundCeilToInt(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundCeilToInt(unique_ptr<BoundExpression> arg,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
-  if (GetTypeInfo(GetExpressionType(arg)).is_integer())
-     return Success(arg);
+  if (GetTypeInfo(GetExpressionType(arg.get())).is_integer())
+     return Success(std::move(arg));
   return CreateUnaryFloatingInputExpression<OPERATOR_CEIL_TO_INT, INT64>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundTrunc(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundTrunc(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count) {
-  if (GetTypeInfo(GetExpressionType(arg)).is_integer())
-    return Success(arg);
+  if (GetTypeInfo(GetExpressionType(arg.get())).is_integer())
+    return Success(std::move(arg));
   return CreateUnaryFloatingExpression<OPERATOR_TRUNC>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
 // -------------------------------- IEEE 754 checks ----------------------------
 
-FailureOrOwned<BoundExpression> BoundIsFinite(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundIsFinite(unique_ptr<BoundExpression> arg,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_IS_FINITE, DOUBLE, BOOL>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundIsNormal(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundIsNormal(unique_ptr<BoundExpression> arg,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_IS_NORMAL, DOUBLE, BOOL>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundIsNaN(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundIsNaN(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_IS_NAN, DOUBLE, BOOL>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
-FailureOrOwned<BoundExpression> BoundIsInf(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundIsInf(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_IS_INF, DOUBLE, BOOL>(
-      allocator, max_row_count, arg);
+      allocator, max_row_count, std::move(arg));
 }
 
 // ------------------------- Other ---------------------------------
@@ -471,29 +460,28 @@ UnaryExpressionFactory* CreateAbsFactory(DataType type) {
   }
 }
 
-FailureOrOwned<BoundExpression> BoundAbs(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundAbs(unique_ptr<BoundExpression> argument,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> argument_ptr(argument);
   PROPAGATE_ON_FAILURE(CheckAttributeCount("ABS",
-                                           argument_ptr->result_schema(),
+                                           argument->result_schema(),
                                            1));
-  DataType input_type = GetExpressionType(argument_ptr.get());
+  DataType input_type = GetExpressionType(argument.get());
   if (input_type == UINT32 || input_type == UINT64) {
-    return Success(argument_ptr.release());
+    return Success(std::move(argument));
   }
   UnaryExpressionFactory* factory =
-      CreateAbsFactory(GetExpressionType(argument_ptr.get()));
+      CreateAbsFactory(GetExpressionType(argument.get()));
   return RunUnaryFactory(factory, allocator, max_row_count,
-                         argument_ptr.release(), "ABS");
+                         std::move(argument), "ABS");
 }
 
-FailureOrOwned<BoundExpression> BoundFormatSignaling(BoundExpression* number,
-                                                     BoundExpression* precision,
+FailureOrOwned<BoundExpression> BoundFormatSignaling(unique_ptr<BoundExpression> number,
+                                                     unique_ptr<BoundExpression> precision,
                                                      BufferAllocator* allocator,
                                                      rowcount_t max_row_count) {
   return CreateTypedBoundBinaryExpression<OPERATOR_FORMAT_SIGNALING, DOUBLE,
-      INT32, STRING>(allocator, max_row_count, number, precision);
+      INT32, STRING>(allocator, max_row_count, std::move(number), std::move(precision));
 }
 
 }  // namespace supersonic

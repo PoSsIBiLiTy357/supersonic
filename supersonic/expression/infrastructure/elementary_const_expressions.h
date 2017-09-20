@@ -42,7 +42,7 @@ class ConstExpression: public Expression {
       rowcount_t max_row_count) const {
     return InitBasicExpression(
         max_row_count,
-        new BoundConstExpression<type>(allocator, value_),
+        make_unique<BoundConstExpression<type>>(allocator, value_),
         allocator);
   }
 
@@ -75,7 +75,7 @@ class ConstExpression<type, true>: public Expression {
       rowcount_t max_row_count) const {
     return InitBasicExpression(
         max_row_count,
-        new BoundConstExpression<type>(allocator, StringPiece(value_)),
+        make_unique<BoundConstExpression<type>>(allocator, StringPiece(value_)),
         allocator);
   }
 

@@ -13,11 +13,9 @@
 // limitations under the License.
 //
 
-#include <memory>
-using std::unique_ptr;
-
 #include "supersonic/expression/core/string_expressions.h"
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/infrastructure/block.h"
 #include "supersonic/base/infrastructure/tuple_schema.h"
 #include "supersonic/cursor/infrastructure/value_ref.h"
@@ -314,10 +312,13 @@ TEST(StringExpressionTest, StringReplace) {
 // Unfortunately the Concat expression does not fit into the general testing
 // scheme. We create wrappers around concat, which take a fixed number of
 // parameters.
-const Expression* TernaryConcat(const Expression* first,
-                                const Expression* second,
-                                const Expression* third) {
-  return Concat((new ExpressionList())->add(first)->add(second)->add(third));
+unique_ptr<const Expression> TernaryConcat(
+    unique_ptr<const Expression> first,
+    unique_ptr<const Expression> second,
+    unique_ptr<const Expression> third)
+{
+  return Concat(make_unique<ExpressionList>(std::move(first), std::move(second),
+                                            std::move(third)));
 }
 
 TEST(StringExpressionTest, Concat) {
@@ -334,10 +335,10 @@ TEST(StringExpressionTest, ConcatSchema) {
   unique_ptr<Block> block(BlockBuilder<STRING, STRING>()
                           .AddRow("SuperSonic", __)
                           .Build());
-  ExpressionList* expr_list = new ExpressionList();
+  auto expr_list = make_unique<ExpressionList>();
   expr_list->add(AttributeAt(0))->add(AttributeAt(1));
   unique_ptr<BoundExpressionTree>
-      concat(DefaultBind(block->view().schema(), 100, Concat(expr_list)));
+      concat(DefaultBind(block->view().schema(), 100, Concat(std::move(expr_list))));
   EXPECT_TUPLE_SCHEMAS_EQUAL(
       concat->result_schema(),
       TupleSchema::Singleton("CONCAT(col0, col1)", STRING, NULLABLE));
@@ -347,10 +348,10 @@ TEST(StringExpressionTest, ConcatSchemaWithNull) {
   unique_ptr<Block> block(BlockBuilder<STRING>()
                           .AddRow("SuperSonic")
                           .Build());
-  ExpressionList* expr_list = new ExpressionList();
+  auto expr_list = make_unique<ExpressionList>();
   expr_list->add(AttributeAt(0));
   unique_ptr<BoundExpressionTree>
-      concat(DefaultBind(block->view().schema(), 100, Concat(expr_list)));
+      concat(DefaultBind(block->view().schema(), 100, Concat(std::move(expr_list))));
   EXPECT_TUPLE_SCHEMAS_EQUAL(
       concat->result_schema(),
       TupleSchema::Singleton("CONCAT(col0)", STRING, NOT_NULLABLE));
@@ -363,10 +364,10 @@ TEST(StringExpressionTest, ConcatWithNullFields) {
                           .AddRow(__, "Everest", "Carpathian")
                           .AddRow("K", "R", "K")
                           .Build());
-  ExpressionList* expr_list = new ExpressionList();
+  auto expr_list = make_unique<ExpressionList>();
   expr_list->add(AttributeAt(0))->add(AttributeAt(1))->add(AttributeAt(2));
   unique_ptr<BoundExpressionTree> concat(
-      DefaultBind(block->view().schema(), 100, Concat(expr_list)));
+      DefaultBind(block->view().schema(), 100, Concat(std::move(expr_list))));
   const View& result = DefaultEvaluate(concat.get(), block->view());
   unique_ptr<Block> expected(BlockBuilder<STRING>()
                              .AddRow(__)
@@ -384,10 +385,12 @@ TEST(StringExpressionTest, ConcatTenInputs) {
                           .AddRow("S", "u", "p", "e", "r",
                                   "S", "o", "n", "i", "c")
                           .Build());
-  ExpressionList* expr_list = new ExpressionList();
-  for (int i = 0; i < 10; ++i) expr_list->add(AttributeAt(i));
+  auto expr_list = make_unique<ExpressionList>();
+  for (int i = 0; i < 10; ++i) {
+    expr_list->add(AttributeAt(i));
+  }
   unique_ptr<BoundExpressionTree> concat(
-      DefaultBind(block->view().schema(), 100, Concat(expr_list)));
+      DefaultBind(block->view().schema(), 100, Concat(std::move(expr_list))));
   const View& result = DefaultEvaluate(concat.get(), block->view());
   unique_ptr<Block> expected(BlockBuilder<STRING>()
                              .AddRow("SuperSonic")
@@ -401,10 +404,10 @@ TEST(StringExpressionTest, ConcatNumbers) {
                           .AddRow("Sonic", 124)
                           .AddRow("", -12)
                           .Build());
-  ExpressionList* expr_list = new ExpressionList();
+  auto expr_list = make_unique<ExpressionList>();
   expr_list->add(AttributeAt(0))->add(AttributeAt(1));
   unique_ptr<BoundExpressionTree> concat(
-      DefaultBind(block->view().schema(), 100, Concat(expr_list)));
+      DefaultBind(block->view().schema(), 100, Concat(std::move(expr_list))));
   const View& result = DefaultEvaluate(concat.get(), block->view());
   unique_ptr<Block> expected(BlockBuilder<STRING>()
                              .AddRow("Super123")

@@ -29,6 +29,12 @@ CursorProxy::CursorProxy(Cursor* cursor)
           cursor_->IsWaitingOnBarrierSupported()),
       cursor_status_(ResultView::BOS()) {}
 
+CursorProxy::CursorProxy(unique_ptr<Cursor> cursor)
+    : cursor_(std::move(cursor)),
+      is_waiting_on_barrier_supported_(
+          cursor_->IsWaitingOnBarrierSupported()),
+      cursor_status_(ResultView::BOS()) {}
+
 void CursorProxy::Terminate() {
   if (cursor_.get() == NULL) return;
   if (!cursor_status_.is_done()) {

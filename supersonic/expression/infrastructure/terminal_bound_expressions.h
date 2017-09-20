@@ -90,7 +90,7 @@ FailureOrOwned<BoundExpression> BoundConstDataType(const DataType& value,
                                                    BufferAllocator* allocator,
                                                    rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundRandInt32(RandomBase* random_generator,
+FailureOrOwned<BoundExpression> BoundRandInt32(unique_ptr<RandomBase> random_generator,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count);
 

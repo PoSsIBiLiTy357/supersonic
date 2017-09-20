@@ -15,12 +15,8 @@
 
 #include "supersonic/cursor/core/limit.h"
 
-#include <algorithm>
-#include "supersonic/utils/std_namespace.h"
-#include <string>
-namespace supersonic {using std::string; }
-
 #include <glog/logging.h>
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/exception/failureor.h"
@@ -44,8 +40,8 @@ class LimitCursor : public BasicCursor {
   // Constructor taking both start_offset and number of rows.
   LimitCursor(rowcount_t start_offset,
               rowcount_t num_rows,
-              Cursor* child)
-      : BasicCursor(child->schema(), child),
+              unique_ptr<Cursor> child)
+      : BasicCursor(std::move(child)),
         start_offset_(start_offset),
         num_rows_(num_rows) {}
 
@@ -98,8 +94,8 @@ class LimitOperation : public BasicOperation {
   // Constructor taking both start_offset and number of rows.
   LimitOperation(rowcount_t start_offset,
                  rowcount_t num_rows,
-                 Operation* child)
-      : BasicOperation(child),
+                 unique_ptr<Operation> child)
+      : BasicOperation(std::move(child)),
         start_offset_(start_offset),
         num_rows_(num_rows) {}
 
@@ -107,7 +103,7 @@ class LimitOperation : public BasicOperation {
     FailureOrOwned<Cursor> child_cursor = child()->CreateCursor();
     PROPAGATE_ON_FAILURE(child_cursor);
     return Success(
-        BoundLimit(start_offset_, num_rows_, child_cursor.release()));
+        BoundLimit(start_offset_, num_rows_, child_cursor.move()));
   }
 
  private:
@@ -118,12 +114,12 @@ class LimitOperation : public BasicOperation {
 
 }  // namespace
 
-Operation* Limit(rowcount_t offset, rowcount_t limit, Operation* child) {
-  return new LimitOperation(offset, limit, child);
+unique_ptr<Operation> Limit(rowcount_t offset, rowcount_t limit, unique_ptr<Operation> child) {
+  return make_unique<LimitOperation>(offset, limit, std::move(child));
 }
 
-Cursor* BoundLimit(rowcount_t offset, rowcount_t limit, Cursor* child) {
-  return new LimitCursor(offset, limit, child);
+unique_ptr<Cursor> BoundLimit(rowcount_t offset, rowcount_t limit, unique_ptr<Cursor> child) {
+  return make_unique<LimitCursor>(offset, limit, std::move(child));
 }
 
 }  // namespace supersonic

@@ -202,76 +202,79 @@ string WrongNumberOfArgumentsString(int expected, int received) {
 // Helper functions for building unary, binary and ternary operations with a
 // check for the correct number of arguments in the proto.
 static ExpressionResult MakeUnaryOperation(
-    const Expression* (*function) (const Expression*),
-    PointerVector<const Expression>* args) {
-  if (args->size() != 1) {
+    unique_ptr<const Expression> (*function) (unique_ptr<const Expression>),
+    vector<unique_ptr<const Expression>> args) {
+  if (args.size() != 1) {
     THROW(new Exception(
         ERROR_BAD_PROTO,
-        WrongNumberOfArgumentsString(1, args->size())));
+        WrongNumberOfArgumentsString(1, args.size())));
   }
-  return Success(function(args->at(0).release()));
+  return Success(function(std::move(args[0])));
 }
 
 static ExpressionResult MakeBinaryOperation(
-    const Expression* (*function) (const Expression*, const Expression*),
-    PointerVector<const Expression>* args) {
-  if (args->size() != 2) {
+    unique_ptr<const Expression> (*function) (
+        unique_ptr<const Expression>, unique_ptr<const Expression>),
+    vector<unique_ptr<const Expression>> args) {
+  if (args.size() != 2) {
     THROW(new Exception(
         ERROR_BAD_PROTO,
-        WrongNumberOfArgumentsString(2, args->size())));
+        WrongNumberOfArgumentsString(2, args.size())));
   }
-  return Success(function(args->at(0).release(),
-                          args->at(1).release()));
+  return Success(function(std::move(args[0]),
+                          std::move(args[1])));
 }
 
 static ExpressionResult MakeTernaryOperation(
-    const Expression* (*function) (const Expression*, const Expression*,
-                                   const Expression*),
-    PointerVector<const Expression>* args) {
-  if (args->size() != 3) {
+    unique_ptr<const Expression> (*function) (
+        unique_ptr<const Expression>, unique_ptr<const Expression>,
+        unique_ptr<const Expression>),
+    vector<unique_ptr<const Expression>> args) {
+  if (args.size() != 3) {
     THROW(new Exception(
         ERROR_BAD_PROTO,
-        WrongNumberOfArgumentsString(3, args->size())));
+        WrongNumberOfArgumentsString(3, args.size())));
   }
-  return Success(function(args->at(0).release(),
-                          args->at(1).release(),
-                          args->at(2).release()));
+  return Success(function(std::move(args[0]),
+                          std::move(args[1]),
+                          std::move(args[2])));
 }
 
 static ExpressionResult MakeSenaryOperation(
-    const Expression* (*function) (const Expression*, const Expression*,
-                                   const Expression*, const Expression*,
-                                   const Expression*, const Expression*),
-    PointerVector<const Expression>* args) {
-  if (args->size() != 6) {
+    unique_ptr<const Expression> (*function) (
+        unique_ptr<const Expression>, unique_ptr<const Expression>,
+        unique_ptr<const Expression>, unique_ptr<const Expression>,
+        unique_ptr<const Expression>, unique_ptr<const Expression>),
+    vector<unique_ptr<const Expression>> args) {
+  if (args.size() != 6) {
     THROW(new Exception(
         ERROR_BAD_PROTO,
-        WrongNumberOfArgumentsString(6, args->size())));
+        WrongNumberOfArgumentsString(6, args.size())));
   }
-  return Success(function(args->at(0).release(),
-                          args->at(1).release(),
-                          args->at(2).release(),
-                          args->at(3).release(),
-                          args->at(4).release(),
-                          args->at(5).release()));
+  return Success(function(std::move(args[0]),
+                          std::move(args[1]),
+                          std::move(args[2]),
+                          std::move(args[3]),
+                          std::move(args[4]),
+                          std::move(args[5])));
 }
 
 static ExpressionResult MakeNaryOperation(
-    const Expression* (*function) (const ExpressionList*),
-    PointerVector<const Expression>* args) {
+    unique_ptr<const Expression> (*function) (unique_ptr<const ExpressionList>),
+    vector<unique_ptr<const Expression>> args) {
 
-  if (args->size() == 0) {
+  if (args.size() == 0) {
     THROW(new Exception(
         ERROR_BAD_PROTO,
         "Wrong number of arguments to operation, expected positive number, "
         "received zero."));
   }
 
-  std::unique_ptr<ExpressionList> list(new ExpressionList());
-  for (int i = 0; i < args->size(); ++i) {
-    list->add(args->at(i).release());
+  auto list = make_unique<ExpressionList>();
+  for (int i = 0; i < args.size(); ++i) {
+    list->add(std::move(args[i]));
   }
-  return Success(function(list.release()));
+  return Success(function(std::move(list)));
 }
 
 // In addition to the helper functions that include arity explicitly in their
@@ -279,48 +282,50 @@ static ExpressionResult MakeNaryOperation(
 // function pointer types. This is not really essential, but makes life a bit
 // easier.
 static ExpressionResult MakeOperation(
-    const Expression* (*function) (),
-    PointerVector<const Expression>* args) {
-  if (args->size() != 0) {
+    unique_ptr<const Expression> (*function) (),
+    vector<unique_ptr<const Expression>> args) {
+  if (args.size() != 0) {
     THROW(new Exception(
         ERROR_BAD_PROTO,
-        WrongNumberOfArgumentsString(0, args->size())));
+        WrongNumberOfArgumentsString(0, args.size())));
   }
   return Success(function());
 }
 
 static ExpressionResult MakeOperation(
-    const Expression* (*function) (const Expression*),
-    PointerVector<const Expression>* args) {
-  return MakeUnaryOperation(function, args);
+    unique_ptr<const Expression> (*function) (unique_ptr<const Expression>),
+    vector<unique_ptr<const Expression>> args) {
+  return MakeUnaryOperation(function, std::move(args));
 }
 
 static ExpressionResult MakeOperation(
-    const Expression* (*function) (const Expression*, const Expression*),
-    PointerVector<const Expression>* args) {
-  return MakeBinaryOperation(function, args);
+    unique_ptr<const Expression> (*function) (
+        unique_ptr<const Expression>, unique_ptr<const Expression>),
+    vector<unique_ptr<const Expression>>args) {
+  return MakeBinaryOperation(function, std::move(args));
 }
 
 static ExpressionResult MakeOperation(
-    const Expression* (*function) (const Expression*,
-                                   const Expression*,
-                                   const Expression*),
-    PointerVector<const Expression>* args) {
-  return MakeTernaryOperation(function, args);
+    unique_ptr<const Expression> (*function) (
+        unique_ptr<const Expression>, unique_ptr<const Expression>,
+        unique_ptr<const Expression>),
+    vector<unique_ptr<const Expression>> args) {
+  return MakeTernaryOperation(function, std::move(args));
 }
 
 static ExpressionResult MakeOperation(
-    const Expression* (*function) (const Expression*, const Expression*,
-                                   const Expression*, const Expression*,
-                                   const Expression*, const Expression*),
-    PointerVector<const Expression>* args) {
-  return MakeSenaryOperation(function, args);
+    unique_ptr<const Expression> (*function) (
+        unique_ptr<const Expression>, unique_ptr<const Expression>,
+        unique_ptr<const Expression>, unique_ptr<const Expression>,
+        unique_ptr<const Expression>, unique_ptr<const Expression>),
+    vector<unique_ptr<const Expression>> args) {
+  return MakeSenaryOperation(function, std::move(args));
 }
 
 static ExpressionResult MakeOperation(
-    const Expression* (*function) (const ExpressionList*),
-    PointerVector<const Expression>* args) {
-  return MakeNaryOperation(function, args);
+    unique_ptr<const Expression> (*function) (unique_ptr<const ExpressionList>),
+    vector<unique_ptr<const Expression>> args) {
+  return MakeNaryOperation(function, std::move(args));
 }
 
 ExpressionResult OperatorNotImplemented(OperationType op_type) {
@@ -370,11 +375,11 @@ ExpressionResult MakeRegexpOperation(const OperationDescription& regexp_descr) {
   }
   switch (regexp_descr.type()) {
     case common::REGEXP_FULL:
-      return Success(RegexpFullMatch(result.release(), c.string_value()));
+      return Success(RegexpFullMatch(result.move(), c.string_value()));
     case common::REGEXP_PARTIAL:
-      return Success(RegexpPartialMatch(result.release(), c.string_value()));
+      return Success(RegexpPartialMatch(result.move(), c.string_value()));
     case common::REGEXP_EXTRACT:
-      return Success(RegexpExtract(result.release(), c.string_value()));
+      return Success(RegexpExtract(result.move(), c.string_value()));
     default:
       LOG(FATAL) << "Unknown type of expression: "
                  << common::OperationType_Name(regexp_descr.type())
@@ -420,8 +425,8 @@ ExpressionResult MakeRegexpReplaceOperation(
   // No context, as the error actually occurred in the child.
   PROPAGATE_ON_FAILURE(right);
 
-  return Success(RegexpReplace(left.release(), c.string_value(),
-                               right.release()));
+  return Success(RegexpReplace(left.move(), c.string_value(),
+                               right.move()));
 #else
   THROW(new Exception(
         ERROR_BAD_PROTO,
@@ -441,14 +446,14 @@ ExpressionResult MakeInOperation(const OperationDescription& in_description) {
       BuildExpressionFromProto(in_description.argument(0));
   // No context here, as the error actually occurred in the child.
   PROPAGATE_ON_FAILURE(needle_result);
-  std::unique_ptr<ExpressionList> haystack(new ExpressionList());
+  auto haystack = make_unique<ExpressionList>();
   for (int i = 1; i < in_description.argument_size(); ++i) {
     ExpressionResult child_result =
         BuildExpressionFromProto(in_description.argument(i));
     PROPAGATE_ON_FAILURE(child_result);
-    haystack->add(child_result.release());
+    haystack->add(child_result.move());
   }
-  return Success(In(needle_result.release(), haystack.release()));
+  return Success(In(needle_result.move(), std::move(haystack)));
 }
 
 ExpressionResult MakeCastOperation(
@@ -476,7 +481,7 @@ ExpressionResult MakeCastOperation(
   // No context here, as the error actually occurred in the child.
   PROPAGATE_ON_FAILURE(expressionToCast);
 
-  return Success(CastTo(castType.get(), expressionToCast.release()));
+  return Success(CastTo(castType.get(), expressionToCast.move()));
 }
 
 ExpressionResult MakeParseOperation(
@@ -510,12 +515,12 @@ ExpressionResult MakeParseOperation(
   PROPAGATE_ON_FAILURE(expressionToParse);
 
   return Success(ParseStringNulling(parseToType.get(),
-                                    expressionToParse.release()));
+                                    expressionToParse.move()));
 }
 
 ExpressionResult BuildStandardOperationFromProto(
     OperationType op_type,
-    PointerVector<const Expression>* args) {
+    vector<unique_ptr<const Expression>> args) {
   switch (op_type) {
     // Expressions already handled above, this is to avoid a compile-time
     // warning.
@@ -530,103 +535,103 @@ ExpressionResult BuildStandardOperationFromProto(
                    << "was passed to the `standard' case of the "
                    << "BuildOperationFromProto function: "
                    << common::OperationType_Name(op_type);
-    case common::ADD: return MakeOperation(&Plus, args);
-    case common::MULTIPLY: return MakeOperation(&Multiply, args);
-    case common::SUBTRACT: return MakeOperation(&Minus, args);
-    case common::DIVIDE: return MakeOperation(&Divide, args);
+    case common::ADD: return MakeOperation(&Plus, std::move(args));
+    case common::MULTIPLY: return MakeOperation(&Multiply, std::move(args));
+    case common::SUBTRACT: return MakeOperation(&Minus, std::move(args));
+    case common::DIVIDE: return MakeOperation(&Divide, std::move(args));
     case common::DIVIDE_SIGNALING:
-        return MakeOperation(&DivideSignaling, args);
-    case common::DIVIDE_NULLING: return MakeOperation(&DivideNulling, args);
-    case common::DIVIDE_QUIET: return MakeOperation(&DivideQuiet, args);
-    case common::CPP_DIVIDE: return MakeOperation(&CppDivide, args);
-    case common::MODULUS: return MakeOperation(&Modulus, args);
-    case common::IS_ODD: return MakeOperation(&IsOdd, args);
-    case common::IS_EVEN: return MakeOperation(&IsEven, args);
-    case common::NEGATE: return MakeOperation(&Negate, args);
-    case common::NOT: return MakeOperation(&Not, args);
-    case common::AND: return MakeOperation(&And, args);
-    case common::OR: return MakeOperation(&Or, args);
-    case common::AND_NOT: return MakeOperation(&AndNot, args);
-    case common::XOR: return MakeOperation(&Xor, args);
-    case common::EQUAL: return MakeOperation(&Equal, args);
-    case common::NOT_EQUAL: return MakeOperation(&NotEqual, args);
-    case common::GREATER: return MakeOperation(&Greater, args);
-    case common::GREATER_OR_EQUAL: return MakeOperation(&GreaterOrEqual, args);
-    case common::LESS: return MakeOperation(&Less, args);
-    case common::LESS_OR_EQUAL: return MakeOperation(&LessOrEqual, args);
-    case common::IS_NULL: return MakeOperation(&IsNull, args);
-    case common::IFNULL: return MakeOperation(&IfNull, args);
-    case common::IF: return MakeOperation(&If, args);
-    case common::CASE: return MakeOperation(&Case, args);
-    case common::BITWISE_AND: return MakeOperation(&BitwiseAnd, args);
-    case common::BITWISE_OR: return MakeOperation(&BitwiseOr, args);
-    case common::BITWISE_NOT: return MakeOperation(&BitwiseNot, args);
-    case common::BITWISE_XOR: return MakeOperation(&BitwiseXor, args);
-    case common::SHIFT_LEFT: return MakeOperation(&ShiftLeft, args);
-    case common::SHIFT_RIGHT: return MakeOperation(&ShiftRight, args);
+        return MakeOperation(&DivideSignaling, std::move(args));
+    case common::DIVIDE_NULLING: return MakeOperation(&DivideNulling, std::move(args));
+    case common::DIVIDE_QUIET: return MakeOperation(&DivideQuiet, std::move(args));
+    case common::CPP_DIVIDE: return MakeOperation(&CppDivide, std::move(args));
+    case common::MODULUS: return MakeOperation(&Modulus, std::move(args));
+    case common::IS_ODD: return MakeOperation(&IsOdd, std::move(args));
+    case common::IS_EVEN: return MakeOperation(&IsEven, std::move(args));
+    case common::NEGATE: return MakeOperation(&Negate, std::move(args));
+    case common::NOT: return MakeOperation(&Not, std::move(args));
+    case common::AND: return MakeOperation(&And, std::move(args));
+    case common::OR: return MakeOperation(&Or, std::move(args));
+    case common::AND_NOT: return MakeOperation(&AndNot, std::move(args));
+    case common::XOR: return MakeOperation(&Xor, std::move(args));
+    case common::EQUAL: return MakeOperation(&Equal, std::move(args));
+    case common::NOT_EQUAL: return MakeOperation(&NotEqual, std::move(args));
+    case common::GREATER: return MakeOperation(&Greater, std::move(args));
+    case common::GREATER_OR_EQUAL: return MakeOperation(&GreaterOrEqual, std::move(args));
+    case common::LESS: return MakeOperation(&Less, std::move(args));
+    case common::LESS_OR_EQUAL: return MakeOperation(&LessOrEqual, std::move(args));
+    case common::IS_NULL: return MakeOperation(&IsNull, std::move(args));
+    case common::IFNULL: return MakeOperation(&IfNull, std::move(args));
+    case common::IF: return MakeOperation(&If, std::move(args));
+    case common::CASE: return MakeOperation(&Case, std::move(args));
+    case common::BITWISE_AND: return MakeOperation(&BitwiseAnd, std::move(args));
+    case common::BITWISE_OR: return MakeOperation(&BitwiseOr, std::move(args));
+    case common::BITWISE_NOT: return MakeOperation(&BitwiseNot, std::move(args));
+    case common::BITWISE_XOR: return MakeOperation(&BitwiseXor, std::move(args));
+    case common::SHIFT_LEFT: return MakeOperation(&ShiftLeft, std::move(args));
+    case common::SHIFT_RIGHT: return MakeOperation(&ShiftRight, std::move(args));
     case common::COPY: return OperatorNotImplemented(op_type);
     case common::ROUND:
-        if (args->size() == 1) return MakeOperation(&Round, args);
-        if (args->size() == 2) return MakeOperation(&RoundWithPrecision, args);
+        if (args.size() == 1) return MakeOperation(&Round, std::move(args));
+        if (args.size() == 2) return MakeOperation(&RoundWithPrecision, std::move(args));
         THROW(new Exception(
             ERROR_BAD_PROTO,
             StringPrintf("Expected 1 or 2 arguments to ROUND, received %zd.",
-                         args->size())));
-    case common::ROUND_TO_INT: return MakeOperation(&RoundToInt, args);
-    case common::TRUNC: return MakeOperation(&Trunc, args);
-    case common::CEIL: return MakeOperation(&Ceil, args);
-    case common::CEIL_TO_INT: return MakeOperation(&CeilToInt, args);
-    case common::EXP: return MakeOperation(&Exp, args);
-    case common::FLOOR: return MakeOperation(&Floor, args);
-    case common::FLOOR_TO_INT: return MakeOperation(&FloorToInt, args);
-    case common::LN: return MakeOperation(&Ln, args);
-    case common::LOG10: return MakeOperation(&Log10, args);
-    case common::LOG: return MakeOperation(&Log, args);
-    case common::SQRT: return MakeOperation(&Sqrt, args);
-    case common::SQRT_NULLING: return MakeOperation(&SqrtNulling, args);
-    case common::SQRT_SIGNALING: return MakeOperation(&SqrtSignaling, args);
-    case common::SQRT_QUIET: return MakeOperation(&SqrtQuiet, args);
-    case common::POWER_QUIET: return MakeOperation(&PowerQuiet, args);
-    case common::POWER_SIGNALING: return MakeOperation(&PowerSignaling, args);
-    case common::POWER_NULLING: return MakeOperation(&PowerNulling, args);
-    case common::SIN: return MakeOperation(&Sin, args);
-    case common::COS: return MakeOperation(&Cos, args);
-    case common::TAN: return MakeOperation(&Tan, args);
-    case common::PI: return MakeOperation(&Pi, args);
-    case common::LENGTH: return MakeOperation(&Length, args);
-    case common::LTRIM: return MakeOperation(&Ltrim, args);
-    case common::RTRIM: return MakeOperation(&Rtrim, args);
-    case common::TRIM: return MakeOperation(&Trim, args);
-    case common::TOUPPER: return MakeOperation(&ToUpper, args);
-    case common::TOLOWER: return MakeOperation(&ToLower, args);
-    case common::UNIXTIMESTAMP: return MakeOperation(&UnixTimestamp, args);
-    case common::FROMUNIXTIME: return MakeOperation(&FromUnixTime, args);
-    case common::MAKEDATE: return MakeOperation(&MakeDate, args);
-    case common::MAKEDATETIME: return MakeOperation(&MakeDatetime, args);
+                         args.size())));
+    case common::ROUND_TO_INT: return MakeOperation(&RoundToInt, std::move(args));
+    case common::TRUNC: return MakeOperation(&Trunc, std::move(args));
+    case common::CEIL: return MakeOperation(&Ceil, std::move(args));
+    case common::CEIL_TO_INT: return MakeOperation(&CeilToInt, std::move(args));
+    case common::EXP: return MakeOperation(&Exp, std::move(args));
+    case common::FLOOR: return MakeOperation(&Floor, std::move(args));
+    case common::FLOOR_TO_INT: return MakeOperation(&FloorToInt, std::move(args));
+    case common::LN: return MakeOperation(&Ln, std::move(args));
+    case common::LOG10: return MakeOperation(&Log10, std::move(args));
+    case common::LOG: return MakeOperation(&Log, std::move(args));
+    case common::SQRT: return MakeOperation(&Sqrt, std::move(args));
+    case common::SQRT_NULLING: return MakeOperation(&SqrtNulling, std::move(args));
+    case common::SQRT_SIGNALING: return MakeOperation(&SqrtSignaling, std::move(args));
+    case common::SQRT_QUIET: return MakeOperation(&SqrtQuiet, std::move(args));
+    case common::POWER_QUIET: return MakeOperation(&PowerQuiet, std::move(args));
+    case common::POWER_SIGNALING: return MakeOperation(&PowerSignaling, std::move(args));
+    case common::POWER_NULLING: return MakeOperation(&PowerNulling, std::move(args));
+    case common::SIN: return MakeOperation(&Sin, std::move(args));
+    case common::COS: return MakeOperation(&Cos, std::move(args));
+    case common::TAN: return MakeOperation(&Tan, std::move(args));
+    case common::PI: return MakeOperation(&Pi, std::move(args));
+    case common::LENGTH: return MakeOperation(&Length, std::move(args));
+    case common::LTRIM: return MakeOperation(&Ltrim, std::move(args));
+    case common::RTRIM: return MakeOperation(&Rtrim, std::move(args));
+    case common::TRIM: return MakeOperation(&Trim, std::move(args));
+    case common::TOUPPER: return MakeOperation(&ToUpper, std::move(args));
+    case common::TOLOWER: return MakeOperation(&ToLower, std::move(args));
+    case common::UNIXTIMESTAMP: return MakeOperation(&UnixTimestamp, std::move(args));
+    case common::FROMUNIXTIME: return MakeOperation(&FromUnixTime, std::move(args));
+    case common::MAKEDATE: return MakeOperation(&MakeDate, std::move(args));
+    case common::MAKEDATETIME: return MakeOperation(&MakeDatetime, std::move(args));
     case common::DATEDIFF: return OperatorNotImplemented(op_type);
     case common::DATETIMEDIFF: return OperatorNotImplemented(op_type);
     case common::ADD_MINUTE:
-        if (args->size() == 1) return MakeOperation(&AddMinute, args);
-        if (args->size() == 2) return MakeOperation(&AddMinutes, args);
+        if (args.size() == 1) return MakeOperation(&AddMinute, std::move(args));
+        if (args.size() == 2) return MakeOperation(&AddMinutes, std::move(args));
         THROW(new Exception(
             ERROR_BAD_PROTO,
             StringPrintf("Expected 1 or 2 arguments to ADD_MINUTE, got %zd.",
-                         args->size())));
+                         args.size())));
     case common::ADD_DAY:
-        if (args->size() == 1) return MakeOperation(&AddDay, args);
-        if (args->size() == 2) return MakeOperation(&AddDays, args);
+        if (args.size() == 1) return MakeOperation(&AddDay, std::move(args));
+        if (args.size() == 2) return MakeOperation(&AddDays, std::move(args));
         THROW(new Exception(
             ERROR_BAD_PROTO,
             StringPrintf("Expected 1 or 2 arguments to ADD_DAY, received %zd.",
-                         args->size())));
+                         args.size())));
     case common::ADD_WEEK: return OperatorNotImplemented(op_type);
     case common::ADD_MONTH:
-        if (args->size() == 1) return MakeOperation(&AddMonth, args);
-        if (args->size() == 2) return MakeOperation(&AddMonths, args);
+        if (args.size() == 1) return MakeOperation(&AddMonth, std::move(args));
+        if (args.size() == 2) return MakeOperation(&AddMonths, std::move(args));
         THROW(new Exception(
             ERROR_BAD_PROTO,
             StringPrintf("Expected 1 or 2 arguments to ADD_MONTH, got %zd.",
-                         args->size())));
+                         args.size())));
     case common::ADD_YEAR: return OperatorNotImplemented(op_type);
     case common::TRUNC_TO_SECOND: return OperatorNotImplemented(op_type);
     case common::TRUNC_TO_MINUTE: return OperatorNotImplemented(op_type);
@@ -635,45 +640,45 @@ ExpressionResult BuildStandardOperationFromProto(
     case common::TRUNC_TO_MONTH: return OperatorNotImplemented(op_type);
     case common::TRUNC_TO_QUARTER: return OperatorNotImplemented(op_type);
     case common::TRUNC_TO_YEAR: return OperatorNotImplemented(op_type);
-    case common::YEAR_LOCAL: return MakeOperation(&YearLocal, args);
-    case common::QUARTER_LOCAL: return MakeOperation(&QuarterLocal, args);
-    case common::MONTH_LOCAL: return MakeOperation(&MonthLocal, args);
-    case common::DAY_LOCAL: return MakeOperation(&DayLocal, args);
-    case common::WEEKDAY_LOCAL: return MakeOperation(&WeekdayLocal, args);
-    case common::YEARDAY_LOCAL: return MakeOperation(&YearDayLocal, args);
-    case common::HOUR_LOCAL: return MakeOperation(&HourLocal, args);
-    case common::MINUTE_LOCAL: return MakeOperation(&MinuteLocal, args);
-    case common::YEAR_UTC: return MakeOperation(&Year, args);
-    case common::QUARTER_UTC: return MakeOperation(&Quarter, args);
-    case common::MONTH_UTC: return MakeOperation(&Month, args);
-    case common::DAY_UTC: return MakeOperation(&Day, args);
-    case common::WEEKDAY_UTC: return MakeOperation(&Weekday, args);
-    case common::YEARDAY_UTC: return MakeOperation(&YearDay, args);
-    case common::HOUR_UTC: return MakeOperation(&Hour, args);
-    case common::MINUTE_UTC: return MakeOperation(&Minute, args);
-    case common::SECOND: return MakeOperation(&Second, args);
-    case common::MICROSECOND: return MakeOperation(&Microsecond, args);
+    case common::YEAR_LOCAL: return MakeOperation(&YearLocal, std::move(args));
+    case common::QUARTER_LOCAL: return MakeOperation(&QuarterLocal, std::move(args));
+    case common::MONTH_LOCAL: return MakeOperation(&MonthLocal, std::move(args));
+    case common::DAY_LOCAL: return MakeOperation(&DayLocal, std::move(args));
+    case common::WEEKDAY_LOCAL: return MakeOperation(&WeekdayLocal, std::move(args));
+    case common::YEARDAY_LOCAL: return MakeOperation(&YearDayLocal, std::move(args));
+    case common::HOUR_LOCAL: return MakeOperation(&HourLocal, std::move(args));
+    case common::MINUTE_LOCAL: return MakeOperation(&MinuteLocal, std::move(args));
+    case common::YEAR_UTC: return MakeOperation(&Year, std::move(args));
+    case common::QUARTER_UTC: return MakeOperation(&Quarter, std::move(args));
+    case common::MONTH_UTC: return MakeOperation(&Month, std::move(args));
+    case common::DAY_UTC: return MakeOperation(&Day, std::move(args));
+    case common::WEEKDAY_UTC: return MakeOperation(&Weekday, std::move(args));
+    case common::YEARDAY_UTC: return MakeOperation(&YearDay, std::move(args));
+    case common::HOUR_UTC: return MakeOperation(&Hour, std::move(args));
+    case common::MINUTE_UTC: return MakeOperation(&Minute, std::move(args));
+    case common::SECOND: return MakeOperation(&Second, std::move(args));
+    case common::MICROSECOND: return MakeOperation(&Microsecond, std::move(args));
     case common::SUBSTRING:
-        if (args->size() == 2) return MakeOperation(&TrailingSubstring, args);
-        if (args->size() == 3) return MakeOperation(&Substring, args);
+        if (args.size() == 2) return MakeOperation(&TrailingSubstring, std::move(args));
+        if (args.size() == 3) return MakeOperation(&Substring, std::move(args));
         THROW(new Exception(
             ERROR_BAD_PROTO,
             StringPrintf("Expected 1 or 2 arguments to SUBSTRING, got %zd.",
-                         args->size())));
-    case common::FORMAT: return MakeOperation(&Format, args);
+                         args.size())));
+    case common::FORMAT: return MakeOperation(&Format, std::move(args));
     case common::DATE_FORMAT_LOCAL:
-        return MakeOperation(&DateFormatLocal, args);
-    case common::DATE_FORMAT_UTC: return MakeOperation(&DateFormat, args);
-    case common::CONCATENATE: return MakeNaryOperation(&Concat, args);
-    case common::TOSTRING: return MakeOperation(&ToString, args);
-    case common::STRING_OFFSET: return MakeOperation(&StringOffset, args);
-    case common::REPLACE: return MakeOperation(&StringReplace, args);
-    case common::IS_FINITE: return MakeOperation(&IsFinite, args);
-    case common::IS_INF: return MakeOperation(&IsInf, args);
-    case common::IS_NAN: return MakeOperation(&IsNaN, args);
-    case common::IS_NORMAL: return MakeOperation(&IsNormal, args);
-    case common::RANDOM_INT32: return MakeOperation(&RandInt32, args);
-    case common::SEQUENCE: return MakeOperation(&Sequence, args);
+        return MakeOperation(&DateFormatLocal, std::move(args));
+    case common::DATE_FORMAT_UTC: return MakeOperation(&DateFormat, std::move(args));
+    case common::CONCATENATE: return MakeNaryOperation(&Concat, std::move(args));
+    case common::TOSTRING: return MakeOperation(&ToString, std::move(args));
+    case common::STRING_OFFSET: return MakeOperation(&StringOffset, std::move(args));
+    case common::REPLACE: return MakeOperation(&StringReplace, std::move(args));
+    case common::IS_FINITE: return MakeOperation(&IsFinite, std::move(args));
+    case common::IS_INF: return MakeOperation(&IsInf, std::move(args));
+    case common::IS_NAN: return MakeOperation(&IsNaN, std::move(args));
+    case common::IS_NORMAL: return MakeOperation(&IsNormal, std::move(args));
+    case common::RANDOM_INT32: return MakeOperation(&RandInt32, std::move(args));
+    case common::SEQUENCE: return MakeOperation(&Sequence, std::move(args));
 
     case common::UNIMPLEMENTED_OPERATOR_0:
         return OperatorNotImplemented(op_type);
@@ -711,14 +716,14 @@ ExpressionResult BuildOperationFromProto(
     default: break;
   }
 
-  PointerVector<const Expression> args;
+  vector<unique_ptr<const Expression>> args;
   for (int i = 0; i < operation_descr.argument_size(); ++i) {
     ExpressionResult child_result =
         BuildExpressionFromProto(operation_descr.argument(i));
     PROPAGATE_ON_FAILURE(child_result);
-    args.emplace_back(child_result.release());
+    args.emplace_back(child_result.move());
   }
-  ExpressionResult result = BuildStandardOperationFromProto(op_type, &args);
+  ExpressionResult result = BuildStandardOperationFromProto(op_type, std::move(args));
   PROPAGATE_ON_FAILURE_WITH_CONTEXT(result,
                                     operation_descr.ShortDebugString(),
                                     "");
@@ -732,20 +737,20 @@ ExpressionResult BuildFunctionCallFromProto(
 }
 
 ExpressionResult BuildTupleFromProto(const Tuple& tuple_descr) {
-  std::unique_ptr<CompoundExpression> result(new CompoundExpression());
+  auto result = make_unique<CompoundExpression>();
   for (int i = 0; i < tuple_descr.expression_size(); i++) {
     const Tuple::TupleExpression& expr = tuple_descr.expression(i);
     ExpressionResult expression = BuildExpressionFromProto(expr.expression());
     if (expression.is_failure()) { return expression; }
     if (expr.alias_size() == 0) {
-      result->Add(expression.release());
+      result->Add(expression.move());
     } else {
       result->AddAsMulti(
           vector<string>(expr.alias().begin(), expr.alias().end()),
-          expression.release());
+          expression.move());
     }
   }
-  return Success(result.release());
+  return Success(std::move(result));
 }
 
 ExpressionResult BuildExpressionFromProto(

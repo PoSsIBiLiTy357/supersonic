@@ -123,8 +123,8 @@ class BoundUnaryExpression : public BasicBoundExpression {
  public:
   BoundUnaryExpression(const TupleSchema& schema,
                        BufferAllocator* allocator,
-                       BoundExpression* arg,
-                       const DataType expected_arg_type);
+                       const DataType expected_arg_type,
+                       unique_ptr<BoundExpression> arg);
   virtual ~BoundUnaryExpression() {}
 
   virtual rowcount_t row_capacity() const {
@@ -152,9 +152,9 @@ class BoundBinaryExpression : public BasicBoundExpression {
  public:
   BoundBinaryExpression(const TupleSchema& schema,
                        BufferAllocator* allocator,
-                       BoundExpression* left,
+                       unique_ptr<BoundExpression> left,
                        const DataType expected_left_type,
-                       BoundExpression* right,
+                       unique_ptr<BoundExpression> light,
                        const DataType expected_right_type);
   virtual ~BoundBinaryExpression() {}
 
@@ -178,8 +178,8 @@ class BoundBinaryExpression : public BasicBoundExpression {
   BoundExpression* const right() const { return right_.get(); }
 
  private:
-  const std::unique_ptr<BoundExpression> left_;
-  const std::unique_ptr<BoundExpression> right_;
+  const unique_ptr<BoundExpression> left_;
+  const unique_ptr<BoundExpression> right_;
   DISALLOW_COPY_AND_ASSIGN(BoundBinaryExpression);
 };
 
@@ -189,12 +189,12 @@ class BoundTernaryExpression : public BasicBoundExpression {
  public:
   BoundTernaryExpression(const TupleSchema& schema,
                          BufferAllocator* allocator,
-                         BoundExpression* left,
                          const DataType left_type,
-                         BoundExpression* middle,
+                         unique_ptr<BoundExpression> left,
                          const DataType middle_type,
-                         BoundExpression* right,
-                         const DataType right_type);
+                         unique_ptr<BoundExpression> middle,
+                         const DataType right_type,
+                         unique_ptr<BoundExpression> right);
   virtual ~BoundTernaryExpression() {}
 
   virtual rowcount_t row_capacity() const {
@@ -216,9 +216,9 @@ class BoundTernaryExpression : public BasicBoundExpression {
   }
 
  protected:
-  const std::unique_ptr<BoundExpression> left_;
-  const std::unique_ptr<BoundExpression> middle_;
-  const std::unique_ptr<BoundExpression> right_;
+  const unique_ptr<BoundExpression> left_;
+  const unique_ptr<BoundExpression> middle_;
+  const unique_ptr<BoundExpression> right_;
 
   DISALLOW_COPY_AND_ASSIGN(BoundTernaryExpression);
 };
@@ -249,7 +249,8 @@ FailureOr<typename TypeTraits<data_type>::hold_type> GetConstantExpressionValue(
 // appropriate constant expression which can be substituted for it after
 // binding is returned.
 // Takes ownership of expression.
-FailureOrOwned<const Expression> ResolveToConstant(BoundExpression* expression);
+FailureOrOwned<const Expression> ResolveToConstant(
+    unique_ptr<BoundExpression> expression);
 
 // Takes an instantiated but uninitialized BasicBoundExpression,
 // calls Init() on it, and returns it wrapped in a result upon success, and
@@ -279,7 +280,7 @@ FailureOrOwned<const Expression> ResolveToConstant(BoundExpression* expression);
 // row_capacity.
 FailureOrOwned<BoundExpression> InitBasicExpression(
     rowcount_t row_capacity,
-    BasicBoundExpression* expression,
+    unique_ptr<BasicBoundExpression> expression,
     BufferAllocator* allocator);
 
 }  // namespace supersonic

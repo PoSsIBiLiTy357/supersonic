@@ -15,13 +15,7 @@
 
 #include "supersonic/testing/operation_testing.h"
 
-#include <cstddef>
-#include <limits>
-#include <memory>
 #include "supersonic/utils/std_namespace.h"
-using std::make_unique;
-
-
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception_macros.h"
 #include "supersonic/base/infrastructure/block.h"
@@ -46,29 +40,26 @@ namespace supersonic {
 
 namespace {
 
-Cursor* Sort(Cursor* input) {
+unique_ptr<Cursor> Sort(unique_ptr<Cursor> input) {
   SortOrder sort_order;
   sort_order.add(ProjectAllAttributes(), ASCENDING);
-  std::unique_ptr<const BoundSortOrder> bound_sort_order(
-      SucceedOrDie(sort_order.Bind(input->schema())));
-  std::unique_ptr<const SingleSourceProjector> result_projector(
-      ProjectAllAttributes());
-  std::unique_ptr<const BoundSingleSourceProjector> bound_result_projector(
-      SucceedOrDie(result_projector->Bind(input->schema())));
+  auto bound_sort_order = SucceedOrDie(sort_order.Bind(input->schema()));
+  auto result_projector = ProjectAllAttributes();
+  auto bound_result_projector = SucceedOrDie(result_projector->Bind(input->schema()));
   return SucceedOrDie(BoundSort(
-      bound_sort_order.release(),
-      bound_result_projector.release(),
+      std::move(bound_sort_order),
+      std::move(bound_result_projector),
       1 << 19,  // 0.5 MB
       "",
       HeapBufferAllocator::Get(),
-      input));
+      std::move(input)));
 }
 
 // Decorator that limits max_row_count requested of the delegate.
 class ViewLimiter : public BasicDecoratorCursor {
  public:
-  ViewLimiter(size_t capped_max_row_count, Cursor* delegate)
-      : BasicDecoratorCursor(delegate),
+  ViewLimiter(size_t capped_max_row_count, unique_ptr<Cursor> delegate)
+      : BasicDecoratorCursor(std::move(delegate)),
         capped_max_row_count_(capped_max_row_count) {
     CHECK_GT(capped_max_row_count, 0);
   }
@@ -95,8 +86,8 @@ class BarrierInjector : public BasicDecoratorCursor {
  public:
   BarrierInjector(RandomBase* random,
                   double barrier_probability,
-                  Cursor* delegate)
-      : BasicDecoratorCursor(delegate),
+                  unique_ptr<Cursor> delegate)
+      : BasicDecoratorCursor(std::move(delegate)),
         random_(random),
         barrier_probability_(barrier_probability) {
     CHECK_NOTNULL(random);
@@ -124,8 +115,8 @@ class BarrierInjector : public BasicDecoratorCursor {
 class BarrierSwallower : public BasicDecoratorCursor {
  public:
   BarrierSwallower(int retry_limit,
-                   Cursor* input)
-      : BasicDecoratorCursor(input),
+                   unique_ptr<Cursor> input)
+      : BasicDecoratorCursor(std::move(input)),
         retry_limit_(retry_limit) {}
 
   virtual ResultView Next(rowcount_t max_row_count) {
@@ -164,8 +155,8 @@ class Counter {
 // we thus can't fault the caller for not propagating it).
 class InterruptionCounter : public BasicDecoratorCursor {
  public:
-  InterruptionCounter(Counter* counter, Cursor* input)
-      : BasicDecoratorCursor(input),
+  InterruptionCounter(Counter* counter, unique_ptr<Cursor> input)
+      : BasicDecoratorCursor(std::move(input)),
         marked_(false),
         counter_(counter) {}
 
@@ -241,8 +232,8 @@ class TestCursor : public BasicDecoratorCursor {
 // - block_.ResetArenas() is called on every Next()
 class DeepCopyingCursor : public BasicDecoratorCursor {
  public:
-  DeepCopyingCursor(Cursor* cursor, BufferAllocator* allocator)
-      : BasicDecoratorCursor(cursor),
+  DeepCopyingCursor(unique_ptr<Cursor> cursor, BufferAllocator* allocator)
+      : BasicDecoratorCursor(std::move(cursor)),
         block_(delegate()->schema(), allocator),
         view_(block_.schema()),
         deep_copier_(block_.schema(), true) {}
@@ -292,15 +283,15 @@ const int kMaxBarrierRetries = 1e6;
 
 }  // namespace
 
-Cursor* CreateViewLimiter(size_t capped_max_row_count, Cursor* delegate) {
-  return new ViewLimiter(capped_max_row_count, delegate);
+unique_ptr<Cursor> CreateViewLimiter(size_t capped_max_row_count, unique_ptr<Cursor> delegate) {
+  return make_unique<ViewLimiter>(capped_max_row_count, std::move(delegate));
 }
 
 // Wraps an operation
 class InputWrapperOperation : public BasicOperation {
  public:
-  InputWrapperOperation(Operation* child, RandomBase* random)
-      : child_(child),
+  InputWrapperOperation(unique_ptr<Operation> child, RandomBase* random)
+      : child_(std::move(child)),
         capped_max_row_count_(std::numeric_limits<size_t>::max()),
         random_(random),
         barrier_probability_(0),
@@ -309,17 +300,19 @@ class InputWrapperOperation : public BasicOperation {
   virtual FailureOrOwned<Cursor> CreateCursor() const {
     FailureOrOwned<Cursor> child = child_->CreateCursor();
     PROPAGATE_ON_FAILURE(child);
-    std::unique_ptr<Cursor> cursor(child.release());
+    auto cursor = child.move();
     if (barrier_probability_ > 0) {
       cursor = make_unique<BarrierInjector>(random_, barrier_probability_,
-                                       cursor.release());
+                                            std::move(cursor));
     }
     if (interruption_counter_ != NULL) {
       cursor = make_unique<InterruptionCounter>(interruption_counter_,
-          cursor.release());
+          std::move(cursor));
     }
-    cursor = make_unique<DeepCopyingCursor>(cursor.release(), buffer_allocator());
-    return Success(new ViewLimiter(capped_max_row_count_, cursor.release()));
+    cursor = make_unique<DeepCopyingCursor>(
+        std::move(cursor), buffer_allocator());
+    return Success(make_unique<ViewLimiter>(
+        capped_max_row_count_, std::move(cursor)));
   }
 
   void set_capped_max_row_count(size_t capped_max_row_count) {
@@ -333,7 +326,7 @@ class InputWrapperOperation : public BasicOperation {
   }
 
  private:
-  std::unique_ptr<Operation> child_;
+  unique_ptr<Operation> child_;
   size_t capped_max_row_count_;
   RandomBase* const random_;
   double barrier_probability_;
@@ -366,22 +359,19 @@ OperationTest::OperationTest()
       random_(FLAGS_random_seed) {}
 
 OperationTest::~OperationTest() {
-  for (int i = 0; i < inputs_.size(); ++i) {
-    if (!inputs_claimed_[i]) delete inputs_[i];
-  }
+  // has to be there for the default delation of InputWraperOperation
 }
 
-void OperationTest::AddInput(Operation* input) {
-  inputs_.push_back(new InputWrapperOperation(input, &random_));
-  inputs_claimed_.push_back(false);
+void OperationTest::AddInput(unique_ptr<Operation> input) {
+  inputs_.emplace_back(std::make_unique<InputWrapperOperation>(std::move(input), &random_));
+  saved_inputs_.push_back(inputs_.back().get());
 }
 
-Operation* OperationTest::input_at(size_t position) {
+unique_ptr<Operation> OperationTest::input_at(size_t position) {
   CHECK_LT(position, inputs_.size()) << "There aren't that many inputs";
-  CHECK(!inputs_claimed_[position])
+  CHECK(inputs_[position] != nullptr)
       << "The input " << position << " has already been used up.";
-  inputs_claimed_[position] = true;
-  return inputs_[position];
+  return std::move(inputs_[position]);
 }
 
 static void SetSizes(const size_t* sizes,
@@ -422,42 +412,40 @@ void OperationTest::ExecuteOnce(Operation* tested_operation,
       << "barrier_probability = "  << barrier_probability;
 
   // We're assuming that the tested operation uses our input() as its child.
-  for (int i = 0; i < inputs_.size(); ++i) {
-    inputs_[i]->set_capped_max_row_count(input_max_row_count);
-    inputs_[i]->set_barrier_probability(barrier_probability);
+  for (auto const& saved_input: saved_inputs_) {
+    saved_input->set_capped_max_row_count(input_max_row_count);
+    saved_input->set_barrier_probability(barrier_probability);
   }
   FailureOrOwned<Cursor> tested_cursor(tested_operation->CreateCursor());
   ASSERT_TRUE(tested_cursor.is_success())
       << tested_cursor.exception().PrintStackTrace();
-  Cursor* tested = new BarrierSwallower(
+  unique_ptr<Cursor> tested = make_unique<BarrierSwallower>(
       kMaxBarrierRetries,
-      new ViewLimiter(output_max_row_count,
-                      tested_cursor.release()));
+      make_unique<ViewLimiter>(output_max_row_count, tested_cursor.move()));
 
   FailureOrOwned<Cursor> expected_cursor = expected_->CreateCursor();
   ASSERT_TRUE(expected_cursor.is_success())
       << tested_cursor.exception().PrintStackTrace();
-  Cursor* expected = expected_cursor.release();
+  auto expected = expected_cursor.move();
 
   if (ignore_row_order_) {
-    tested = Sort(tested);
-    expected = Sort(expected);
+    tested = Sort(std::move(tested));
+    expected = Sort(std::move(expected));
   }
 
-  ASSERT_CURSORS_EQUAL(expected, tested)
+  ASSERT_CURSORS_EQUAL(std::move(expected), std::move(tested))
       << "When iterating operation ''" << tested_operation->DebugDescription()
       << "' with input_max_row_count = " << input_max_row_count
       << " and output_max_row_count = " << output_max_row_count
       << " and barrier_probability = " << barrier_probability;
 }
 
-void OperationTest::Execute(Operation* tested_operation) {
+void OperationTest::Execute(unique_ptr<Operation> tested_operation) {
   MemoryLimit tracker(std::numeric_limits<size_t>::max(), true,
                       buffer_allocator_);
-  std::unique_ptr<Operation> deleter(tested_operation);
   tested_operation->SetBufferAllocator(&tracker, true);
   for (int i = 0; i < inputs_.size(); ++i) {
-    CHECK(inputs_claimed_[i])
+    CHECK(inputs_[i] == nullptr)
         << "The input " << i << " has not been used by the tested operation.";
   }
   if (expected_bind_result_ != OK) {
@@ -476,7 +464,7 @@ void OperationTest::Execute(Operation* tested_operation) {
 
   for (size_t i = 0; i < input_view_sizes_.size(); ++i) {
     for (size_t j = 0; j < result_view_sizes_.size(); ++j) {
-      ExecuteOnce(tested_operation,
+      ExecuteOnce(tested_operation.get(),
                   input_view_sizes_[i],
                   result_view_sizes_[j],
                   0.0);
@@ -538,13 +526,13 @@ void OperationTest::Execute(Operation* tested_operation) {
     std::unique_ptr<Cursor> test(
         SucceedOrDie(tested_operation->CreateCursor()));
     ASSERT_TRUE(test->IsWaitingOnBarrierSupported());
-    ExecuteOnce(tested_operation, 1, 1, 0.1);
+    ExecuteOnce(tested_operation.get(), 1, 1, 0.1);
     if (testing::Test::HasFatalFailure()) return;
-    ExecuteOnce(tested_operation, 1, 1, 0.6);
+    ExecuteOnce(tested_operation.get(), 1, 1, 0.6);
     if (testing::Test::HasFatalFailure()) return;
-    ExecuteOnce(tested_operation, 1, 1, 0.99);
+    ExecuteOnce(tested_operation.get(), 1, 1, 0.99);
     if (testing::Test::HasFatalFailure()) return;
-    ExecuteOnce(tested_operation, 2, 2, 0.5);
+    ExecuteOnce(tested_operation.get(), 2, 2, 0.5);
     if (testing::Test::HasFatalFailure()) return;
   } else {
     LOG(WARNING) << "Skipping barrier checks";
@@ -552,14 +540,14 @@ void OperationTest::Execute(Operation* tested_operation) {
 
   // Test propagation of interruptions.
   Counter interruption_counter;
-  for (int i = 0; i < inputs_.size(); ++i) {
-    inputs_[i]->set_interruption_counter(&interruption_counter);
-    inputs_[i]->set_capped_max_row_count(1);
+  for (auto const& saved_input: saved_inputs_) {
+    saved_input->set_interruption_counter(&interruption_counter);
+    saved_input->set_capped_max_row_count(1);
   }
   std::unique_ptr<Cursor> test(new BarrierSwallower(
       kMaxBarrierRetries, SucceedOrDie(tested_operation->CreateCursor())));
-  for (int i = 0; i < inputs_.size(); ++i) {
-    inputs_[i]->set_interruption_counter(NULL);
+  for (auto const& saved_input: saved_inputs_) {
+    saved_input->set_interruption_counter(NULL);
   }
 
   std::unique_ptr<Cursor> expected(SucceedOrDie(expected_->CreateCursor()));
@@ -569,14 +557,14 @@ void OperationTest::Execute(Operation* tested_operation) {
 }
 
 FailureOrOwned<Cursor> TestData::CreateCursor() const {
-  return Success(new TestCursor(
+  return Success(make_unique<TestCursor>(
       table_.view(),
       exception_.get() != NULL ? exception_->Clone() : NULL));
 }
 
 // --------------- AbstractTestDataBuilder -------------------------------------
 
-Operation* AbstractTestDataBuilder::OverwriteNamesAndBuild(
+unique_ptr<Operation> AbstractTestDataBuilder::OverwriteNamesAndBuild(
     const vector<string>& names) const {
   return Project(ProjectRename(names, ProjectAllAttributes()),
                  Build());
@@ -584,32 +572,32 @@ Operation* AbstractTestDataBuilder::OverwriteNamesAndBuild(
 
 // Builds a cursor over the stream.
 // Ownership of the result is passed to the caller.
-Cursor* AbstractTestDataBuilder::BuildCursor() const {
-  return SucceedOrDie(TurnIntoCursor(Build()));
+unique_ptr<Cursor> AbstractTestDataBuilder::BuildCursor() const {
+  return unique_ptr<Cursor>(
+    SucceedOrDie(TurnIntoCursor(Build())));
 }
 
 // Builds a cursor over the stream.
 // Overrides column names with the given names.
 // Ownership of the result is passed to the caller.
-Cursor* AbstractTestDataBuilder::BuildCursor(const vector<string>& names)
+unique_ptr<Cursor> AbstractTestDataBuilder::BuildCursor(const vector<string>& names)
     const {
-  return SucceedOrDie(TurnIntoCursor(OverwriteNamesAndBuild(names)));
+    SucceedOrDie(TurnIntoCursor(OverwriteNamesAndBuild(names)));
 }
 
-Cursor* RenameAttributesInCursorAs(const vector<string>& new_names,
-                                   Cursor* input) {
+unique_ptr<Cursor> RenameAttributesInCursorAs(const vector<string>& new_names,
+                                              unique_ptr<Cursor> input) {
   CHECK_EQ(new_names.size(), input->schema().attribute_count());
-  std::unique_ptr<BoundSingleSourceProjector> projector(
-      new BoundSingleSourceProjector(input->schema()));
+  auto projector = make_unique<BoundSingleSourceProjector>(input->schema());
   for (size_t i = 0; i < new_names.size(); ++i) {
     projector->AddAs(i, new_names[i]);
   }
-  return BoundProject(projector.release(), input);
+  return BoundProject(std::move(projector), std::move(input));
 }
 
-Operation* RenameAttributesInOperationAs(const vector<string>& new_names,
-                                         Operation* input) {
-  return Project(ProjectRename(new_names, ProjectAllAttributes()), input);
+unique_ptr<Operation> RenameAttributesInOperationAs(const vector<string>& new_names,
+                                                    unique_ptr<Operation> input) {
+  return Project(ProjectRename(new_names, ProjectAllAttributes()), std::move(input));
 }
 
 }  // namespace supersonic

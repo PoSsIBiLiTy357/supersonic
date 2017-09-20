@@ -109,17 +109,17 @@ FailureOrVoid CheckAttributeCount(const string& operation_name,
 }
 
 FailureOrOwned<BoundExpression> CheckTypeAndPassAlong(
-    BoundExpression* expression,
+    unique_ptr<BoundExpression> expression,
     DataType type) {
   FailureOrVoid check =
       CheckAttributeCount("No-op", expression->result_schema(), 1);
   if (check.is_success()) {
-    check = CheckExpressionType(type, expression);
+    check = CheckExpressionType(type, expression.get());
   }  // That's not an "else" - check could have become false.
   if (check.is_failure()) {
-    return Failure(check.release_exception());
+    return Failure(check.move_exception());
   }
-  return Success(expression);
+  return Success(std::move(expression));
 }
 
 bool ExpressionIsNullable(const BoundExpression* const arg) {

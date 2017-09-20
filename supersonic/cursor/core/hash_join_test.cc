@@ -33,41 +33,40 @@
 
 namespace supersonic {
 
-CompoundSingleSourceProjector* column_0_selector() {
-  CompoundSingleSourceProjector* selector =
-      new CompoundSingleSourceProjector();
+unique_ptr<CompoundSingleSourceProjector> column_0_selector() {
+  auto selector = make_unique<CompoundSingleSourceProjector>();
   selector->add(ProjectAttributeAt(0));
   return selector;
 }
 
-CompoundSingleSourceProjector* column_01_selector() {
-  CompoundSingleSourceProjector* selector =
-      new CompoundSingleSourceProjector();
+unique_ptr<CompoundSingleSourceProjector> column_01_selector() {
+  auto selector = make_unique<CompoundSingleSourceProjector>();
   selector->add(ProjectAttributeAt(0));
   selector->add(ProjectAttributeAt(1));
   return selector;
 }
 
-CompoundMultiSourceProjector* all_columns_projector() {
-  CompoundMultiSourceProjector* projector =
-      new CompoundMultiSourceProjector();
+unique_ptr<CompoundMultiSourceProjector> all_columns_projector() {
+  auto projector = make_unique<CompoundMultiSourceProjector>();
   projector->add(0, ProjectAllAttributes("L."));
   projector->add(1, ProjectAllAttributes("R."));
   return projector;
 }
 
-Operation* CreateOperation(
+static
+unique_ptr<Operation> CreateOperation(
     JoinType join_type,
-    const SingleSourceProjector* lhs_key_selector,
-    const SingleSourceProjector* rhs_key_selector,
-    const MultiSourceProjector* result_projector,
+    unique_ptr<const SingleSourceProjector> lhs_key_selector,
+    unique_ptr<const SingleSourceProjector> rhs_key_selector,
+    unique_ptr<const MultiSourceProjector> result_projector,
     KeyUniqueness rhs_key_uniqueness,
-    Operation* lhs, Operation* rhs) {
-  return new HashJoinOperation(
+    unique_ptr<Operation> lhs, unique_ptr<Operation> rhs) {
+  return make_unique<HashJoinOperation>(
       join_type,
-      lhs_key_selector, rhs_key_selector, result_projector,
+      std::move(lhs_key_selector), std::move(rhs_key_selector),
+      std::move(result_projector),
       rhs_key_uniqueness,
-      lhs, rhs);
+      std::move(lhs), std::move(rhs));
 }
 
 
@@ -281,15 +280,14 @@ TEST_F(HashJoinTest, _2b2b2c_InnerJoin_2b2b2c) {
 }
 
 TEST_F(HashJoinTest, _2b2b2c_InnerJoin_2b2b2cWithSpyTransform) {
-  Operation* lhs = builder_2b2b2c_.Build();
-  Operation* rhs = builder_2b2b2c_.Build();
+  auto lhs = builder_2b2b2c_.Build();
+  auto rhs = builder_2b2b2c_.Build();
 
-  std::unique_ptr<Cursor> expected_result(
-      builder_2b2b2c_x2_output_.BuildCursor());
+  auto expected_result = builder_2b2b2c_x2_output_.BuildCursor();
 
   std::unique_ptr<Operation> hash_join_operation(
       CreateOperation(INNER, column_0_selector(), column_0_selector(),
-                      all_columns_projector(), NOT_UNIQUE, lhs, rhs));
+                      all_columns_projector(), NOT_UNIQUE, std::move(lhs), std::move(rhs)));
 
   std::unique_ptr<Cursor> hash_join(
       SucceedOrDie(hash_join_operation->CreateCursor()));
@@ -297,9 +295,9 @@ TEST_F(HashJoinTest, _2b2b2c_InnerJoin_2b2b2cWithSpyTransform) {
   std::unique_ptr<CursorTransformerWithSimpleHistory> spy_transformer(
       PrintingSpyTransformer());
   hash_join->ApplyToChildren(spy_transformer.get());
-  hash_join.reset(spy_transformer->Transform(hash_join.release()));
+  hash_join = spy_transformer->Transform(std::move(hash_join));
 
-  EXPECT_CURSORS_EQUAL(expected_result.release(), hash_join.release());
+  EXPECT_CURSORS_EQUAL(std::move(expected_result), std::move(hash_join));
 }
 
 TEST_P(HashJoinTest, _1a1b2a2b_InnerJoin_1a1b2a2b) {
@@ -397,7 +395,7 @@ TEST_F(HashJoinTest, HashJoinShallowCopiesStrings) {
     expected_output_builder.AddRow("supersonic", "supersonic");
   }
   test.SetExpectedResult(expected_output_builder.Build());
-  Operation* operation = CreateOperation(INNER, column_0_selector(),
+  auto operation = CreateOperation(INNER, column_0_selector(),
                                          column_0_selector(),
                                          all_columns_projector(),
                                          NOT_UNIQUE,
@@ -406,16 +404,16 @@ TEST_F(HashJoinTest, HashJoinShallowCopiesStrings) {
   // kSize) copies of the string "supersonic".
   MemoryLimit memory_limit(9 * kSize * kSize);
   operation->SetBufferAllocator(&memory_limit, false);
-  test.Execute(operation);
+  test.Execute(std::move(operation));
 }
 
 TEST_F(HashJoinTest, TransformTest) {
-  Operation* lhs = builder_2b2b2c_.Build();
-  Operation* rhs = builder_2b2b2c_.Build();
+  auto lhs = builder_2b2b2c_.Build();
+  auto rhs = builder_2b2b2c_.Build();
 
-  std::unique_ptr<Operation> hash_join_operation(
-      CreateOperation(INNER, column_0_selector(), column_0_selector(),
-                      all_columns_projector(), NOT_UNIQUE, lhs, rhs));
+  auto hash_join_operation = CreateOperation(
+      INNER, column_0_selector(), column_0_selector(), all_columns_projector(),
+      NOT_UNIQUE, std::move(lhs), std::move(rhs));
 
   std::unique_ptr<Cursor> hash_join(
       SucceedOrDie(hash_join_operation->CreateCursor()));
@@ -428,40 +426,39 @@ TEST_F(HashJoinTest, TransformTest) {
 }
 
 TEST_F(HashJoinTest, EmptyLhsSkipsRhs) {
-  Operation* lhs = TestDataBuilder<STRING>().Build();
-  Operation* rhs = TestDataBuilder<STRING>()
+  auto lhs = TestDataBuilder<STRING>().Build();
+  auto rhs = TestDataBuilder<STRING>()
                    .AddRow("foo")
                    .ReturnException(ERROR_EVALUATION_ERROR).Build();
   OperationTest test;
-  test.AddInput(lhs);
-  test.AddInput(rhs);
+  test.AddInput(std::move(lhs));
+  test.AddInput(std::move(rhs));
   // Expect an empty result with no exception (since the rhs is not
   // supposed to be read at all).
   test.SetExpectedResult(TestDataBuilder<STRING, STRING>().Build());
-  Operation* operation =
-      CreateOperation(INNER, column_0_selector(), column_0_selector(),
-                      all_columns_projector(), NOT_UNIQUE,
-                      test.input_at(0), test.input_at(1));
-  test.Execute(operation);
+  auto operation = CreateOperation(
+      INNER, column_0_selector(), column_0_selector(), all_columns_projector(),
+      NOT_UNIQUE, test.input_at(0), test.input_at(1));
+  test.Execute(std::move(operation));
 }
 
 TEST_F(HashJoinTest, EmptyRhsSkipsLhs) {
-  Operation* lhs = TestDataBuilder<STRING>()
-                   .AddRow("foo")
-                   .ReturnException(ERROR_EVALUATION_ERROR).Build();
-  Operation* rhs = TestDataBuilder<STRING>().Build();
+  auto lhs = TestDataBuilder<STRING>()
+                 .AddRow("foo")
+                 .ReturnException(ERROR_EVALUATION_ERROR)
+                 .Build();
+  auto rhs = TestDataBuilder<STRING>().Build();
   OperationTest test;
-  test.AddInput(lhs);
-  test.AddInput(rhs);
+  test.AddInput(std::move(lhs));
+  test.AddInput(std::move(rhs));
   // Expect an empty result with no exception (since the lhs is not
   // supposed to be read beyond the first row).
   test.SetExpectedResult(TestDataBuilder<STRING, STRING>().Build());
-  Operation* operation =
-      CreateOperation(INNER, column_0_selector(), column_0_selector(),
-                      all_columns_projector(), NOT_UNIQUE,
-                      test.input_at(0), test.input_at(1));
+  auto operation = CreateOperation(
+      INNER, column_0_selector(), column_0_selector(), all_columns_projector(),
+      NOT_UNIQUE, test.input_at(0), test.input_at(1));
   test.SetInputViewSizes(1);
-  test.Execute(operation);
+  test.Execute(std::move(operation));
 }
 
 }  // namespace supersonic

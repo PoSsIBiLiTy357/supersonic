@@ -38,11 +38,11 @@ class ComparableCursor : public Streamable {
  public:
   // include_rows_in_representation = true
   // Takes ownership of cursor.
-  explicit ComparableCursor(Cursor* cursor);
+  explicit ComparableCursor(unique_ptr<Cursor> cursor);
   virtual ~ComparableCursor();
 
   // Takes ownership of cursor.
-  ComparableCursor(Cursor* cursor, bool include_rows_in_representation);
+  ComparableCursor(unique_ptr<Cursor> cursor, bool include_rows_in_representation);
 
   // Returns a View over next row from the last view returned by wrapped cursor.
   // Calls Next() internally if necessary.
@@ -74,7 +74,7 @@ testing::AssertionResult CompareResultViews(
 // Predicate formatter for use with EXPECT_PRED_FORMAT2.
 testing::AssertionResult CursorsEqual(
     const char* a_str, const char* b_str,
-    Cursor* a, Cursor* b);
+    unique_ptr<Cursor> a, unique_ptr<Cursor> b);
 
 }  // namespace supersonic
 

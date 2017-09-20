@@ -76,12 +76,12 @@ TEST_F(ProjectCursorTest, ExceptionFromInputPropagated) {
 }
 
 TEST_F(ProjectCursorTest, InvalidProjectorSpecification) {
-  std::unique_ptr<Operation> input(TestDataBuilder<INT32, STRING>()
-                                       .AddRow(1, "foo")
-                                       .AddRow(3, "bar")
-                                       .Build());
+  auto input = TestDataBuilder<INT32, STRING>()
+                   .AddRow(1, "foo")
+                   .AddRow(3, "bar")
+                   .Build();
   FailureOrOwned<Cursor> projector(TurnIntoCursor(
-      Project(ProjectNamedAttribute("incorrect_name"), input.release())));
+      Project(ProjectNamedAttribute("incorrect_name"), std::move(input))));
   EXPECT_TRUE(projector.is_failure());
 }
 

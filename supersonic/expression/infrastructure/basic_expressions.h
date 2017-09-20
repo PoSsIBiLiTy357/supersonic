@@ -51,8 +51,8 @@ class UnaryExpression : public Expression {
       rowcount_t max_row_count) const;
 
  protected:
-  explicit UnaryExpression(const Expression* const child_expression)
-      : child_expression_(child_expression) {
+  explicit UnaryExpression(unique_ptr<const Expression> child_expression)
+      : child_expression_(std::move(child_expression)) {
   }
 
  protected:
@@ -65,7 +65,7 @@ class UnaryExpression : public Expression {
       const TupleSchema& input_schema,
       BufferAllocator* const allocator,
       rowcount_t row_capacity,
-      BoundExpression* child) const = 0;
+      unique_ptr<BoundExpression> child) const = 0;
 
   DISALLOW_COPY_AND_ASSIGN(UnaryExpression);
 };
@@ -83,9 +83,9 @@ class BinaryExpression : public Expression {
       rowcount_t max_row_count) const;
 
  protected:
-  BinaryExpression(const Expression* const left, const Expression* const right)
-      : left_(left),
-        right_(right) {
+  BinaryExpression(unique_ptr<const Expression> left, unique_ptr<const Expression> right)
+      : left_(std::move(left)),
+        right_(std::move(right)) {
   }
 
   std::unique_ptr<const Expression> left_;
@@ -98,8 +98,8 @@ class BinaryExpression : public Expression {
       const TupleSchema& input_schema,
       BufferAllocator* const allocator,
       rowcount_t row_capacity,
-      BoundExpression* left,
-      BoundExpression* right) const = 0;
+      unique_ptr<BoundExpression> left,
+      unique_ptr<BoundExpression> right) const = 0;
 
   DISALLOW_COPY_AND_ASSIGN(BinaryExpression);
 };
@@ -117,12 +117,12 @@ class TernaryExpression : public Expression {
       rowcount_t max_row_count) const;
 
  protected:
-  TernaryExpression(const Expression* const left,
-                    const Expression* const middle,
-                    const Expression* const right)
-      : left_(left),
-        middle_(middle),
-        right_(right) {
+  TernaryExpression(unique_ptr<const Expression> left,
+                    unique_ptr<const Expression> middle,
+                    unique_ptr<const Expression> right)
+      : left_(std::move(left)),
+        middle_(std::move(middle)),
+        right_(std::move(right)) {
   }
   std::unique_ptr<const Expression> left_;
   std::unique_ptr<const Expression> middle_;
@@ -135,9 +135,9 @@ class TernaryExpression : public Expression {
       const TupleSchema& input_schema,
       BufferAllocator* const allocator,
       rowcount_t row_capacity,
-      BoundExpression* left,
-      BoundExpression* middle,
-      BoundExpression* right) const = 0;
+      unique_ptr<BoundExpression> left,
+      unique_ptr<BoundExpression> middle,
+      unique_ptr<BoundExpression> right) const = 0;
 
   DISALLOW_COPY_AND_ASSIGN(TernaryExpression);
 };
@@ -152,25 +152,25 @@ class TernaryExpression : public Expression {
 
 // In the description_pattern "$0" will be replaced with description of the
 // child (ex. "FINGERPRINT($0)").
-Expression* CreateExpressionForExistingBoundFactory(
-    const Expression* const child,
+unique_ptr<const Expression> CreateExpressionForExistingBoundFactory(
+    unique_ptr<const Expression> child,
     BoundUnaryExpressionFactory bound_expression_factory,
     const string& description_pattern);
 
 // In the description_pattern "$0" and "$1" will be replaced with description of
 // the left and right child (ex. "CONTAINS($0, $1)").
-Expression* CreateExpressionForExistingBoundFactory(
-    const Expression* const left,
-    const Expression* const right,
+unique_ptr<const Expression> CreateExpressionForExistingBoundFactory(
+    unique_ptr<const Expression> left,
+    unique_ptr<const Expression> right,
     BoundBinaryExpressionFactory bound_expression_factory,
     const string& description_pattern);
 
 // In the description_pattern "$0", "$1" and "$2" will be replaced with the
 // descriptions of the left, middle and right child respectively.
-Expression* CreateExpressionForExistingBoundFactory(
-    const Expression* const left,
-    const Expression* const middle,
-    const Expression* const right,
+unique_ptr<const Expression> CreateExpressionForExistingBoundFactory(
+    unique_ptr<const Expression> left,
+    unique_ptr<const Expression> middle,
+    unique_ptr<const Expression> right,
     BoundTernaryExpressionFactory bound_expression_factory,
     const string& description_pattern);
 

@@ -25,69 +25,76 @@
 
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/types.h"
+#include "supersonic/expression/base/expression.h"
 
 namespace supersonic {
 
-class BoundExpression;
-class BoundExpressionList;
 class BufferAllocator;
-class Expression;
 
 // Shorthands for function pointers to expression creation functions.
-typedef const Expression*(*ConstExpressionCreator)();
+typedef unique_ptr<const Expression>(*ConstExpressionCreator)();
 
-typedef const Expression*(*UnaryExpressionCreator)(const Expression*);
+typedef unique_ptr<const Expression>(*UnaryExpressionCreator)(
+    unique_ptr<const Expression>);
 
-typedef const Expression*(*BinaryExpressionCreator)(const Expression*,
-                                                    const Expression*);
+typedef unique_ptr<const Expression>(*BinaryExpressionCreator)(
+    unique_ptr<const Expression>,
+    unique_ptr<const Expression>);
 
-typedef const Expression*(*TernaryExpressionCreator)(const Expression*,
-                                                     const Expression*,
-                                                     const Expression*);
+typedef unique_ptr<const Expression>(*TernaryExpressionCreator)(
+    unique_ptr<const Expression>,
+    unique_ptr<const Expression>,
+    unique_ptr<const Expression>);
 
-typedef const Expression*(*QuaternaryExpressionCreator)(const Expression*,
-                                                        const Expression*,
-                                                        const Expression*,
-                                                        const Expression*);
+typedef unique_ptr<const Expression>(*QuaternaryExpressionCreator)(
+    unique_ptr<const Expression>,
+    unique_ptr<const Expression>,
+    unique_ptr<const Expression>,
+    unique_ptr<const Expression>);
 
-typedef const Expression*(*QuinaryExpressionCreator)(const Expression*,
-                                                     const Expression*,
-                                                     const Expression*,
-                                                     const Expression*,
-                                                     const Expression*);
+typedef unique_ptr<const Expression>(*QuinaryExpressionCreator)(
+    unique_ptr<const Expression>,
+    unique_ptr<const Expression>,
+    unique_ptr<const Expression>,
+    unique_ptr<const Expression>,
+    unique_ptr<const Expression>);
 
-typedef const Expression*(*SenaryExpressionCreator)(const Expression*,
-                                                    const Expression*,
-                                                    const Expression*,
-                                                    const Expression*,
-                                                    const Expression*,
-                                                    const Expression*);
-
+typedef unique_ptr<const Expression>(*SenaryExpressionCreator)(
+    unique_ptr<const Expression>,
+    unique_ptr<const Expression>,
+    unique_ptr<const Expression>,
+    unique_ptr<const Expression>,
+    unique_ptr<const Expression>,
+    unique_ptr<const Expression>);
 
 // TODO(ptab): Rename to *Creator (for example: BoundConstExpressionCreator).
-typedef FailureOrOwned<BoundExpression>(*BoundConstExpressionFactory)(
-    BufferAllocator*, rowcount_t);
+typedef FailureOrOwned<BoundExpression> (*BoundConstExpressionFactory)(
+    BufferAllocator *, rowcount_t);
 
-typedef FailureOrOwned<BoundExpression>(*BoundUnaryExpressionFactory)(
-    BoundExpression*, BufferAllocator*, rowcount_t);
+typedef FailureOrOwned<BoundExpression> (*BoundUnaryExpressionFactory)(
+    unique_ptr<BoundExpression>, BufferAllocator *, rowcount_t);
 
-typedef FailureOrOwned<BoundExpression>(*BoundBinaryExpressionFactory)(
-    BoundExpression*, BoundExpression*, BufferAllocator*, rowcount_t);
+typedef FailureOrOwned<BoundExpression> (*BoundBinaryExpressionFactory)(
+    unique_ptr<BoundExpression>, unique_ptr<BoundExpression>,
+    BufferAllocator *, rowcount_t);
 
-typedef FailureOrOwned<BoundExpression>(*BoundTernaryExpressionFactory)(
-    BoundExpression*, BoundExpression*, BoundExpression*, BufferAllocator*,
-    rowcount_t);
+typedef FailureOrOwned<BoundExpression> (*BoundTernaryExpressionFactory)(
+    unique_ptr<BoundExpression>, unique_ptr<BoundExpression>,
+    unique_ptr<BoundExpression>, BufferAllocator *, rowcount_t);
 
-typedef FailureOrOwned<BoundExpression>(*BoundQuaternaryExpressionFactory)(
-    BoundExpression*, BoundExpression*, BoundExpression*, BoundExpression*,
-    BufferAllocator*, rowcount_t);
+typedef FailureOrOwned<BoundExpression> (*BoundQuaternaryExpressionFactory)(
+    unique_ptr<BoundExpression>, unique_ptr<BoundExpression>,
+    unique_ptr<BoundExpression>, unique_ptr<BoundExpression>,
+    BufferAllocator *, rowcount_t);
 
-typedef FailureOrOwned<BoundExpression>(*BoundSenaryExpressionFactory)(
-    BoundExpression*, BoundExpression*, BoundExpression*, BoundExpression*,
-    BoundExpression*, BoundExpression*, BufferAllocator*, rowcount_t);
+typedef FailureOrOwned<BoundExpression> (*BoundSenaryExpressionFactory)(
+    unique_ptr<BoundExpression>, unique_ptr<BoundExpression>,
+    unique_ptr<BoundExpression>, unique_ptr<BoundExpression>,
+    unique_ptr<BoundExpression>, unique_ptr<BoundExpression>,
+    BufferAllocator *, rowcount_t);
 
-typedef FailureOrOwned<BoundExpression>(*BoundExpressionListExpressionFactory)(
-    BoundExpressionList*,  BufferAllocator*, rowcount_t);
+typedef FailureOrOwned<BoundExpression> (*BoundExpressionListExpressionFactory)(
+    unique_ptr<BoundExpressionList>, BufferAllocator *, rowcount_t);
 
 }  // namespace supersonic
 #endif  // SUPERSONIC_EXPRESSION_INFRASTRUCTURE_BOUND_EXPRESSION_CREATORS_H_

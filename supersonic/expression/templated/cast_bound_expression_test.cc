@@ -38,10 +38,10 @@ using util::gtl::Container;
 
 template <DataType to_type, bool is_implicit>
 FailureOrOwned<BoundExpression> BoundUnaryCast(
-    BoundExpression* child_ptr,
+    unique_ptr<BoundExpression> child,
     BufferAllocator* const allocator,
     rowcount_t row_capacity) {
-  return BoundInternalCast(allocator, row_capacity, child_ptr, to_type,
+  return BoundInternalCast(allocator, row_capacity, std::move(child), to_type,
                            is_implicit);
 }
 

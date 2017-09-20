@@ -16,10 +16,7 @@
 
 #include "supersonic/expression/core/string_bound_expressions.h"
 
-#include <set>
 #include "supersonic/utils/std_namespace.h"
-#include <string>
-namespace supersonic {using std::string; }
 
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
@@ -61,22 +58,22 @@ TEST(StringBoundExpressionsTest, BoundContainsCI) {
   TestBoundFactoryFailure(&BoundContainsCI, FLOAT, STRING);
 }
 
-FailureOrOwned<BoundExpression> BoundOneArgConcat(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundOneArgConcat(unique_ptr<BoundExpression> arg,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count) {
-  BoundExpressionList* list = new BoundExpressionList();
-  list->add(arg);
-  return BoundConcat(list, allocator, max_row_count);
+  auto list = make_unique<BoundExpressionList>();
+  list->add(std::move(arg));
+  return BoundConcat(std::move(list), allocator, max_row_count);
 }
 
-FailureOrOwned<BoundExpression> BoundTwoArgConcat(BoundExpression* arg1,
-                                                  BoundExpression* arg2,
+FailureOrOwned<BoundExpression> BoundTwoArgConcat(unique_ptr<BoundExpression> arg1,
+                                                  unique_ptr<BoundExpression> arg2,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count) {
-  BoundExpressionList* list = new BoundExpressionList();
-  list->add(arg1);
-  list->add(arg2);
-  return BoundConcat(list, allocator, max_row_count);
+  auto list = make_unique<BoundExpressionList>();
+  list->add(std::move(arg1));
+  list->add(std::move(arg2));
+  return BoundConcat(std::move(list), allocator, max_row_count);
 }
 
 TEST(StringBoundExpressionsTest, BoundConcat) {

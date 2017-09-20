@@ -71,7 +71,7 @@ struct Format {
     // We allocate one byte more than necessary, for null-termination, although
     // we don't actually need the null, to avoid printf writing it on
     // unassigned memory
-    char* new_str = static_cast<char *>(arena->AllocateBytes(length+1));
+    auto* new_str = static_cast<char *>(arena->AllocateBytes(length+1));
     CHECK_NOTNULL(new_str);
     size_t new_length =
         snprintf(new_str, length + 1, "%.*lf", precision, number);

@@ -15,13 +15,7 @@
 
 #include "supersonic/expression/core/elementary_expressions.h"
 
-#include <cstddef>
-
-#include <memory>
-#include <string>
-namespace supersonic {using std::string; }
-using std::unique_ptr;
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/utils/exception/failureor.h"
@@ -59,8 +53,8 @@ namespace {
 template<OperatorId op>
 class ChangeTypeExpression : public UnaryExpression {
  public:
-  ChangeTypeExpression(DataType type, const Expression* const source)
-      : UnaryExpression(source),
+  ChangeTypeExpression(DataType type, unique_ptr<const Expression> source)
+      : UnaryExpression(std::move(source)),
         to_type_(type) {}
   virtual ~ChangeTypeExpression() {}
 
@@ -74,7 +68,7 @@ class ChangeTypeExpression : public UnaryExpression {
       const TupleSchema& input_schema,
       BufferAllocator* const allocator,
       rowcount_t row_capacity,
-      BoundExpression* child) const;
+      unique_ptr<BoundExpression> child) const;
 
   DataType to_type_;
   DISALLOW_COPY_AND_ASSIGN(ChangeTypeExpression);
@@ -86,11 +80,11 @@ ChangeTypeExpression<OPERATOR_CAST_QUIET>::CreateBoundUnaryExpression(
     const TupleSchema& input_schema,
     BufferAllocator* const allocator,
     rowcount_t row_capacity,
-    BoundExpression* child) const {
-  DataType from_type = GetExpressionType(child);
-  if (from_type == to_type_) return Success(child);
+    unique_ptr<BoundExpression> child) const {
+  DataType from_type = GetExpressionType(child.get());
+  if (from_type == to_type_) return Success(std::move(child));
   return CreateUnaryNumericExpression<OPERATOR_CAST_QUIET>(allocator,
-      row_capacity, child, to_type_);
+      row_capacity, std::move(child), to_type_);
 }
 
 template<>
@@ -99,8 +93,8 @@ ChangeTypeExpression<OPERATOR_PARSE_STRING_QUIET>::CreateBoundUnaryExpression(
     const TupleSchema& input_schema,
     BufferAllocator* const allocator,
     rowcount_t row_capacity,
-    BoundExpression* child) const {
-  return BoundParseStringQuiet(to_type_, child, allocator, row_capacity);
+    unique_ptr<BoundExpression> child) const {
+  return BoundParseStringQuiet(to_type_, std::move(child), allocator, row_capacity);
 }
 
 template<>
@@ -109,8 +103,8 @@ ChangeTypeExpression<OPERATOR_PARSE_STRING_NULLING>::CreateBoundUnaryExpression(
     const TupleSchema& input_schema,
     BufferAllocator* const allocator,
     rowcount_t row_capacity,
-    BoundExpression* child) const {
-  return BoundParseStringNulling(to_type_, child, allocator, row_capacity);
+    unique_ptr<BoundExpression> child) const {
+  return BoundParseStringNulling(to_type_, std::move(child), allocator, row_capacity);
 }
 
 // ----------------------------------------------------------------------------
@@ -120,8 +114,8 @@ ChangeTypeExpression<OPERATOR_PARSE_STRING_NULLING>::CreateBoundUnaryExpression(
 // failing at binding time.
 class CaseExpression : public Expression {
  public:
-  explicit CaseExpression(const ExpressionList* const arguments)
-      : arguments_(arguments) {}
+  explicit CaseExpression(unique_ptr<const ExpressionList> arguments)
+      : arguments_(std::move(arguments)) {}
 
   virtual FailureOrOwned<BoundExpression> DoBind(
       const TupleSchema& input_schema,
@@ -150,7 +144,7 @@ class CaseExpression : public Expression {
                        num_arguments)));
     }
 
-    return BoundCase(bound_arguments.release(), allocator, max_row_count);
+    return BoundCase(bound_arguments.move(), allocator, max_row_count);
   }
 
   virtual string ToString(bool verbose) const {
@@ -166,118 +160,121 @@ class CaseExpression : public Expression {
 
 // ----------------------------------------------------------------------------
 // Expressions instantiation:
-const Expression* CastTo(DataType to_type, const Expression* const child) {
-  return InternalCast(to_type, child, false);
+unique_ptr<const Expression> CastTo(DataType to_type, unique_ptr<const Expression> child) {
+  return InternalCast(to_type, std::move(child), false);
 }
 
-const Expression* ParseStringQuiet(DataType to_type,
-                                   const Expression* const child) {
-  return new ChangeTypeExpression<OPERATOR_PARSE_STRING_QUIET>(to_type, child);
+unique_ptr<const Expression> ParseStringQuiet(DataType to_type,
+                                   unique_ptr<const Expression> child) {
+  return make_unique<ChangeTypeExpression<OPERATOR_PARSE_STRING_QUIET>>(
+      to_type, std::move(child));
 }
 
-const Expression* ParseStringNulling(DataType to_type,
-                                     const Expression* const child) {
-  return new ChangeTypeExpression<OPERATOR_PARSE_STRING_NULLING>(to_type,
-                                                                 child);
+unique_ptr<const Expression> ParseStringNulling(DataType to_type,
+                                     unique_ptr<const Expression> child) {
+  return make_unique<ChangeTypeExpression<OPERATOR_PARSE_STRING_NULLING>>(
+      to_type, std::move(child));
 }
 
-const Expression* Case(const ExpressionList* const arguments) {
-  return new CaseExpression(arguments);
+unique_ptr<const Expression> Case(unique_ptr<const ExpressionList> arguments) {
+  return make_unique<CaseExpression>(std::move(arguments));
 }
 
-const Expression* Not(const Expression* const argument) {
+unique_ptr<const Expression> Not(unique_ptr<const Expression> argument) {
   return CreateExpressionForExistingBoundFactory(
-      argument, &BoundNot, "(NOT $0)");
+      std::move(argument), &BoundNot, "(NOT $0)");
 }
 
-const Expression* And(const Expression* const left,
-                      const Expression* const right) {
+unique_ptr<const Expression> And(unique_ptr<const Expression> left,
+                      unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundAnd, "($0 AND $1)");
+      std::move(left), std::move(right), &BoundAnd, "($0 AND $1)");
 }
 
-const Expression* Xor(const Expression* const left,
-                      const Expression* const right) {
+unique_ptr<const Expression> Xor(unique_ptr<const Expression> left,
+                      unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundXor, "($0 XOR $1)");
+      std::move(left), std::move(right), &BoundXor, "($0 XOR $1)");
 }
 
-const Expression* Or(const Expression* const left,
-                     const Expression* const right) {
+unique_ptr<const Expression> Or(unique_ptr<const Expression> left,
+                     unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundOr, "($0 OR $1)");
+      std::move(left), std::move(right), &BoundOr, "($0 OR $1)");
 }
 
-const Expression* AndNot(const Expression* const left,
-                         const Expression* const right) {
+unique_ptr<const Expression> AndNot(unique_ptr<const Expression> left,
+                         unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundAndNot, "$0 !&& $1");
+      std::move(left), std::move(right), &BoundAndNot, "$0 !&& $1");
 }
 
-const Expression* If(const Expression* const condition,
-                     const Expression* const then,
-                     const Expression* const otherwise) {
+unique_ptr<const Expression> If(unique_ptr<const Expression> condition,
+                     unique_ptr<const Expression> then,
+                     unique_ptr<const Expression> otherwise) {
   return CreateExpressionForExistingBoundFactory(
-      condition, then, otherwise, &BoundIf, "IF $0 THEN $1 ELSE $2");
+      std::move(condition), std::move(then), std::move(otherwise), &BoundIf,
+      "IF $0 THEN $1 ELSE $2");
 }
 
-const Expression* NullingIf(const Expression* const condition,
-                            const Expression* const then,
-                            const Expression* const otherwise) {
+unique_ptr<const Expression> NullingIf(unique_ptr<const Expression> condition,
+                            unique_ptr<const Expression> then,
+                            unique_ptr<const Expression> otherwise) {
   return CreateExpressionForExistingBoundFactory(
-      condition, then, otherwise, &BoundIfNulling, "IF $0 THEN $1 ELSE $2");
+      std::move(condition), std::move(then), std::move(otherwise),
+      &BoundIfNulling, "IF $0 THEN $1 ELSE $2");
 }
 
-const Expression* IsNull(const Expression* const expression) {
+unique_ptr<const Expression> IsNull(unique_ptr<const Expression> expression) {
   return CreateExpressionForExistingBoundFactory(
-      expression, &BoundIsNull, "ISNULL($0)");
+      std::move(expression), &BoundIsNull, "ISNULL($0)");
 }
 
-const Expression* IfNull(const Expression* const expression,
-                         const Expression* const substitute) {
+unique_ptr<const Expression> IfNull(unique_ptr<const Expression> expression,
+                         unique_ptr<const Expression> substitute) {
   return CreateExpressionForExistingBoundFactory(
-      expression, substitute, &BoundIfNull, "IFNULL($0, $1)");
+      std::move(expression), std::move(substitute), &BoundIfNull, "IFNULL($0, $1)");
 }
 
-const Expression* BitwiseNot(const Expression* const argument) {
+unique_ptr<const Expression> BitwiseNot(unique_ptr<const Expression> argument) {
   return CreateExpressionForExistingBoundFactory(
-      argument, &BoundBitwiseNot, "(~$0)");
+      std::move(argument), &BoundBitwiseNot, "(~$0)");
 }
 
-const Expression* BitwiseAnd(const Expression* const a,
-                             const Expression* const b) {
+unique_ptr<const Expression> BitwiseAnd(unique_ptr<const Expression> a,
+                             unique_ptr<const Expression> b) {
   return CreateExpressionForExistingBoundFactory(
-      a, b, &BoundBitwiseAnd, "($0 & $1)");
+      std::move(a), std::move(b), &BoundBitwiseAnd, "($0 & $1)");
 }
 
-const Expression* BitwiseAndNot(const Expression* const a,
-                                const Expression* const b) {
+unique_ptr<const Expression> BitwiseAndNot(unique_ptr<const Expression> a,
+                                unique_ptr<const Expression> b) {
   return CreateExpressionForExistingBoundFactory(
-      a, b, &BoundBitwiseAndNot, "(~$0 & $1)");
+      std::move(a), std::move(b), &BoundBitwiseAndNot, "(~$0 & $1)");
 }
 
-const Expression* BitwiseOr(const Expression* const a,
-                            const Expression* const b) {
+unique_ptr<const Expression> BitwiseOr(unique_ptr<const Expression> a,
+                            unique_ptr<const Expression> b) {
   return CreateExpressionForExistingBoundFactory(
-      a, b, &BoundBitwiseOr, "($0 | $1)");
+      std::move(a), std::move(b), &BoundBitwiseOr, "($0 | $1)");
 }
 
-const Expression* BitwiseXor(const Expression* const a,
-                             const Expression* const b) {
+unique_ptr<const Expression> BitwiseXor(unique_ptr<const Expression> a,
+                             unique_ptr<const Expression> b) {
   return CreateExpressionForExistingBoundFactory(
-      a, b, &BoundBitwiseXor, "($0 ^ $1)");
+      std::move(a), std::move(b), &BoundBitwiseXor, "($0 ^ $1)");
 }
 
-const Expression* ShiftLeft(const Expression* const argument,
-                            const Expression* const shift) {
+unique_ptr<const Expression> ShiftLeft(unique_ptr<const Expression> argument,
+                            unique_ptr<const Expression> shift) {
   return CreateExpressionForExistingBoundFactory(
-      argument, shift, &BoundShiftLeft, "($0 << $1)");
+      std::move(argument), std::move(shift), &BoundShiftLeft, "($0 << $1)");
 }
 
-const Expression* ShiftRight(const Expression* const argument,
-                             const Expression* const shift) {
+unique_ptr<const Expression> ShiftRight(unique_ptr<const Expression> argument,
+                             unique_ptr<const Expression> shift) {
   return CreateExpressionForExistingBoundFactory(
-      argument, shift, &BoundShiftRight, "($0 >> $1)");
+      std::move(argument), std::move(shift), &BoundShiftRight, "($0 >> $1)");
 }
 
 }  // namespace supersonic

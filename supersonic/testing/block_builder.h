@@ -55,14 +55,14 @@ class View;
 namespace internal {
 
 // Makes a deep copy of the specified view, and returns it in a new block.
-Block* CloneView(const View& view);
+unique_ptr<Block> CloneView(const View& view);
 
 // Makes a copy of the specified view, and returns it in a new block.
 // The ownership is transferred to the caller. All nullable columns for which
 // no nulls have been found are transformed into non-nullable columns.
 // Columns can be forced to be nullable independent whether they have nulls
 // or not, using the is_column_forced_nullable vector.
-Block* CloneViewAndOptimizeNullability(
+unique_ptr<Block> CloneViewAndOptimizeNullability(
     const View& view, const vector<bool>& is_column_forced_nullable);
 
 // Helper function to set value or null from a value reference.
@@ -183,7 +183,7 @@ class BlockBuilder {
   }
 
   // Returns a copy of the prebuilt block. Ownership is passed to the caller.
-  Block* Build() const {
+  unique_ptr<Block> Build() const {
     writer_.CheckSuccess();
     if (has_explicit_schema()) {
       return internal::CloneView(table_.view());

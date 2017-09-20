@@ -16,12 +16,9 @@
 
 #include "supersonic/cursor/core/spy.h"
 
-#include <iosfwd>
 #include <iostream>
-#include <memory>
-#include <string>
-namespace supersonic {using std::string; }
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/utils/timer.h"
@@ -45,8 +42,8 @@ const int64 kNumNanosPerMilli = kNumMicrosPerMilli * 1000;
 
 class SpyCursor : public BasicCursor {
  public:
-  SpyCursor(const string& id, SpyListener* listener, Cursor* child)
-      : BasicCursor(child->schema(), child),
+  SpyCursor(const string& id, SpyListener* listener, unique_ptr<Cursor> child)
+      : BasicCursor(std::move(child)),
         id_(id),
         listener_(listener) {}
 
@@ -72,15 +69,15 @@ class SpyCursor : public BasicCursor {
 
 class SpyOperation : public BasicOperation {
  public:
-  SpyOperation(const string id, SpyListener* listener, Operation* child)
-      : BasicOperation(child),
+  SpyOperation(const string id, SpyListener* listener, unique_ptr<Operation> child)
+      : BasicOperation(std::move(child)),
         id_(id),
         listener_(listener) {}
 
   virtual FailureOrOwned<Cursor> CreateCursor() const {
     FailureOrOwned<Cursor> bound_child(child()->CreateCursor());
     PROPAGATE_ON_FAILURE(bound_child);
-    return Success(BoundSpy(id_, listener_, bound_child.release()));
+    return Success(BoundSpy(id_, listener_, bound_child.move()));
   }
 
  private:
@@ -138,11 +135,11 @@ class SpyCursorSimpleTransformer
   // destroyed.
   //
   // Uses the spy listener stored on construction.
-  virtual Cursor* Transform(Cursor* cursor) {
+  virtual unique_ptr<Cursor> Transform(unique_ptr<Cursor> cursor) {
     string id;
     cursor->AppendDebugDescription(&id);
-    run_history_->emplace_back(new CursorOwnershipRevoker(cursor));
-    return new SpyCursor(id, listener_, cursor);
+    run_history_.emplace_back(make_unique<CursorOwnershipRevoker>(cursor.get()));
+    return make_unique<SpyCursor>(id, listener_, std::move(cursor));
   }
  private:
   SpyListener* listener_;
@@ -150,20 +147,22 @@ class SpyCursorSimpleTransformer
 
 }  // namespace
 
-Operation* Spy(const string& id, SpyListener* listener, Operation* source) {
-  return new SpyOperation(id, listener, source);
+unique_ptr<Operation> Spy(const string& id, SpyListener* listener,
+                          unique_ptr<Operation> source) {
+  return make_unique<SpyOperation>(id, listener, std::move(source));
 }
 
-Sink* Spy(const string& id, SpyListener* listener, Sink* sink) {
-  return new SpySink(id, listener, sink);
+unique_ptr<Sink> Spy(const string& id, SpyListener* listener, Sink* sink) {
+  return make_unique<SpySink>(id, listener, sink);
 }
 
-Cursor* BoundSpy(const string& id, SpyListener* listener, Cursor* child) {
-  return new SpyCursor(id, listener, child);
+unique_ptr<Cursor> BoundSpy(const string& id, SpyListener* listener,
+                            unique_ptr<Cursor> child) {
+    return make_unique<SpyCursor>(id, listener, move(child));
 }
 
-CursorTransformerWithSimpleHistory* PrintingSpyTransformer() {
-  return new SpyCursorSimpleTransformer(PrintingSpyListener());
+unique_ptr<CursorTransformerWithSimpleHistory> PrintingSpyTransformer() {
+  return make_unique<SpyCursorSimpleTransformer>(PrintingSpyListener());
 }
 
 // TODO(ptab): Needs pretty formating that will indent nested next's.
@@ -202,12 +201,12 @@ SpyListener* PrintingSpyListener() {
   return PrintSpyListener::Get();
 }
 
-Operation* SpyPrinter(const string& id, Operation* source) {
-  return Spy(id, PrintSpyListener::Get(), source);
+unique_ptr<Operation> SpyPrinter(const string& id, unique_ptr<Operation> source) {
+  return Spy(id, PrintSpyListener::Get(), std::move(source));
 }
 
-Cursor* BoundSpyPrinter(const string& id, Cursor* child) {
-  return BoundSpy(id, PrintSpyListener::Get(), child);
+unique_ptr<Cursor> BoundSpyPrinter(const string& id, unique_ptr<Cursor> child) {
+  return BoundSpy(id, PrintSpyListener::Get(), std::move(child));
 }
 
 }  // namespace supersonic

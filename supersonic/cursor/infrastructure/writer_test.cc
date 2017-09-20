@@ -56,9 +56,10 @@ TEST_F(WriterTest, WriteAll) {
          .AddRow(2, "cat");
   int block_sizes[] = { 1, 2, 4, 5, 10, 100 };
   for (int i = 0; i < arraysize(block_sizes); ++i) {
-    std::unique_ptr<TestData> input(builder.Build());
-    Writer writer(CreateViewLimiter(block_sizes[i],
-                                    SucceedOrDie(input->CreateCursor())));
+    auto input = builder.Build();
+    auto cursor = input->CreateCursor();
+
+    Writer writer(CreateViewLimiter(block_sizes[i], SucceedOrDie(cursor)));
     Table table(writer.schema(), HeapBufferAllocator::Get());
     TableSink sink(&table);
     FailureOr<rowcount_t> result = writer.WriteAll(&sink);
@@ -77,7 +78,7 @@ TEST_F(WriterTest, WritePartial) {
          .AddRow(1, "baz")
          .AddRow(7, "car")
          .AddRow(2, "cat");
-  std::unique_ptr<TestData> input(builder.Build());
+  auto input = builder.Build();
   Writer writer(SucceedOrDie(input->CreateCursor()));
   Table table1(writer.schema(), HeapBufferAllocator::Get());
   Table table2(writer.schema(), HeapBufferAllocator::Get());
@@ -108,8 +109,8 @@ TEST_F(WriterTest, WriteFailure) {
          .AddRow(4)
          .AddRow(0)  // Division by 0 occurs here.
          .AddRow(2);
-  std::unique_ptr<Operation> compute(
-      Compute(DivideSignaling(ConstInt32(5), AttributeAt(0)), builder.Build()));
+
+  auto compute = Compute(DivideSignaling(ConstInt32(5), AttributeAt(0)), builder.Build());
 
   Writer writer(SucceedOrDie(compute->CreateCursor()));
 
@@ -138,8 +139,9 @@ INSTANTIATE_TEST_CASE_P(SpyUse, WriterSpyTest, testing::Bool());
 
 TEST_P(WriterSpyTest, WritePartialToConstrainedSinks) {
   TestDataBuilder<INT32> builder;
-  builder.AddRow(4).AddRow(6).AddRow(1).AddRow(7).AddRow(2);
-  std::unique_ptr<TestData> input(builder.Build());
+  auto input = builder
+      .AddRow(4).AddRow(6).AddRow(1).AddRow(7).AddRow(2)
+      .Build();
   Writer writer(CreateViewLimiter(2, SucceedOrDie(input->CreateCursor())));
 
   if (GetParam()) {

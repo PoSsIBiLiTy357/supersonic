@@ -81,15 +81,15 @@ class SequenceExpression : public Expression {
 
 class RandInt32Expression : public Expression {
  public:
-  explicit RandInt32Expression(RandomBase* random_generator)
-    : random_generator_(random_generator) {}
+  explicit RandInt32Expression(unique_ptr<RandomBase> random_generator)
+    : random_generator_(std::move(random_generator)) {}
   virtual FailureOrOwned<BoundExpression> DoBind(
       const TupleSchema& input_schema,
       BufferAllocator* allocator,
       rowcount_t max_row_count) const {
-    RandomBase* generator_clone = random_generator_->Clone();
-    CHECK_NOTNULL(generator_clone);
-    return BoundRandInt32(generator_clone, allocator, max_row_count);
+    auto generator_clone = random_generator_->Clone();
+    CHECK_NOTNULL(generator_clone.get());
+    return BoundRandInt32(std::move(generator_clone), allocator, max_row_count);
   }
 
   string ToString(bool verbose) const { return "RANDINT32()"; }
@@ -101,68 +101,69 @@ class RandInt32Expression : public Expression {
 
 }  // namespace
 
-const Expression* Null(DataType type) {
-  return new NullExpression(type);
+unique_ptr<const Expression> Null(DataType type) {
+  return make_unique<NullExpression>(type);
 }
 
-const Expression* Sequence() {
-  return new SequenceExpression();
+unique_ptr<const Expression> Sequence() {
+  return make_unique<SequenceExpression>();
 }
 
-const Expression* RandInt32(RandomBase* random_generator) {
-  return new RandInt32Expression(random_generator);
+unique_ptr<const Expression> RandInt32(
+    unique_ptr<RandomBase> random_generator) {
+  return make_unique<RandInt32Expression>(std::move(random_generator));
 }
 
-const Expression* RandInt32() {
-  return RandInt32(new MTRandom());
+unique_ptr<const Expression> RandInt32() {
+  return RandInt32(make_unique<MTRandom>());
 }
 
-const Expression* ConstInt32(const int32& value) {
-  return new ConstExpression<INT32>(value);
+unique_ptr<const Expression> ConstInt32(const int32& value) {
+  return make_unique<ConstExpression<INT32>>(value);
 }
 
-const Expression* ConstInt64(const int64& value) {
-  return new ConstExpression<INT64>(value);
+unique_ptr<const Expression> ConstInt64(const int64& value) {
+  return make_unique<ConstExpression<INT64>>(value);
 }
 
-const Expression* ConstUint32(const uint32& value) {
-  return new ConstExpression<UINT32>(value);
+unique_ptr<const Expression> ConstUint32(const uint32& value) {
+  return make_unique<ConstExpression<UINT32>>(value);
 }
 
-const Expression* ConstUint64(const uint64& value) {
-  return new ConstExpression<UINT64>(value);
+unique_ptr<const Expression> ConstUint64(const uint64& value) {
+  return make_unique<ConstExpression<UINT64>>(value);
 }
 
-const Expression* ConstFloat(const float& value) {
-  return new ConstExpression<FLOAT>(value);
+unique_ptr<const Expression> ConstFloat(const float& value) {
+  return make_unique<ConstExpression<FLOAT>>(value);
 }
 
-const Expression* ConstDouble(const double& value) {
-  return new ConstExpression<DOUBLE>(value);
+unique_ptr<const Expression> ConstDouble(const double& value) {
+  return make_unique<ConstExpression<DOUBLE>>(value);
 }
 
-const Expression* ConstBool(const bool& value) {
-  return new ConstExpression<BOOL>(value);
+unique_ptr<const Expression> ConstBool(const bool& value) {
+  return make_unique<ConstExpression<BOOL>>(value);
 }
 
-const Expression* ConstDate(const int32& value) {
-  return new ConstExpression<DATE>(value);
+unique_ptr<const Expression> ConstDate(const int32& value) {
+  return make_unique<ConstExpression<DATE>>(value);
 }
 
-const Expression* ConstDateTime(const int64& value) {
-  return new ConstExpression<DATETIME>(value);
+unique_ptr<const Expression> ConstDateTime(const int64& value) {
+  return make_unique<ConstExpression<DATETIME>>(value);
 }
 
-const Expression* ConstString(const StringPiece& value) {
-  return new ConstExpression<STRING>(value);
+unique_ptr<const Expression> ConstString(const StringPiece& value) {
+  return make_unique<ConstExpression<STRING>>(value);
 }
 
-const Expression* ConstBinary(const StringPiece& value) {
-  return new ConstExpression<BINARY>(value);
+unique_ptr<const Expression> ConstBinary(const StringPiece& value) {
+  return make_unique<ConstExpression<BINARY>>(value);
 }
 
-const Expression* ConstDataType(const DataType& value) {
-  return new ConstExpression<DATA_TYPE>(value);
+unique_ptr<const Expression> ConstDataType(const DataType& value) {
+  return make_unique<ConstExpression<DATA_TYPE>>(value);
 }
 
 }  // namespace supersonic

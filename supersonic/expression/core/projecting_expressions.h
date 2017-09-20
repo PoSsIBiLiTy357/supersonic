@@ -42,20 +42,20 @@ namespace supersonic {
 class BufferAllocator;
 class TupleSchema;
 
-const Expression* InputAttributeProjection(
-    const SingleSourceProjector* const projector);
+unique_ptr<const Expression> InputAttributeProjection(
+    unique_ptr<const SingleSourceProjector> projector);
 
 // Creates an expression that will return a value of the specified attribute
 // in the input view.
 // Shortcut for InputAttributeProjection(ProjectNamedAttribute(name)).
-inline const Expression* NamedAttribute(const string& name) {
+inline unique_ptr<const Expression> NamedAttribute(const string& name) {
   return InputAttributeProjection(ProjectNamedAttribute(name));
 }
 
 // Creates an expression that will return a value of the attribute at the
 // specified position in the input view.
 // Shortcut for InputAttributeProjection(ProjectAttributeAt(position)).
-inline const Expression* AttributeAt(const size_t position) {
+inline unique_ptr<const Expression> AttributeAt(const size_t position) {
   return InputAttributeProjection(ProjectAttributeAt(position));
 }
 
@@ -64,22 +64,23 @@ inline const Expression* AttributeAt(const size_t position) {
 // data, type or nullability).
 // Will return a Failure at binding time if argument has more columns in the
 // output than one.
-const Expression* Alias(const string& new_name,
-                        const Expression* const argument);
+unique_ptr<const Expression> Alias(const string& new_name,
+                        unique_ptr<const Expression> const argument);
 
 // Creates an expression that evaluates multiple sources (sub-expressions)
 // and projects them into a single (possibly multi-attribute) result.
-const Expression* Projection(const ExpressionList* sources,
-                             const MultiSourceProjector* projector);
+unique_ptr<const Expression> Projection(
+    unique_ptr<const ExpressionList> sources,
+    unique_ptr<const MultiSourceProjector> projector);
 
 // Concatenates all sources into a single expression. The sources must have
 // non-conflicting schemas.
-inline const Expression* Flat(const ExpressionList* inputs) {
-  CompoundMultiSourceProjector* projector = new CompoundMultiSourceProjector();
+inline unique_ptr<const Expression> Flat(unique_ptr<const ExpressionList> inputs) {
+  auto projector = make_unique<CompoundMultiSourceProjector>();
   for (int i = 0; i < inputs->size(); ++i) {
     projector->add(i, ProjectAllAttributes());
   }
-  return Projection(inputs, projector);
+  return Projection(std::move(inputs), std::move(projector));
 }
 
 // A convenience class to assemble expressions with multi-attribute results
@@ -97,14 +98,14 @@ class CompoundExpression : public Expression {
 
   // Adds a single expression to this compound expression. Copies attribute
   // names from the argument. Returns 'this' for easy chaining.
-  CompoundExpression* Add(const Expression* argument);
+  CompoundExpression* Add(unique_ptr<const Expression> argument);
 
   // Adds a single, one-attribute expression to this compound expression.
   // The 'alias' parameter specifies a name of the resulting attribute.
   // If, later during bind, the argument turns out to have attribute count
   // different than 1, a bind error occurs. Returns 'this' for easy chaining.
   CompoundExpression* AddAs(const StringPiece& alias,
-                            const Expression* argument);
+                            unique_ptr<const Expression> argument);
 
   // Adds a single, multi-attribute expression to this compound expression.
   // The 'alias' vector specifies names of the resulting attributes.
@@ -112,7 +113,7 @@ class CompoundExpression : public Expression {
   // different than the number of aliases specified here, a bind error occurs.
   // Returns 'this' for easy chaining.
   CompoundExpression* AddAsMulti(const vector<string>& aliases,
-                                 const Expression* argument);
+                                 unique_ptr<const Expression> argument);
 
   virtual FailureOrOwned<BoundExpression> DoBind(
       const TupleSchema& input_schema,

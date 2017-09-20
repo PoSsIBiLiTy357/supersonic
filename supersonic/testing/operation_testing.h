@@ -86,12 +86,12 @@ class OperationTest {
 
   // Adds a new input for the tested operation. For single-child operations
   // (a common case), you call this exactly once.
-  void AddInput(Operation* input);
+  void AddInput(unique_ptr<Operation> input);
 
   // A convenience setter for operations that have exactly one input.
-  void SetInput(Operation* input) {
+  void SetInput(unique_ptr<Operation> input) {
     CHECK(inputs_.empty());
-    AddInput(input);
+    AddInput(std::move(input));
   }
 
   // Sets the max_row_count for operation inputs. See Execute. If no arguments
@@ -109,8 +109,8 @@ class OperationTest {
       size_t I = 0, size_t J = 0, size_t K = 0, size_t L = 0);
 
   // Sets the expected result of the tested operation.
-  void SetExpectedResult(Operation* expected) {
-    expected_.reset(expected);
+  void SetExpectedResult(unique_ptr<Operation> expected) {
+    expected_ = std::move(expected);
   }
 
   // Use it (instead of SetExpectedResult) when the operation is expected to
@@ -146,7 +146,7 @@ class OperationTest {
   // Grabs the (wrapped) input, so that it can be passed to the tested
   // operation. Ownership is transferred to the caller. Must be called exactly
   // once.
-  Operation* input() {
+  unique_ptr<Operation> input() {
     CHECK_EQ(1, inputs_.size())
         << "Multiple inputs given; please disambiguate by calling "
         << "input_at(position) instead";
@@ -157,7 +157,7 @@ class OperationTest {
   // Grabs the specified (wrapped) input, so that it can be passed to the tested
   // operation. Ownership is transferred to the caller. Must be called exactly
   // once for each input added.
-  Operation* input_at(size_t position);
+  unique_ptr<Operation> input_at(size_t position);
 
   // Runs the test on the specified operation. Performs the operation on the
   // input(s), and compares against the expected output. Runs a test for every
@@ -167,7 +167,7 @@ class OperationTest {
   // to use for the test can be set by SetInputViewSizes and SetResultViewSizes.
   // If not set, defaults are used (including some small and some large
   // numbers).
-  void Execute(Operation* tested_operation);
+  void Execute(unique_ptr<Operation> tested_operation);
 
  private:
   void ExecuteOnce(Operation* tested_operation,
@@ -176,11 +176,13 @@ class OperationTest {
                    double barrier_probability);
 
   friend class TestInput;
-  vector<InputWrapperOperation*> inputs_;
+  vector<unique_ptr<InputWrapperOperation>> inputs_;
+  // Save raw pointer to the wrapper operation. Used to inject operation
+  // behavior at test time.
+  vector<InputWrapperOperation*> saved_inputs_;
   // Records which of the inputs have been acquired by the tested operation
   // (which delegates ownership). We expect the tested operation to claim
   // each input, exactly once.
-  vector<bool> inputs_claimed_;
   // Expected result.
   std::unique_ptr<Operation> expected_;
   // Expected bind error, if any, or OK if no error expected.
@@ -197,12 +199,14 @@ class OperationTest {
   vector<size_t> input_view_sizes_;
   vector<size_t> result_view_sizes_;
   MTRandom random_;
-  DISALLOW_COPY_AND_ASSIGN(OperationTest);
+
+  OperationTest(const OperationTest&) = delete;
+  OperationTest& operator=(const OperationTest&) = delete;
 };
 
 // Creates a cursor that delegates to the supplied cursor, but caps
 // max_row_count at the specified value.
-Cursor* CreateViewLimiter(size_t capped_max_row_count, Cursor* delegate);
+unique_ptr<Cursor> CreateViewLimiter(size_t capped_max_row_count, unique_ptr<Cursor> delegate);
 
 // An operation that will create cursors with the specified content,
 // and optionally failing with the provided exception.
@@ -210,11 +214,11 @@ class TestData : public BasicOperation {
  public:
 
   // Takes ownership of the block.
-  explicit TestData(Block* block) : table_(block) {}
+  explicit TestData(unique_ptr<Block> block) : table_(std::move(block)) {}
 
   // Takes ownership of the block and the exception (if any).
-  TestData(Block* block, const Exception* exception)
-      : table_(block),
+  TestData(unique_ptr<Block> block, const Exception* exception)
+      : table_(std::move(block)),
         exception_(exception) {}
 
   virtual ~TestData() {}
@@ -237,18 +241,18 @@ class AbstractTestDataBuilder {
 
   // Builds an operation that will create cursors over the stream.
   // Ownership of the result is passed to the caller.
-  virtual TestData* Build() const = 0;
+  virtual unique_ptr<TestData> Build() const = 0;
 
-  Operation* OverwriteNamesAndBuild(const vector<string>& names) const;
+  unique_ptr<Operation> OverwriteNamesAndBuild(const vector<string>& names) const;
 
   // Builds a cursor over the stream.
   // Ownership of the result is passed to the caller.
-  Cursor* BuildCursor() const;
+  unique_ptr<Cursor> BuildCursor() const;
 
   // Builds a cursor over the stream.
   // Overrides column names with the given names.
   // Ownership of the result is passed to the caller.
-  Cursor* BuildCursor(const vector<string>& names) const;
+  unique_ptr<Cursor> BuildCursor(const vector<string>& names) const;
 };
 
 // TestDataBuilder that allows to create operations and cursors that return
@@ -279,7 +283,7 @@ class TestDataBuilder : public AbstractTestDataBuilder {
 
   // Takes ownership of the factory.
   This& ReturnException(const ReturnCode error_code) {
-    exception_.reset(new Exception(error_code, ""));
+    exception_ = std::make_unique<Exception>(error_code, "");
     return *this;
   }
 
@@ -312,10 +316,10 @@ class TestDataBuilder : public AbstractTestDataBuilder {
     return *this;
   }
 
-  virtual TestData* Build() const {
-    return exception_.get() == NULL
-        ? new TestData(block_builder_.Build())
-        : new TestData(block_builder_.Build(), exception_->Clone());
+  virtual unique_ptr<TestData> Build() const {
+    return !((bool)exception_)
+        ? std::make_unique<TestData>(block_builder_.Build())
+        : std::make_unique<TestData>(block_builder_.Build(), exception_->Clone());
   }
 
   // Force a column to be nullable, even though no element of that column is

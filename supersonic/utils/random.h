@@ -22,6 +22,8 @@
 #ifndef SUPERSONIC_OPENSOURCE_RANDOM_RANDOM_H_
 #define SUPERSONIC_OPENSOURCE_RANDOM_RANDOM_H_
 
+#include <memory>
+
 #include "supersonic/utils/integral_types.h"
 #include "supersonic/utils/macros.h"
 
@@ -34,7 +36,7 @@ class RandomBase {
 
   // Clone: generate a direct copy of this pseudorandom number generator.
   // NB: Returns NULL if Clone is not implemented/available.
-  virtual RandomBase* Clone() const ABSTRACT;
+  virtual std::unique_ptr<RandomBase> Clone() const ABSTRACT;
 
   // Generates a random value of a given type.
   virtual uint8  Rand8() ABSTRACT;
@@ -72,7 +74,7 @@ class MTRandom : public RandomBase {
 
   virtual ~MTRandom();
 
-  virtual MTRandom *Clone() const;
+  virtual std::unique_ptr<RandomBase> Clone() const;
 
   virtual uint8  Rand8();
   virtual uint16 Rand16();

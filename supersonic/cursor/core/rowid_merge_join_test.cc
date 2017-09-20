@@ -17,6 +17,7 @@
 
 #include <memory>
 
+#include "supersonic/utils/stl_util.h"
 #include "supersonic/base/infrastructure/projector.h"
 #include "supersonic/base/infrastructure/types.h"
 #include "supersonic/cursor/base/cursor.h"
@@ -50,11 +51,11 @@ class RowidMergeJoinTest : public testing::Test {
   TestDataBuilder<STRING, STRING> sample_output_;
 };
 
-Cursor* CreateRowidMergeJoin(
+unique_ptr<Cursor> CreateRowidMergeJoin(
     const SingleSourceProjector& left_key,
     const MultiSourceProjector& result_projector,
-    Cursor* left,
-    Cursor* right) {
+    unique_ptr<Cursor> left,
+    unique_ptr<Cursor> right) {
   FailureOrOwned<const BoundSingleSourceProjector> bound_left(
       left_key.Bind(left->schema()));
   CHECK(bound_left.is_success());
@@ -65,10 +66,10 @@ Cursor* CreateRowidMergeJoin(
   CHECK(bound_right.is_success());
 
   return BoundRowidMergeJoin(
-      bound_left.release(),
-      bound_right.release(),
-      left,
-      right,
+      bound_left.move(),
+      bound_right.move(),
+      std::move(left),
+      std::move(right),
       HeapBufferAllocator::Get());
 }
 
@@ -98,12 +99,13 @@ TEST_F(RowidMergeJoinTest, OneToOne) {
                          .AddRow("E", "EE")
                          .AddRow("F", "FF")
                          .Build());
+  auto proj = make_unique<CompoundMultiSourceProjector>();
+  proj->add(0, ProjectAttributeAtAs(1, "col0"))
+      ->add(1, ProjectAttributeAtAs(0, "col1"));
   test.Execute(
       RowidMergeJoin(
           ProjectAttributeAt(0),
-          (new CompoundMultiSourceProjector())
-              ->add(0, ProjectAttributeAtAs(1, "col0"))
-              ->add(1, ProjectAttributeAtAs(0, "col1")),
+          std::move(proj),
           test.input_at(0),
           test.input_at(1)));
 }
@@ -114,38 +116,38 @@ TEST_F(RowidMergeJoinTest, OneToZeroOrOne) {
   test.AddInput(sample_input_1_.Build());
   test.AddInput(sample_input_2_.Build());
   test.SetExpectedResult(sample_output_.Build());
+  auto proj = make_unique<CompoundMultiSourceProjector>();
+  proj->add(0, ProjectAttributeAtAs(1, "col0"))
+      ->add(1, ProjectAttributeAtAs(0, "col1"));
   test.Execute(
       RowidMergeJoin(
           ProjectAttributeAt(0),
-          (new CompoundMultiSourceProjector())
-              ->add(0, ProjectAttributeAtAs(1, "col0"))
-              ->add(1, ProjectAttributeAtAs(0, "col1")),
+          std::move(proj),
           test.input_at(0),
           test.input_at(1)));
 }
 
 TEST_F(RowidMergeJoinTest, OneToZeroOrOneWithSpyTransform) {
   CreateSampleData();
-  Cursor* input1 = sample_input_1_.BuildCursor();
-  Cursor* input2 = sample_input_2_.BuildCursor();
-  std::unique_ptr<Cursor> expected_result(sample_output_.BuildCursor());
+  auto input1 = sample_input_1_.BuildCursor();
+  auto input2 = sample_input_2_.BuildCursor();
+  auto expected_result = sample_output_.BuildCursor();
 
   std::unique_ptr<const SingleSourceProjector> left_project(
       ProjectAttributeAt(0));
-  std::unique_ptr<CompoundMultiSourceProjector> right_project(
-      new CompoundMultiSourceProjector);
+  auto right_project = make_unique<CompoundMultiSourceProjector>();
   right_project->add(0, ProjectAttributeAtAs(1, "col0"));
   right_project->add(1, ProjectAttributeAtAs(0, "col1"));
 
-  std::unique_ptr<Cursor> rowid_merge(
-      CreateRowidMergeJoin(*left_project, *right_project, input1, input2));
+  auto rowid_merge = CreateRowidMergeJoin(*left_project, *right_project,
+                                          std::move(input1), std::move(input2));
 
   std::unique_ptr<CursorTransformerWithSimpleHistory> spy_transformer(
       PrintingSpyTransformer());
   rowid_merge->ApplyToChildren(spy_transformer.get());
-  rowid_merge.reset(spy_transformer->Transform(rowid_merge.release()));
+  rowid_merge = spy_transformer->Transform(std::move(rowid_merge));
 
-  EXPECT_CURSORS_EQUAL(expected_result.release(), rowid_merge.release());
+  EXPECT_CURSORS_EQUAL(std::move(expected_result), std::move(rowid_merge));
 }
 
 TEST_F(RowidMergeJoinTest, OneToMany) {
@@ -192,12 +194,13 @@ TEST_F(RowidMergeJoinTest, OneToMany) {
                          .AddRow("D5", "DD")
                          .AddRow("D6", "DD")
                          .Build());
+  auto proj = make_unique<CompoundMultiSourceProjector>();
+  proj->add(0, ProjectAttributeAtAs(1, "col0"))
+      ->add(1, ProjectAttributeAtAs(0, "col1"));
   test.Execute(
       RowidMergeJoin(
           ProjectAttributeAt(0),
-          (new CompoundMultiSourceProjector())
-              ->add(0, ProjectAttributeAtAs(1, "col0"))
-              ->add(1, ProjectAttributeAtAs(0, "col1")),
+          std::move(proj),
           test.input_at(0),
           test.input_at(1)));
 }
@@ -246,12 +249,13 @@ TEST_F(RowidMergeJoinTest, OneToManyWithNulls) {
                          .AddRow("D5", "DD")
                          .AddRow("D6", "DD")
                          .Build());
+  auto proj = make_unique<CompoundMultiSourceProjector>();
+  proj->add(0, ProjectAttributeAtAs(1, "col0"))
+      ->add(1, ProjectAttributeAtAs(0, "col1"));
   test.Execute(
       RowidMergeJoin(
           ProjectAttributeAt(0),
-          (new CompoundMultiSourceProjector())
-              ->add(0, ProjectAttributeAtAs(1, "col0"))
-              ->add(1, ProjectAttributeAtAs(0, "col1")),
+          std::move(proj),
           test.input_at(0),
           test.input_at(1)));
 }
@@ -280,38 +284,41 @@ TEST_F(RowidMergeJoinTest, ReferentialIntegrity) {
       .AddRow("B3", "BB")
       .ReturnException(ERROR_FOREIGN_KEY_INVALID)
       .Build());
+  auto proj = make_unique<CompoundMultiSourceProjector>();
+  proj->add(0, ProjectAttributeAtAs(1, "col0"))
+      ->add(1, ProjectAttributeAtAs(0, "col1"));
   test.Execute(
       RowidMergeJoin(
           ProjectAttributeAt(0),
-          (new CompoundMultiSourceProjector())
-              ->add(0, ProjectAttributeAtAs(1, "col0"))
-              ->add(1, ProjectAttributeAtAs(0, "col1")),
+          std::move(proj),
           test.input_at(0),
           test.input_at(1)));
 }
 
 TEST_F(RowidMergeJoinTest, TransformTest) {
   // Empty input cursors.
-  Cursor* input1 = sample_input_1_.BuildCursor();
-  Cursor* input2 = sample_input_2_.BuildCursor();
+  auto input1 = sample_input_1_.BuildCursor();
+  auto input2 = sample_input_2_.BuildCursor();
+
+  auto input1_saved = input1.get();
+  auto input2_saved = input2.get();
 
   std::unique_ptr<const SingleSourceProjector> left_project(
       ProjectAttributeAt(0));
-  std::unique_ptr<CompoundMultiSourceProjector> right_project(
-      new CompoundMultiSourceProjector);
+  auto right_project = make_unique<CompoundMultiSourceProjector>();
   right_project->add(0, ProjectAttributeAtAs(1, "col0"));
   right_project->add(1, ProjectAttributeAtAs(0, "col1"));
 
-  std::unique_ptr<Cursor> rowid_merge(
-      CreateRowidMergeJoin(*left_project, *right_project, input1, input2));
+  auto rowid_merge = CreateRowidMergeJoin(*left_project, *right_project,
+      std::move(input1), std::move(input2));
 
   std::unique_ptr<CursorTransformerWithSimpleHistory> spy_transformer(
       PrintingSpyTransformer());
   rowid_merge->ApplyToChildren(spy_transformer.get());
 
   ASSERT_EQ(2, spy_transformer->GetHistoryLength());
-  EXPECT_EQ(input1, spy_transformer->GetEntryAt(0)->original());
-  EXPECT_EQ(input2, spy_transformer->GetEntryAt(1)->original());
+  EXPECT_EQ(input1_saved, spy_transformer->GetEntryAt(0)->original());
+  EXPECT_EQ(input2_saved, spy_transformer->GetEntryAt(1)->original());
 }
 
 }  // namespace supersonic

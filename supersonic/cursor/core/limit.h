@@ -18,6 +18,7 @@
 #ifndef SUPERSONIC_CURSOR_CORE_LIMIT_H_
 #define SUPERSONIC_CURSOR_CORE_LIMIT_H_
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/infrastructure/types.h"
 
 namespace supersonic {
@@ -26,10 +27,10 @@ namespace supersonic {
 class Cursor;
 class Operation;
 
-Operation* Limit(rowcount_t offset, rowcount_t limit, Operation* child);
+unique_ptr<Operation> Limit(rowcount_t offset, rowcount_t limit, unique_ptr<Operation> child);
 
 // Bound version of the above.
-Cursor* BoundLimit(rowcount_t offset, rowcount_t limit, Cursor* child);
+unique_ptr<Cursor> BoundLimit(rowcount_t offset, rowcount_t limit, unique_ptr<Cursor> child);
 
 }  // namespace supersonic
 

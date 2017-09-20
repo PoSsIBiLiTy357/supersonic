@@ -28,7 +28,7 @@ class Operation;
 
 class ComputeTest : public testing::Test {
  public:
-  Operation* test_input() const {
+  unique_ptr<Operation> test_input() const {
     return TestDataBuilder<STRING, INT32, DOUBLE, INT64 >()
             .AddRow("1", 12, 5.0, 5)
             .AddRow("2", 13, 6.0, 6)
@@ -45,7 +45,7 @@ TEST_F(ComputeTest, EmptyShouldBeEmpty) {
                          .AddRow()
                          .AddRow()
                          .Build());
-  test.Execute(Compute(new CompoundExpression(), test.input()));
+  test.Execute(Compute(make_unique<CompoundExpression>(), test.input()));
 }
 
 TEST_F(ComputeTest, NamedAttribute) {
@@ -56,9 +56,9 @@ TEST_F(ComputeTest, NamedAttribute) {
                          .AddRow(13)
                          .AddRow(__)
                          .Build());
-  test.Execute(Compute(
-      (new CompoundExpression())->AddAs("col0", NamedAttribute("col1")),
-      test.input()));
+  auto expr = make_unique<CompoundExpression>();
+  expr->AddAs("col0", NamedAttribute("col1"));
+  test.Execute(Compute(std::move(expr), test.input()));
 }
 
 TEST_F(ComputeTest, CompoundWithArithmetics) {
@@ -69,13 +69,12 @@ TEST_F(ComputeTest, CompoundWithArithmetics) {
                          .AddRow(13, 19)
                          .AddRow(__, __)
                          .Build());
-  test.Execute(Compute(
-      (new CompoundExpression())
-          ->AddAs("col0", NamedAttribute("col1"))
-          ->AddAs("col1", Plus(
-              NamedAttribute("col1"),
-              NamedAttribute("col3"))),
-      test.input()));
+  auto expr = make_unique<CompoundExpression>();
+  expr->AddAs("col0", NamedAttribute("col1"))
+      ->AddAs("col1", Plus(
+          NamedAttribute("col1"),
+          NamedAttribute("col3")));
+  test.Execute(Compute(std::move(expr), test.input()));
 }
 
 }  // namespace supersonic

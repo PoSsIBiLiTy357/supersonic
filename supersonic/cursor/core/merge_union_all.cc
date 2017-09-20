@@ -128,8 +128,8 @@ class MergeUnionAllCursor : public Cursor {
   // Takes ownership of key_selector. key_selector is an ordered sequence of
   // columns that make up the (possibly multi-column) key that rows are sorted
   // based on.
-  MergeUnionAllCursor(const BoundSortOrder* sort_order,
-                      const vector<Cursor*>& inputs,
+  MergeUnionAllCursor(unique_ptr<const BoundSortOrder> sort_order,
+                      vector<unique_ptr<Cursor>> inputs,
                       BufferAllocator* allocator);
 
   // Allocates the internal block that acts as a placeholder for one view worth
@@ -147,7 +147,7 @@ class MergeUnionAllCursor : public Cursor {
   // Calculates a common schema from all input schemas and specifically, the
   // nullability: an output column is nullable if any in the set of
   // corresponding input columns is nullable.
-  static TupleSchema ResultSchema(const vector<Cursor*>& inputs);
+  static TupleSchema ResultSchema(const vector<unique_ptr<Cursor>>& inputs);
 
  private:
   typedef priority_queue<CursorRowIterator*, vector<CursorRowIterator*>,
@@ -157,7 +157,7 @@ class MergeUnionAllCursor : public Cursor {
   bool clear_result_;
 
   std::unique_ptr<const BoundSortOrder> sort_order_;
-  PointerVector<CursorRowIterator> inputs_;
+  vector<unique_ptr<CursorRowIterator>> inputs_;
 
   // Internal placeholder for result rows.
   Table result_;
@@ -183,20 +183,21 @@ class MergeUnionAllCursor : public Cursor {
   std::stack<CursorRowIterator*> pending_inputs_;
 };
 
-MergeUnionAllCursor::MergeUnionAllCursor(const BoundSortOrder* sort_order,
-                                         const vector<Cursor*>& inputs,
+MergeUnionAllCursor::MergeUnionAllCursor(unique_ptr<const BoundSortOrder> sort_order,
+                                         vector<unique_ptr<Cursor>> inputs,
                                          BufferAllocator* allocator)
     : clear_result_(true),
-      sort_order_(sort_order),
+      sort_order_(std::move(sort_order)),
       result_(ResultSchema(inputs), allocator),
-      row_comparator_(*sort_order),
+      row_comparator_(*sort_order_),
       // TODO(user): Avoid deep copy, by controlling view iterations.
       row_appender_(&result_, true),
       priority_queue_(RowComparatorPointer(&row_comparator_)) {
-  for (int i = 0; i < inputs.size(); i++) {
-    CursorRowIterator* input = new CursorRowIterator(inputs[i]);
-    inputs_.emplace_back(input);
-    pending_inputs_.push(input);
+
+  for (auto& cursor: inputs) {
+    auto input = make_unique<CursorRowIterator>(std::move(cursor));
+    pending_inputs_.push(input.get());
+    inputs_.emplace_back(std::move(input));
   }
 }
 
@@ -295,7 +296,7 @@ void MergeUnionAllCursor::ApplyToChildren(CursorTransformer* callback) {
   }
 }
 
-TupleSchema MergeUnionAllCursor::ResultSchema(const vector<Cursor*>& inputs) {
+TupleSchema MergeUnionAllCursor::ResultSchema(const vector<unique_ptr<Cursor>>& inputs) {
   for (int i = 0; i < inputs.size() - 1; i++)
     CHECK(inputs[i + 1]->schema().EqualByType(inputs[i]->schema()));
   TupleSchema result;
@@ -313,18 +314,17 @@ TupleSchema MergeUnionAllCursor::ResultSchema(const vector<Cursor*>& inputs) {
 
 class MergeUnionAllOperation : public BasicOperation {
  public:
-  MergeUnionAllOperation(const SortOrder* sort_order,
-                         const vector<Operation*>& inputs)
-    : BasicOperation(inputs),
-      sort_order_(sort_order) {}
+  MergeUnionAllOperation(unique_ptr<const SortOrder> sort_order,
+                         vector<unique_ptr<Operation>> inputs)
+    : BasicOperation(std::move(inputs)),
+      sort_order_(std::move(sort_order)) {}
 
   virtual FailureOrOwned<Cursor> CreateCursor() const {
-    vector<Cursor*> inputs;
-    ElementDeleter deleter(&inputs);
+    vector<unique_ptr<Cursor>> inputs;
     for (int i = 0; i < children_count(); i++) {
       FailureOrOwned<Cursor> input_cursor = child_at(i)->CreateCursor();
       PROPAGATE_ON_FAILURE(input_cursor);
-      inputs.push_back(input_cursor.release());
+      inputs.push_back(input_cursor.move());
     }
 
     // BoundSortOrder should allow for differences in column nullability in
@@ -334,9 +334,8 @@ class MergeUnionAllOperation : public BasicOperation {
         sort_order_->Bind(MergeUnionAllCursor::ResultSchema(inputs));
     PROPAGATE_ON_FAILURE(bound_sort_order);
     FailureOrOwned<Cursor> result =
-        BoundMergeUnionAll(bound_sort_order.release(), inputs,
+        BoundMergeUnionAll(bound_sort_order.move(), std::move(inputs),
                            buffer_allocator());
-    inputs.clear();  // Disengages the deleter.
     return result;
   }
 
@@ -346,26 +345,26 @@ class MergeUnionAllOperation : public BasicOperation {
 
 }  // namespace
 
-Operation* MergeUnionAll(const SortOrder* sort_order_raw,
-                         const vector<Operation*>& inputs) {
+unique_ptr<Operation> MergeUnionAll(unique_ptr<const SortOrder> sort_order,
+                                    vector<unique_ptr<Operation>> inputs) {
   // If there are no inputs, there'll be nowhere to take the schema from.
-  std::unique_ptr<const SortOrder> sort_order(sort_order_raw);
   if (inputs.empty()) {
     return Generate(0);
   }
   if (inputs.size() == 1) {
-    return inputs.at(0);
+    return unique_ptr<Operation>(std::move(inputs[0]));
   }
-  return new MergeUnionAllOperation(sort_order.release(), inputs);
+  return make_unique<MergeUnionAllOperation>(std::move(sort_order), std::move(inputs));
 }
 
-FailureOrOwned<Cursor> BoundMergeUnionAll(const BoundSortOrder* sort_order,
-                                          vector<Cursor*> inputs,
-                                          BufferAllocator* buffer_allocator) {
-  std::unique_ptr<MergeUnionAllCursor> cursor(
-      new MergeUnionAllCursor(sort_order, inputs, buffer_allocator));
+FailureOrOwned<Cursor> BoundMergeUnionAll(
+    unique_ptr<const BoundSortOrder> sort_order,
+    vector<unique_ptr<Cursor>> inputs,
+    BufferAllocator* buffer_allocator) {
+  auto cursor = std::make_unique<MergeUnionAllCursor>(
+      std::move(sort_order), std::move(inputs), buffer_allocator);
   PROPAGATE_ON_FAILURE(cursor->Init());
-  return Success(cursor.release());
+  return Success(std::move(cursor));
 }
 
 }  // namespace supersonic

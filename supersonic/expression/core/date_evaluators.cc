@@ -228,7 +228,7 @@ StringPiece DateFormat::operator()(int64 datetime, const StringPiece& format,
                                    Arena* arena) {
   char buffer[33];
   struct tm time_result;
-  time_t offset_time = static_cast<time_t>(datetime / kMillion);
+  auto offset_time = static_cast<time_t>(datetime / kMillion);
   gmtime_r(&offset_time, &time_result);
   // StringPiece stores non-NULL-terminated bytes. We have to allocate
   // a place only to copy the whole format string, and terminate with a NULL.
@@ -236,7 +236,7 @@ StringPiece DateFormat::operator()(int64 datetime, const StringPiece& format,
   string format_string = format.ToString();
   size_t length =
       strftime(buffer, 33, format_string.c_str(), &time_result);
-  char* new_str = static_cast<char *>(arena->AllocateBytes(length + 1));
+  auto* new_str = static_cast<char *>(arena->AllocateBytes(length + 1));
   // TODO(onufry): Replace this with a gentler mechanism. Maybe the allocating
   // operators could take a bool*, on which they would set the error code?
   CHECK_NOTNULL(new_str);
@@ -252,12 +252,12 @@ StringPiece DateFormatLocal::operator()(int64 datetime,
                                         Arena* arena) {
   char buffer[33];
   struct tm time_result;
-  time_t offset_time = static_cast<time_t>(datetime / kMillion);
+  auto offset_time = static_cast<time_t>(datetime / kMillion);
   localtime_r(&offset_time, &time_result);
   string format_string = format.ToString();
   size_t length =
       strftime(buffer, 33, format_string.c_str(), &time_result);
-  char* new_str = static_cast<char *>(arena->AllocateBytes(length + 1));
+  auto* new_str = static_cast<char *>(arena->AllocateBytes(length + 1));
   CHECK_NOTNULL(new_str);
   strncpy(new_str, buffer, length + 1);
   return StringPiece(new_str, length);

@@ -107,16 +107,16 @@ TEST(DateTimeExpressionTest, BindingFailures) {
 }
 
 // Several instantiations of the ConstDateTime functions for testing puproses.
-const Expression* Epoch() {
+unique_ptr<const Expression> Epoch() {
   return ConstDateTime("1970/01/01-00:00:00");
 }
-const Expression* Today() {
+unique_ptr<const Expression> Today() {
   return ConstDateTime("2011/03/22-16:51:44");
 }
-const Expression* BeforeEpoch() {
+unique_ptr<const Expression> BeforeEpoch() {
   return ConstDateTime("1969/03/12-13.11.11");
 }
-const Expression* MalformedDateTime() {
+unique_ptr<const Expression> MalformedDateTime() {
   return ConstDateTime("1980:03:03-12:00:00");
 }
 
@@ -136,7 +136,7 @@ TEST(DateTimeExpressionTest, ConstDateTime) {
 }
 
 template<int64 value>
-const Expression* DateTimeFromMicroseconds() {
+unique_ptr<const Expression> DateTimeFromMicroseconds() {
   return ConstDateTimeFromMicrosecondsSinceEpoch(value);
 }
 
@@ -149,7 +149,7 @@ TEST(DateTimeExpressionTest, ConstDateTimeFromMicrosecondsSinceEpoch) {
 
 // Value is nanoseconds since epoch.
 template<int64 value>
-const Expression* DateTimeFromSeconds() {
+unique_ptr<const Expression> DateTimeFromSeconds() {
   return ConstDateTimeFromSecondsSinceEpoch(
       static_cast<double>(value) / 1000000000.);
 }

@@ -20,6 +20,7 @@
 #ifndef SUPERSONIC_CURSOR_BASE_CURSOR_TRANSFORMER_H_
 #define SUPERSONIC_CURSOR_BASE_CURSOR_TRANSFORMER_H_
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/macros.h"
 
 namespace supersonic {
@@ -34,7 +35,7 @@ class CursorTransformer {
   // of the returned cursor and relinquishes ownership of the argument.
   // The result cursor may or may not be the same as the argument.
   // See CursorTransformer implementations for more details.
-  virtual Cursor* Transform(Cursor* cursor) ABSTRACT;
+  virtual unique_ptr<Cursor> Transform(unique_ptr<Cursor> cursor) ABSTRACT;
 
  protected:
   // To allow instantiation in subclasses.

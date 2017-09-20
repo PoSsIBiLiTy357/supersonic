@@ -181,18 +181,19 @@ TEST_F(ForeignFilterTest, AlternatingMatching) {
 
 TEST_F(ForeignFilterTest, AlternatingMatchingWithSpyTransform) {
   CreateSampleData();
-  Cursor* filter = sample_filter_builder_.BuildCursor();
-  Cursor* input = sample_input_builder_.BuildCursor();
+  auto filter = sample_filter_builder_.BuildCursor();
+  auto input = sample_input_builder_.BuildCursor();
 
-  std::unique_ptr<Cursor> foreign(BoundForeignFilter(0, 0, filter, input));
+  std::unique_ptr<Cursor> foreign(
+      BoundForeignFilter(0, 0, std::move(filter), std::move(input)));
 
   std::unique_ptr<CursorTransformerWithSimpleHistory> spy_transformer(
       PrintingSpyTransformer());
   foreign->ApplyToChildren(spy_transformer.get());
-  foreign.reset(spy_transformer->Transform(foreign.release()));
+  foreign = spy_transformer->Transform(std::move(foreign));
 
   std::unique_ptr<Cursor> expected_result(sample_output_builder_.BuildCursor());
-  EXPECT_CURSORS_EQUAL(expected_result.release(), foreign.release());
+  EXPECT_CURSORS_EQUAL(std::move(expected_result), std::move(foreign));
 }
 
 TEST_F(ForeignFilterTest, EmptyFilter) {
@@ -269,18 +270,21 @@ TEST_F(ForeignFilterTest, Projectors) {
 
 TEST_F(ForeignFilterTest, TransformTest) {
   // Cursors built from empty builders.
-  Cursor* filter = sample_filter_builder_.BuildCursor();
-  Cursor* input = sample_input_builder_.BuildCursor();
+  auto filter = sample_filter_builder_.BuildCursor();
+  auto input = sample_input_builder_.BuildCursor();
 
-  std::unique_ptr<Cursor> foreign(BoundForeignFilter(0, 0, filter, input));
+  auto filter_saved = filter.get();
+  auto input_saved = input.get();
+
+  auto foreign = BoundForeignFilter(0, 0, std::move(filter), std::move(input));
 
   std::unique_ptr<CursorTransformerWithSimpleHistory> spy_transformer(
       PrintingSpyTransformer());
   foreign->ApplyToChildren(spy_transformer.get());
 
   ASSERT_EQ(2, spy_transformer->GetHistoryLength());
-  EXPECT_EQ(filter, spy_transformer->GetEntryAt(0)->original());
-  EXPECT_EQ(input, spy_transformer->GetEntryAt(1)->original());
+  EXPECT_EQ(filter_saved, spy_transformer->GetEntryAt(0)->original());
+  EXPECT_EQ(input_saved, spy_transformer->GetEntryAt(1)->original());
 }
 
 }  // namespace supersonic

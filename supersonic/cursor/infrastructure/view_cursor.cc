@@ -16,12 +16,7 @@
 
 #include "supersonic/cursor/infrastructure/view_cursor.h"
 
-#include <algorithm>
 #include "supersonic/utils/std_namespace.h"
-#include <memory>
-#include <string>
-namespace supersonic {using std::string; }
-
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
@@ -45,7 +40,9 @@ namespace {
 
 class ViewCursor : public BasicCursor {
  public:
-  static Cursor* Create(const View& view) { return new ViewCursor(view); }
+  explicit ViewCursor(const View& view)
+      : BasicCursor(view.schema()),
+        iterator_(view) {}
 
   virtual ResultView Next(rowcount_t max_row_count) {
     PROPAGATE_ON_FAILURE(ThrowIfInterrupted());
@@ -65,9 +62,6 @@ class ViewCursor : public BasicCursor {
   }
 
  private:
-  explicit ViewCursor(const View& view)
-      : BasicCursor(view.schema()),
-        iterator_(view) {}
 
   ViewIterator iterator_;
   DISALLOW_COPY_AND_ASSIGN(ViewCursor);
@@ -80,14 +74,13 @@ class ViewCursorWithSelectionVector : public BasicCursor {
                                        const rowid_t* const selection_vector,
                                        BufferAllocator* buffer_allocator,
                                        const rowcount_t buffer_row_capacity) {
-    std::unique_ptr<ViewCursorWithSelectionVector> cursor(
-        new ViewCursorWithSelectionVector(view, row_count, selection_vector,
-                                          buffer_allocator));
+    auto cursor = make_unique<ViewCursorWithSelectionVector>(
+        view, row_count, selection_vector, buffer_allocator);
     if (!cursor->Allocate(buffer_row_capacity)) {
       THROW(new Exception(ERROR_MEMORY_EXCEEDED,
                           "Failed to preallocate buffer"));
     }
-    return Success(cursor.release());
+    return Success(std::move(cursor));
   }
 
   virtual ResultView Next(rowcount_t max_row_count) {
@@ -117,7 +110,6 @@ class ViewCursorWithSelectionVector : public BasicCursor {
 
   virtual CursorId GetCursorId() const { return SELECTION_VECTOR_VIEW; }
 
- private:
   ViewCursorWithSelectionVector(const View& view,
                                 const rowcount_t row_count,
                                 const rowid_t* const selection_vector,
@@ -132,6 +124,7 @@ class ViewCursorWithSelectionVector : public BasicCursor {
     source_view_.ResetFrom(view);
   }
 
+ private:
   virtual string DebugDescription() const {
     return StrCat("ViewCursorWithSelectionVector(",
                   source_view_.schema().GetHumanReadableSpecification(),
@@ -154,8 +147,8 @@ class ViewCursorWithSelectionVector : public BasicCursor {
 
 }  // namespace
 
-Cursor* CreateCursorOverView(const View& view) {
-  return ViewCursor::Create(view);
+unique_ptr<Cursor> CreateCursorOverView(const View& view) {
+  return std::make_unique<ViewCursor>(view);
 }
 
 FailureOrOwned<Cursor> CreateCursorOverViewWithSelection(

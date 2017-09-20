@@ -19,8 +19,7 @@
 #ifndef SUPERSONIC_BENCHMARK_INFRASTRUCTURE_BENCHMARK_TRANSFORMER_H_
 #define SUPERSONIC_BENCHMARK_INFRASTRUCTURE_BENCHMARK_TRANSFORMER_H_
 
-#include <memory>
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/cursor/core/spy.h"
 #include "supersonic/cursor/infrastructure/history_transformer.h"
 #include "supersonic/utils/macros.h"
@@ -52,7 +51,7 @@ class CursorWithBenchmarkListener {
   BenchmarkListener* release_listener() { return listener_.release(); }
 
  private:
-  std::unique_ptr<BenchmarkListener> listener_;
+  unique_ptr<BenchmarkListener> listener_;
   Cursor* cursor_;
 
   DISALLOW_COPY_AND_ASSIGN(CursorWithBenchmarkListener);
@@ -62,7 +61,7 @@ typedef CursorTransformerWithVectorHistory<CursorWithBenchmarkListener>
 CursorTransformerWithBenchmarkHistory;
 
 // Spy wrapping benchmark cursor transformer.
-CursorTransformerWithBenchmarkHistory* BenchmarkSpyTransformer();
+unique_ptr<CursorTransformerWithBenchmarkHistory> BenchmarkSpyTransformer();
 
 }  // namespace supersonic
 

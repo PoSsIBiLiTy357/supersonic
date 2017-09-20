@@ -21,9 +21,7 @@
 #ifndef SUPERSONIC_CURSOR_CORE_SPY_H_
 #define SUPERSONIC_CURSOR_CORE_SPY_H_
 
-#include <string>
-namespace supersonic {using std::string; }
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/integral_types.h"
 #include "supersonic/base/infrastructure/types.h"
 #include "supersonic/cursor/infrastructure/history_transformer.h"
@@ -52,7 +50,7 @@ class SpyListener {
 SpyListener* PrintingSpyListener();
 
 // Spy wrapping printing cursor transformer.
-CursorTransformerWithSimpleHistory* PrintingSpyTransformer();
+unique_ptr<CursorTransformerWithSimpleHistory> PrintingSpyTransformer();
 
 // This operation will call listener's BeforeNext method
 // every time it is asked for more data. Then it delegates the call to
@@ -60,16 +58,21 @@ CursorTransformerWithSimpleHistory* PrintingSpyTransformer();
 // Parameter "id" is used to distinguish different operators that can share
 // the same listener. The 'id' is forwarded to listener with every call.
 // Takes ownership of the source. Does not take ownership of the listener.
-Operation* Spy(const string& id, SpyListener* listener, Operation* source);
+unique_ptr<Operation> Spy(const string& id, SpyListener* listener,
+                          unique_ptr<Operation> source);
 
 // Spy around Sink. See comments about spy for operations above.
 // Will call BeforeNext() before sink write, and AfterNext()
 // after Sink write. For sinks the max_row_count parameter of the
 // calls is set to 0.
-Sink* Spy(const string& id, SpyListener* listener, Sink* sink);
+unique_ptr<Sink> Spy(const string& id, SpyListener* listener, Sink* sink);
 
 // Takes ownership of the child. Does not take ownership of the listener.
-Cursor* BoundSpy(const string& id, SpyListener* listener, Cursor* child);
+unique_ptr<Cursor> BoundSpy(const string& id, SpyListener* listener,
+                            unique_ptr<Cursor> child);
+
+unique_ptr<Cursor> BoundSpy(const string& id, SpyListener* listener,
+                            unique_ptr<Cursor> child);
 
 // SpyPrinter is a cursor that dumps to the standard output all information
 // acquired from given source. It presents the same set of data as source.

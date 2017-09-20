@@ -13,11 +13,9 @@
 // limitations under the License.
 //
 
-#include <memory>
-using std::unique_ptr;
-
 #include "supersonic/base/infrastructure/block.h"
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/integral_types.h"
 #include "supersonic/base/infrastructure/copy_column.h"
 #include "supersonic/base/infrastructure/view_copier.h"
@@ -34,7 +32,7 @@ class BlockTest : public testing::Test {
     ViewCopier copier(source.schema(), true);
     return copier.Copy(source.row_count(), source, 0, destination);
   }
-  Block* test_block() {
+  unique_ptr<Block> test_block() {
     return BlockBuilder<STRING, INT32>()
       .AddRow("foo", 5)
       .AddRow("bar", 8)
@@ -142,12 +140,12 @@ TEST_F(BlockTest, OffsetsShouldCalculateCorrectly) {
 class ViewTest : public testing::Test {
  public:
   void SetUp() {
-    test_block_.reset(BlockBuilder<STRING, INT32>()
+    test_block_ = BlockBuilder<STRING, INT32>()
         .AddRow("foo", 5)
         .AddRow("bar", 8)
         .AddRow("baz", 4)
         .AddRow("raw", 4)
-        .Build());
+        .Build();
   }
   const View& test_view() const { return test_block_->view(); }
 

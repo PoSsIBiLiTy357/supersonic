@@ -16,6 +16,7 @@
 #ifndef SUPERSONIC_CURSOR_CORE_HYBRID_GROUP_UTILS_H_
 #define SUPERSONIC_CURSOR_CORE_HYBRID_GROUP_UTILS_H_
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/infrastructure/projector.h"
 #include "supersonic/cursor/base/cursor.h"
 #include "supersonic/utils/pointer_vector.h"
@@ -66,11 +67,11 @@ namespace supersonic {
 //
 // Takes ownership of group_by_columns and child.
 FailureOrOwned<Cursor> BoundHybridGroupTransform(
-    const SingleSourceProjector* group_by_columns,
+    unique_ptr<const SingleSourceProjector> group_by_columns,
     const util::gtl::PointerVector<const SingleSourceProjector>&
         column_group_projectors,
     BufferAllocator* allocator,
-    Cursor* child);
+    unique_ptr<Cursor> child);
 
 // Debug options for BoundHybridGroupAggregate.
 class HybridGroupDebugOptions {
@@ -101,9 +102,9 @@ class HybridGroupDebugOptions {
 // nullability.
 // Takes ownership of projector and input.
 FailureOrOwned<Cursor> MakeSelectedColumnsNotNullable(
-    const SingleSourceProjector* selection_projector,
+    unique_ptr<const SingleSourceProjector> selection_projector,
     BufferAllocator* allocator,
-    Cursor* input);
+    unique_ptr<Cursor> input);
 
 // Extend the schema by an INT32 column filled with 0-es. This is used by hybrid
 // GROUP BY to properly compute COUNT(*) in face of rows being replicated N
@@ -113,7 +114,7 @@ FailureOrOwned<Cursor> MakeSelectedColumnsNotNullable(
 FailureOrOwned<Cursor> ExtendByConstantColumn(
     const string& new_column_name,
     BufferAllocator* allocator,
-    Cursor* input);
+    unique_ptr<Cursor> input);
 
 }  // namespace supersonic
 

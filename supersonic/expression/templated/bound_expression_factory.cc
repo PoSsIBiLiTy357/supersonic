@@ -41,16 +41,15 @@ namespace supersonic {
 // Assumes ownership, releases in case of success.
 class BufferAllocator;
 
-FailureOrOwned<BoundExpression> ResolveTypePromotion(BoundExpression* child_ptr,
+FailureOrOwned<BoundExpression> ResolveTypePromotion(unique_ptr<BoundExpression> child,
                                                      DataType result_type,
                                                      BufferAllocator* allocator,
                                                      rowcount_t row_capacity,
                                                      bool promote) {
-  std::unique_ptr<BoundExpression> child(child_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount("Implicit cast attempt",
                                            child->result_schema(), 1));
   if (GetExpressionType(child.get()) == result_type)
-    return Success(child.release());
+    return Success(std::move(child));
   if (!promote) THROW(new Exception(
       ERROR_ATTRIBUTE_TYPE_MISMATCH,
       StringPrintf("Implicit cast attempt from %s to %s of %s failed.",
@@ -58,9 +57,9 @@ FailureOrOwned<BoundExpression> ResolveTypePromotion(BoundExpression* child_ptr,
                    GetTypeInfo(result_type).name().c_str(),
                    GetExpressionName(child.get()).c_str())));
   FailureOrOwned<BoundExpression> cast_child = BoundInternalCast(
-      allocator, row_capacity, child.release(), result_type, true);
+      allocator, row_capacity, std::move(child), result_type, true);
   PROPAGATE_ON_FAILURE(cast_child);
-  return Success(cast_child.release());
+  return Success(cast_child.move());
 }
 
 // Encapsulation of type mapping.
@@ -126,9 +125,8 @@ FailureOrOwned<BoundExpression> RunUnaryFactory(
     UnaryExpressionFactory* factory_ptr,
     BufferAllocator* const allocator,
     rowcount_t row_capacity,
-    BoundExpression* child_ptr,
+    unique_ptr<BoundExpression> child,
     const string& operation_name) {
-  std::unique_ptr<BoundExpression> child(child_ptr);
   // Factory creation functions signalize a type mismatch with a NULL
   // return pointer.
   // TODO(onufry): factory functions should return a FailureOr<Factory> instead
@@ -141,18 +139,16 @@ FailureOrOwned<BoundExpression> RunUnaryFactory(
                " failed due to type mismatch.")));
   }
   std::unique_ptr<UnaryExpressionFactory> factory(factory_ptr);
-  return factory->create_expression(allocator, row_capacity, child.release());
+  return factory->create_expression(allocator, row_capacity, std::move(child));
 }
 
 FailureOrOwned<BoundExpression> RunBinaryFactory(
     BinaryExpressionFactory* factory_ptr,
     BufferAllocator* const allocator,
     rowcount_t row_capacity,
-    BoundExpression* left_ptr,
-    BoundExpression* right_ptr,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     const string& operation_name) {
-  std::unique_ptr<BoundExpression> left(left_ptr);
-  std::unique_ptr<BoundExpression> right(right_ptr);
   if (factory_ptr == NULL) {
     THROW(new Exception(
         ERROR_ATTRIBUTE_TYPE_MISMATCH,
@@ -160,8 +156,8 @@ FailureOrOwned<BoundExpression> RunBinaryFactory(
                " failed due to type mismatch.")));
   }
   std::unique_ptr<BinaryExpressionFactory> factory(factory_ptr);
-  return factory->create_expression(allocator, row_capacity, left.release(),
-                                    right.release());
+  return factory->create_expression(allocator, row_capacity, std::move(left),
+                                    std::move(right));
 }
 
 }  // namespace supersonic

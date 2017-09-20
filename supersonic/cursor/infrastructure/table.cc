@@ -48,6 +48,14 @@ Table::Table(Block* block)
   view_.ResetFrom(block_->view());
 }
 
+Table::Table(unique_ptr<Block> block)
+    : BasicOperation(),
+      block_(std::move(block)),
+      view_(block_->schema()),
+      view_copier_(block_->schema(), true) {
+  view_.ResetFrom(block_->view());
+}
+
 // Needs to be here as long as ViewCopier is only forward-declared in *.h.
 Table::~Table() {}
 
@@ -124,11 +132,11 @@ FailureOrOwned<Cursor> Table::CreateCursor() const {
 }
 
 FailureOrOwned<Table> MaterializeTable(BufferAllocator* allocator,
-                                       Cursor* cursor) {
-  std::unique_ptr<Table> table(new Table(cursor->schema(), allocator));
+                                       unique_ptr<Cursor> cursor) {
+  auto table = make_unique<Table>(cursor->schema(), allocator);
   TableSink sink(table.get());
-  PROPAGATE_ON_FAILURE(WriteCursor(cursor, &sink));
-  return Success(table.release());
+  PROPAGATE_ON_FAILURE(WriteCursor(std::move(cursor), &sink));
+  return Success(std::move(table));
 }
 
 }  // namespace supersonic

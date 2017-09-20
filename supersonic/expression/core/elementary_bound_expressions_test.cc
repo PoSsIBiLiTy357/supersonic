@@ -16,15 +16,7 @@
 
 #include "supersonic/expression/core/elementary_bound_expressions.h"
 
-#include <memory>
-#include <set>
-#include <string>
-#include <vector>
 #include "supersonic/utils/std_namespace.h"
-namespace supersonic {using std::string; }
-using std::vector;
-using std::unique_ptr;
-
 #include "supersonic/base/exception/result.h"
 #include "supersonic/expression/base/expression.h"
 #include "supersonic/expression/core/projecting_bound_expressions.h"
@@ -41,10 +33,10 @@ namespace {
 // ------------------------- Control expressions -------------------------
 
 FailureOrOwned<BoundExpression> BoundCastToInt64(
-    BoundExpression* source,
+    unique_ptr<BoundExpression> source,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  return BoundCastTo(INT64, source, allocator, max_row_count);
+  return BoundCastTo(INT64, std::move(source), allocator, max_row_count);
 }
 
 TEST(ElementaryBoundExpressionsTest, BoundCastTo) {
@@ -54,18 +46,18 @@ TEST(ElementaryBoundExpressionsTest, BoundCastTo) {
 
 template<DataType out_type>
 FailureOrOwned<BoundExpression> TypedBoundParseStringQuiet(
-    BoundExpression* source,
+    unique_ptr<BoundExpression> source,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  return BoundParseStringQuiet(out_type, source, allocator, max_row_count);
+  return BoundParseStringQuiet(out_type, std::move(source), allocator, max_row_count);
 }
 
 template<DataType out_type>
 FailureOrOwned<BoundExpression> TypedBoundParseStringNulling(
-    BoundExpression* source,
+    unique_ptr<BoundExpression> source,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  return BoundParseStringNulling(out_type, source, allocator, max_row_count);
+  return BoundParseStringNulling(out_type, std::move(source), allocator, max_row_count);
 }
 
 TEST(ElementaryBoundExpressionsTest, BoundParseString) {
@@ -161,7 +153,7 @@ TEST(ElementaryBoundExpressionsTest, BoundCaseCollectReferredAttributeNames) {
   list->add(SucceedOrDie(BoundNamedAttribute(schema, "value2")));
 
   FailureOrOwned<BoundExpression> bound_case =
-      BoundCase(list.release(), HeapBufferAllocator::Get(), 20);
+      BoundCase(std::move(list), HeapBufferAllocator::Get(), 20);
   ASSERT_TRUE(bound_case.is_success())
       << bound_case.exception().PrintStackTrace();
   EXPECT_EQ(

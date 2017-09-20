@@ -13,21 +13,16 @@
 // limitations under the License.
 //
 
-#include "supersonic/base/infrastructure/projector.h"
 
-#include <memory>
 #include <set>
-#include "supersonic/utils/std_namespace.h"
-#include <string>
-using std::unique_ptr;
-using std::make_unique;
-namespace supersonic {using std::string; }
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
 #include "supersonic/proto/supersonic.pb.h"
 #include "supersonic/utils/strings/join.h"
+#include "supersonic/base/infrastructure/projector.h"
 
 namespace supersonic {
 
@@ -108,7 +103,7 @@ FailureOrOwned<const BoundSingleSourceProjector> NamedAttributeProjector::Bind(
   } else {
     auto projector = make_unique<BoundSingleSourceProjector>(source_schema);
     CHECK(projector->Add(source_position));
-    return Success(projector.release());
+    return Success(std::move(projector));
   }
 }
 
@@ -117,9 +112,9 @@ namespace {
 class RenamingProjector : public SingleSourceProjector {
  public:
   explicit RenamingProjector(const vector<string>& aliases,
-                             const SingleSourceProjector* source)
+                             unique_ptr<const SingleSourceProjector> source)
       : aliases_(aliases),
-        source_(source) {
+        source_(std::move(source)) {
     set<string> unique(aliases.begin(), aliases.end());
     CHECK_EQ(aliases.size(), unique.size())
         << "The provided list of aliases isn't unique: " << strings::Join(
@@ -148,11 +143,11 @@ class RenamingProjector : public SingleSourceProjector {
       CHECK(result_projector->AddAs(bound->source_attribute_position(i),
                                     aliases_[i]));
     }
-    return Success(result_projector.release());
+    return Success(std::move(result_projector));
   }
 
-  virtual RenamingProjector* Clone() const {
-    return new RenamingProjector(aliases_, source_->Clone());
+  virtual unique_ptr<SingleSourceProjector> Clone() const {
+    return make_unique<RenamingProjector>(aliases_, source_->Clone());
   }
 
   // (result_projection) RENAME AS (name1, name2, name3)
@@ -189,14 +184,13 @@ class PositionedAttributeProjector : public SingleSourceProjector {
                        source_schema.attribute_count(),
                        source_position_)));
     }
-    unique_ptr<BoundSingleSourceProjector> projector(
-        new BoundSingleSourceProjector(source_schema));
+    auto projector = make_unique<BoundSingleSourceProjector>(source_schema);
     CHECK(projector->Add(source_position_));
-    return Success(projector.release());
+    return Success(std::move(projector));
   }
 
-  virtual PositionedAttributeProjector* Clone() const {
-    return new PositionedAttributeProjector(source_position_);
+  virtual unique_ptr<SingleSourceProjector> Clone() const {
+    return make_unique<PositionedAttributeProjector>(source_position_);
   }
 
   virtual string ToString(bool verbose) const {
@@ -230,8 +224,8 @@ class AllAttributesProjector : public SingleSourceProjector {
     return Success(result);
   }
 
-  virtual AllAttributesProjector* Clone() const {
-    return new AllAttributesProjector(prefix_);
+  virtual unique_ptr<SingleSourceProjector> Clone() const {
+    return make_unique<AllAttributesProjector>(prefix_);
   }
 
   virtual string ToString(bool verbose) const {
@@ -247,8 +241,7 @@ class AllAttributesProjector : public SingleSourceProjector {
 FailureOrOwned<const BoundSingleSourceProjector>
 CompoundSingleSourceProjector::Bind(
     const TupleSchema& source_schema) const {
-  unique_ptr<BoundSingleSourceProjector> projector(
-      new BoundSingleSourceProjector(source_schema));
+  auto projector = make_unique<BoundSingleSourceProjector>(source_schema);
   for (int i = 0; i < projectors_.size(); ++i) {
     FailureOrOwned<const BoundSingleSourceProjector> component =
         projectors_[i]->Bind(source_schema);
@@ -268,74 +261,71 @@ CompoundSingleSourceProjector::Bind(
       }
     }
   }
-  return Success(projector.release());
+  return Success(std::move(projector));
 }
 
-CompoundSingleSourceProjector* CompoundSingleSourceProjector::Clone() const {
-  CompoundSingleSourceProjector* clone = new CompoundSingleSourceProjector();
-  for (vector<linked_ptr<const SingleSourceProjector> >::const_iterator i =
-       projectors_.begin(); i != projectors_.end(); ++i) {
-    clone->add((*i)->Clone());
+unique_ptr<SingleSourceProjector> CompoundSingleSourceProjector::Clone() const {
+  auto clone = make_unique<CompoundSingleSourceProjector>();
+  for (const auto& projector: projectors_) {
+    clone->add(projector->Clone());
   }
   return clone;
 }
 
 string CompoundSingleSourceProjector::ToString(bool verbose) const {
   string result_description = "(";
-  for (vector<linked_ptr<const SingleSourceProjector> >::const_iterator it
-          = projectors_.begin(); it < projectors_.end(); ++it) {
-    if (it != projectors_.begin()) result_description.append(", ");
-    result_description.append((*it)->ToString(verbose));
+  for (const auto& projector: projectors_) {
+    result_description.append(projector->ToString(verbose));
   }
   result_description.append(")");
   return result_description;
 }
 
-const SingleSourceProjector* ProjectRename(
+unique_ptr<const SingleSourceProjector> ProjectRename(
     const vector<string>& aliases,
-    const SingleSourceProjector* source) {
-  return new RenamingProjector(aliases, source);
+    unique_ptr<const SingleSourceProjector> source) {
+  return make_unique<RenamingProjector>(aliases, std::move(source));
 }
 
-const SingleSourceProjector* ProjectNamedAttribute(const StringPiece& name) {
-  return new NamedAttributeProjector(name);
+unique_ptr<const SingleSourceProjector> ProjectNamedAttribute(const StringPiece& name) {
+  return make_unique<NamedAttributeProjector>(name);
 }
 
-const SingleSourceProjector* ProjectAttributeAt(const int position) {
-  return new PositionedAttributeProjector(position);
+unique_ptr<const SingleSourceProjector> ProjectAttributeAt(const int position) {
+  return make_unique<PositionedAttributeProjector>(position);
 }
 
-const SingleSourceProjector* ProjectAttributesAt(const vector<int>& positions) {
+unique_ptr<const SingleSourceProjector> ProjectAttributesAt(const vector<int>& positions) {
   unique_ptr<CompoundSingleSourceProjector> projector(
       new CompoundSingleSourceProjector);
   for (int i = 0; i < positions.size(); ++i) {
     projector->add(ProjectAttributeAt(positions[i]));
   }
-  return projector.release();
-}
-
-const SingleSourceProjector* ProjectNamedAttributes(
-    const vector<string>& names) {
-  CompoundSingleSourceProjector* projector = new CompoundSingleSourceProjector;
-  for (int i = 0; i < names.size(); ++i) {
-    projector->add(ProjectNamedAttribute(names[i]));
-  }
   return projector;
 }
 
-const SingleSourceProjector* ProjectAllAttributes() {
-  return new AllAttributesProjector();
+unique_ptr<const SingleSourceProjector> ProjectNamedAttributes(
+    const vector<string>& names) {
+  auto projector = make_unique<CompoundSingleSourceProjector>();
+  for (int i = 0; i < names.size(); ++i) {
+    projector->add(ProjectNamedAttribute(names[i]));
+  }
+  return std::move(projector);
 }
 
-const SingleSourceProjector* ProjectAllAttributes(const StringPiece& prefix) {
-  return new AllAttributesProjector(prefix);
+unique_ptr<const SingleSourceProjector> ProjectAllAttributes() {
+  return make_unique<AllAttributesProjector>();
+}
+
+unique_ptr<const SingleSourceProjector> ProjectAllAttributes(
+    const StringPiece& prefix) {
+  return make_unique<AllAttributesProjector>(prefix);
 }
 
 FailureOrOwned<const BoundMultiSourceProjector>
 CompoundMultiSourceProjector::Bind(
     const vector<const TupleSchema*>& source_schemas) const {
-  unique_ptr<BoundMultiSourceProjector> projector(
-      new BoundMultiSourceProjector(source_schemas));
+  auto projector = make_unique<BoundMultiSourceProjector>(source_schemas);
   for (int i = 0; i < projectors_.size(); ++i) {
     FailureOrOwned<const BoundSingleSourceProjector> component =
         projectors_[i].second->Bind(*source_schemas[projectors_[i].first]);
@@ -358,7 +348,7 @@ CompoundMultiSourceProjector::Bind(
     }
   }
 
-  return Success(projector.release());
+  return Success(std::move(projector));
 }
 
 string CompoundMultiSourceProjector::ToString(bool verbose) const {
@@ -370,17 +360,16 @@ string CompoundMultiSourceProjector::ToString(bool verbose) const {
   return strings::Join(projectors_str, ", ");
 }
 
-pair<BoundMultiSourceProjector*, BoundSingleSourceProjector*> DecomposeNth(
+pair<unique_ptr<BoundMultiSourceProjector>, unique_ptr<BoundSingleSourceProjector>>
+DecomposeNth(
     int source_index,
     const BoundMultiSourceProjector& projector) {
-  unique_ptr<BoundSingleSourceProjector> new_nth(
-      new BoundSingleSourceProjector(projector.source_schema(source_index)));
+  auto new_nth = make_unique<BoundSingleSourceProjector>(projector.source_schema(source_index));
   vector<const TupleSchema*> schemas;
   for (int i = 0; i < projector.source_count(); ++i) {
     schemas.push_back(&projector.source_schema(i));
   }
-  unique_ptr<BoundMultiSourceProjector> new_projector(
-      new BoundMultiSourceProjector(schemas));
+  auto new_projector = make_unique<BoundMultiSourceProjector>(schemas);
 
   std::map<int, int> uniqualizer;
   for (int i = 0; i < projector.result_schema().attribute_count(); ++i) {
@@ -403,7 +392,7 @@ pair<BoundMultiSourceProjector*, BoundSingleSourceProjector*> DecomposeNth(
       new_projector->AddAs(source_index, position, alias);
     }
   }
-  return std::make_pair(new_projector.release(), new_nth.release());
+  return { std::move(new_projector), std::move(new_nth) };
 }
 
 }  // namespace supersonic

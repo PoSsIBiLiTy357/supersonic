@@ -18,9 +18,8 @@
 
 #include <memory>
 #include <string>
-namespace supersonic {using std::string; }
-using std::unique_ptr;
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
 #include "supersonic/base/exception/result.h"
@@ -43,7 +42,8 @@ namespace {
 // arguments.
 class ConcatExpression : public Expression {
  public:
-  explicit ConcatExpression(const ExpressionList* const list) : args_(list) {}
+  explicit ConcatExpression(unique_ptr<const ExpressionList> list)
+      : args_(std::move(list)) {}
 
  private:
   virtual FailureOrOwned<BoundExpression> DoBind(
@@ -53,7 +53,7 @@ class ConcatExpression : public Expression {
     FailureOrOwned<BoundExpressionList> args = args_->DoBind(
         input_schema, allocator, max_row_count);
     PROPAGATE_ON_FAILURE(args);
-    return BoundConcat(args.release(), allocator, max_row_count);
+    return BoundConcat(args.move(), allocator, max_row_count);
   }
 
   virtual string ToString(bool verbose) const {
@@ -65,79 +65,91 @@ class ConcatExpression : public Expression {
 
 }  // namespace
 
-const Expression* Concat(const ExpressionList* const args) {
-  return new ConcatExpression(args);
+unique_ptr<const Expression> Concat(unique_ptr<const ExpressionList> args) {
+  return make_unique<ConcatExpression>(std::move(args));
 }
 
-const Expression* Length(const Expression* const str) {
-  return CreateExpressionForExistingBoundFactory(str, &BoundLength,
+unique_ptr<const Expression> Length(unique_ptr<const Expression> str) {
+  return CreateExpressionForExistingBoundFactory(std::move(str), &BoundLength,
                                                  "LENGTH($0)");
 }
 
-const Expression* Ltrim(const Expression* const str) {
-  return CreateExpressionForExistingBoundFactory(str, &BoundLtrim, "LTRIM($0)");
+unique_ptr<const Expression> Ltrim(unique_ptr<const Expression> str) {
+  return CreateExpressionForExistingBoundFactory(std::move(str), &BoundLtrim,
+                                                 "LTRIM($0)");
 }
 
-const Expression* Rtrim(const Expression* const str) {
-  return CreateExpressionForExistingBoundFactory(str, &BoundRtrim, "RTRIM($0)");
+unique_ptr<const Expression> Rtrim(unique_ptr<const Expression> str) {
+  return CreateExpressionForExistingBoundFactory(std::move(str), &BoundRtrim,
+                                                 "RTRIM($0)");
 }
 
-const Expression* StringContains(const Expression* const haystack,
-                                 const Expression* const needle) {
-  return CreateExpressionForExistingBoundFactory(haystack, needle,
-      &BoundContains, "CONTAINS($0, $1)");
-}
-
-const Expression* StringContainsCI(const Expression* const haystack,
-                                   const Expression* const needle) {
-  return CreateExpressionForExistingBoundFactory(haystack, needle,
-      &BoundContainsCI, "CONTAINS_CI($0, $1)");
-}
-
-const Expression* StringOffset(const Expression* const haystack,
-                               const Expression* const needle) {
+unique_ptr<const Expression>
+StringContains(unique_ptr<const Expression> haystack,
+               unique_ptr<const Expression> needle) {
   return CreateExpressionForExistingBoundFactory(
-      haystack, needle, &BoundStringOffset, "STRING_OFFSET($0, $1)");
+      std::move(haystack), std::move(needle), &BoundContains,
+      "CONTAINS($0, $1)");
 }
 
-const Expression* StringReplace(const Expression* const haystack,
-                                const Expression* const needle,
-                                const Expression* const substitute) {
+unique_ptr<const Expression>
+StringContainsCI(unique_ptr<const Expression> haystack,
+                 unique_ptr<const Expression> needle) {
   return CreateExpressionForExistingBoundFactory(
-      haystack, needle, substitute, &BoundStringReplace,
-      "STRING_REPLACE($0, $1, $2)");
+      std::move(haystack), std::move(needle), &BoundContainsCI,
+      "CONTAINS_CI($0, $1)");
 }
 
-const Expression* Substring(const Expression* const str,
-                            const Expression* const pos,
-                            const Expression* const length) {
+unique_ptr<const Expression> StringOffset(unique_ptr<const Expression> haystack,
+                                          unique_ptr<const Expression> needle) {
   return CreateExpressionForExistingBoundFactory(
-      str, pos, length, &BoundSubstring, "SUBSTRING($0, $1, $2)");
+      std::move(haystack), std::move(needle), &BoundStringOffset,
+      "STRING_OFFSET($0, $1)");
 }
 
-const Expression* ToLower(const Expression* const str) {
-  return CreateExpressionForExistingBoundFactory(str, &BoundToLower,
+unique_ptr<const Expression>
+StringReplace(unique_ptr<const Expression> haystack,
+              unique_ptr<const Expression> needle,
+              unique_ptr<const Expression> substitute) {
+  return CreateExpressionForExistingBoundFactory(
+      std::move(haystack), std::move(needle), std::move(substitute),
+      &BoundStringReplace, "STRING_REPLACE($0, $1, $2)");
+}
+
+unique_ptr<const Expression> Substring(unique_ptr<const Expression> str,
+                                       unique_ptr<const Expression> pos,
+                                       unique_ptr<const Expression> length) {
+  return CreateExpressionForExistingBoundFactory(
+      std::move(str), std::move(pos), std::move(length), &BoundSubstring,
+      "SUBSTRING($0, $1, $2)");
+}
+
+unique_ptr<const Expression> ToLower(unique_ptr<const Expression> str) {
+  return CreateExpressionForExistingBoundFactory(std::move(str), &BoundToLower,
                                                  "TO_LOWER($0)");
 }
 
-const Expression* ToString(const Expression* const expr) {
-  return CreateExpressionForExistingBoundFactory(expr, &BoundToString,
-                                                 "TO_STRING($0)");
+unique_ptr<const Expression> ToString(unique_ptr<const Expression> expr) {
+  return CreateExpressionForExistingBoundFactory(
+      std::move(expr), &BoundToString, "TO_STRING($0)");
 }
 
-const Expression* ToUpper(const Expression* const str) {
-  return CreateExpressionForExistingBoundFactory(str, &BoundToUpper,
+unique_ptr<const Expression> ToUpper(unique_ptr<const Expression> str) {
+  return CreateExpressionForExistingBoundFactory(std::move(str), &BoundToUpper,
                                                  "TO_UPPER($0)");
 }
 
-const Expression* TrailingSubstring(const Expression* const str,
-                                    const Expression* const pos) {
-  return CreateExpressionForExistingBoundFactory(
-      str, pos, &BoundTrailingSubstring, "SUBSTRING($0, $1)");
+unique_ptr<const Expression>
+TrailingSubstring(unique_ptr<const Expression> str,
+                  unique_ptr<const Expression> pos) {
+  return CreateExpressionForExistingBoundFactory(std::move(str), std::move(pos),
+                                                 &BoundTrailingSubstring,
+                                                 "SUBSTRING($0, $1)");
 }
 
-const Expression* Trim(const Expression* const str) {
-  return CreateExpressionForExistingBoundFactory(str, &BoundTrim, "TRIM($0)");
+unique_ptr<const Expression> Trim(unique_ptr<const Expression> str) {
+  return CreateExpressionForExistingBoundFactory(std::move(str), &BoundTrim,
+                                                 "TRIM($0)");
 }
 
 }  // namespace supersonic

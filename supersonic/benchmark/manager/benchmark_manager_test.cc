@@ -49,20 +49,19 @@ class MockBenchmarkNode : public BenchmarkTreeNode {
 class BenchmarkManagerTest : public testing::Test {
  protected:
   // Caller takes ownership of the Cursor.
-  MockCursor* CreateMockCursor() {
+  unique_ptr<MockCursor> CreateMockCursor() {
     // Using NiceMock for cursor as BenchmarkManager only acts on the cursor
     // through the tree builder.
     std::unique_ptr<MockCursor> cursor(new NiceMock<MockCursor>);
     ON_CALL(*cursor, schema()).WillByDefault(ReturnRef(schema_));
     ON_CALL(*cursor, GetCursorId()).WillByDefault(Return(VIEW));
-    return cursor.release();
+    return cursor;
   }
 
   // Caller takes ownership of the result node.
   BenchmarkTreeNode* CreateMockNodeWithExpectation() {
-    std::unique_ptr<CursorStatistics> stats(new MockCursorStatistics(&dummy_));
-    std::unique_ptr<MockBenchmarkNode> node(
-        new MockBenchmarkNode(stats.release()));
+    auto stats = make_unique<MockCursorStatistics>(&dummy_);
+    auto node = make_unique<MockBenchmarkNode>(stats.release());
     EXPECT_CALL(*node, GatherAllData());
     return node.release();
   }
@@ -73,7 +72,7 @@ class BenchmarkManagerTest : public testing::Test {
 
 TEST_F(BenchmarkManagerTest, TypicalUseCaseTest) {
   rowcount_t block_size = -1;
-  std::unique_ptr<MockCursor> cursor(CreateMockCursor());
+  auto cursor = CreateMockCursor();
 
   // Return EOS on next call, hence there should only be one call to Next()
   // with the argument being the specified block size.
@@ -90,10 +89,10 @@ TEST_F(BenchmarkManagerTest, TypicalUseCaseTest) {
 }
 
 TEST_F(BenchmarkManagerTest, SetUpTest) {
-  std::unique_ptr<Cursor> cursor(CreateMockCursor());
+  auto cursor = CreateMockCursor();
   std::unique_ptr<BenchmarkDataWrapper> data_wrapper(
-      SetUpBenchmarkForCursor(cursor.release()));
-  std::unique_ptr<Cursor> transformed_cursor(data_wrapper->release_cursor());
+      SetUpBenchmarkForCursor(std::move(cursor)));
+  auto transformed_cursor = data_wrapper->move_cursor();
 
   EXPECT_TRUE(transformed_cursor.get() != NULL);
   ASSERT_TRUE(data_wrapper->node() != NULL);

@@ -15,9 +15,8 @@
 
 #include "supersonic/cursor/core/project.h"
 
-#include <memory>
-
 #include <glog/logging.h>
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/exception/failureor.h"
@@ -40,10 +39,10 @@ namespace {
 class ProjectCursor : public BasicCursor {
  public:
   // Takes ownership of BoundSingleSourceProjector and child cursor.
-  ProjectCursor(const BoundSingleSourceProjector* projector, Cursor* child)
-      : BasicCursor(projector->result_schema(), child),
-        projector_(projector),
-        result_view_(projector->result_schema()) {}
+  ProjectCursor(unique_ptr<const BoundSingleSourceProjector> projector, unique_ptr<Cursor> child)
+      : BasicCursor(projector->result_schema(), std::move(child)),
+        projector_(std::move(projector)),
+        result_view_(projector_->result_schema()) {}
 
   virtual ResultView Next(rowcount_t max_row_count) {
     ResultView next_result = child()->Next(max_row_count);
@@ -62,7 +61,7 @@ class ProjectCursor : public BasicCursor {
   virtual CursorId GetCursorId() const { return PROJECT; }
 
  private:
-  std::unique_ptr<const BoundSingleSourceProjector> projector_;
+  unique_ptr<const BoundSingleSourceProjector> projector_;
   View result_view_;
 
   DISALLOW_COPY_AND_ASSIGN(ProjectCursor);
@@ -71,10 +70,10 @@ class ProjectCursor : public BasicCursor {
 class ProjectOperation : public BasicOperation {
  public:
   // Takes ownership of projector and child_operation.
-  ProjectOperation(const SingleSourceProjector* projector,
-                      Operation* child_operation)
-      : BasicOperation(child_operation),
-        projector_(projector) {}
+  ProjectOperation(unique_ptr<const SingleSourceProjector> projector,
+                   unique_ptr<Operation> child_operation)
+      : BasicOperation(std::move(child_operation)),
+        projector_(std::move(projector)) {}
 
   virtual ~ProjectOperation() {}
 
@@ -85,25 +84,25 @@ class ProjectOperation : public BasicOperation {
         projector_->Bind(child_cursor->schema());
     PROPAGATE_ON_FAILURE(bound_projector);
     return Success(
-        BoundProject(bound_projector.release(), child_cursor.release()));
+        BoundProject(bound_projector.move(), child_cursor.move()));
   }
 
  private:
-  std::unique_ptr<const SingleSourceProjector> projector_;
+  unique_ptr<const SingleSourceProjector> projector_;
 
   DISALLOW_COPY_AND_ASSIGN(ProjectOperation);
 };
 
 }  // namespace
 
-Operation* Project(const SingleSourceProjector* projector,
-                   Operation* child) {
-  return new ProjectOperation(projector, child);
+unique_ptr<Operation> Project(unique_ptr<const SingleSourceProjector> projector,
+                              unique_ptr<Operation> child) {
+  return make_unique<ProjectOperation>(std::move(projector), std::move(child));
 }
 
-Cursor* BoundProject(const BoundSingleSourceProjector* projector,
-                     Cursor* child) {
-  return new ProjectCursor(projector, child);
+unique_ptr<Cursor> BoundProject(unique_ptr<const BoundSingleSourceProjector> projector,
+                                unique_ptr<Cursor> child) {
+  return make_unique<ProjectCursor>(std::move(projector), std::move(child));
 }
 
 }  // namespace supersonic

@@ -24,51 +24,55 @@ namespace supersonic {
 
 class BufferAllocator;
 
-FailureOrOwned<BoundExpression> BoundNegate(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundNegate(unique_ptr<BoundExpression> arg,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count) {
   return CreateUnarySignedNumericExpression<OPERATOR_NEGATE>(allocator,
-      max_row_count, arg);
+      max_row_count, std::move(arg));
 }
 
-#define DEFINE_BINARY_NUMERIC_EXPRESSION(expression_name, operator_name)      \
-FailureOrOwned<BoundExpression> expression_name(BoundExpression* left,        \
-                                                BoundExpression* right,       \
-                                                BufferAllocator* allocator,   \
-                                                rowcount_t max_row_count) {   \
-  return CreateBinaryNumericExpression<operator_name>(                        \
-    allocator, max_row_count, left, right);                                   \
-}
+#define DEFINE_BINARY_NUMERIC_EXPRESSION(expression_name, operator_name)       \
+  FailureOrOwned<BoundExpression> expression_name(                             \
+      unique_ptr<BoundExpression> left,                                        \
+      unique_ptr<BoundExpression> right,                                       \
+      BufferAllocator *allocator,                                              \
+      rowcount_t max_row_count) {                                              \
+    return CreateBinaryNumericExpression<operator_name>(                       \
+        allocator, max_row_count, std::move(left), std::move(right));          \
+  }
 
 DEFINE_BINARY_NUMERIC_EXPRESSION(BoundPlus, OPERATOR_ADD);
 DEFINE_BINARY_NUMERIC_EXPRESSION(BoundMultiply, OPERATOR_MULTIPLY);
 DEFINE_BINARY_NUMERIC_EXPRESSION(BoundMinus, OPERATOR_SUBTRACT);
 
 FailureOrOwned<BoundExpression> BoundDivideSignaling(
-    BoundExpression* left,
-    BoundExpression* right,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
   return CreateTypedBoundBinaryExpression<OPERATOR_DIVIDE_SIGNALING,
-      DOUBLE, DOUBLE, DOUBLE>(allocator, max_row_count, left, right);
+      DOUBLE, DOUBLE, DOUBLE>(allocator, max_row_count,
+                              std::move(left), std::move(right));
 }
 
 FailureOrOwned<BoundExpression> BoundDivideNulling(
-    BoundExpression* left,
-    BoundExpression* right,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
   return CreateTypedBoundBinaryExpression<OPERATOR_DIVIDE_NULLING,
-      DOUBLE, DOUBLE, DOUBLE>(allocator, max_row_count, left, right);
+      DOUBLE, DOUBLE, DOUBLE>(allocator, max_row_count,
+                              std::move(left), std::move(right));
 }
 
 FailureOrOwned<BoundExpression> BoundDivideQuiet(
-    BoundExpression* left,
-    BoundExpression* right,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
   return CreateTypedBoundBinaryExpression<OPERATOR_DIVIDE_QUIET,
-      DOUBLE, DOUBLE, DOUBLE>(allocator, max_row_count, left, right);
+      DOUBLE, DOUBLE, DOUBLE>(allocator, max_row_count,
+                              std::move(left), std::move(right));
 }
 
 DEFINE_BINARY_NUMERIC_EXPRESSION(BoundCppDivideSignaling,
@@ -77,21 +81,21 @@ DEFINE_BINARY_NUMERIC_EXPRESSION(BoundCppDivideNulling,
                                  OPERATOR_CPP_DIVIDE_NULLING);
 
 FailureOrOwned<BoundExpression> BoundModulusSignaling(
-    BoundExpression* left,
-    BoundExpression* right,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
   return CreateBinaryIntegerExpression<OPERATOR_MODULUS_SIGNALING>(
-      allocator, max_row_count, left, right);
+      allocator, max_row_count, std::move(left), std::move(right));
 }
 
 FailureOrOwned<BoundExpression> BoundModulusNulling(
-    BoundExpression* left,
-    BoundExpression* right,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
   return CreateBinaryIntegerExpression<OPERATOR_MODULUS_NULLING>(
-      allocator, max_row_count, left, right);
+      allocator, max_row_count, std::move(left), std::move(right));
 }
 
 #undef DEFINE_BINARY_NUMERIC_EXPRESSION

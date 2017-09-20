@@ -61,8 +61,7 @@ TEST(LookupIndexTest, ValueSelectorBasic) {
   schema.add_attribute(Attribute("col3", STRING, NULLABLE));
   schema.add_attribute(Attribute("col4", DATE, NOT_NULLABLE));
 
-  std::unique_ptr<BoundSingleSourceProjector> projector(
-      new BoundSingleSourceProjector(schema));
+  auto projector = make_unique<BoundSingleSourceProjector>(schema);
 
   ASSERT_TRUE(projector->Add(1));
   ASSERT_TRUE(projector->Add(3));
@@ -81,8 +80,7 @@ TEST(LookupIndexTest, ValueSelectorNoKey) {
   TupleSchema schema;
   schema.add_attribute(Attribute("col1", INT32, NOT_NULLABLE));
 
-  std::unique_ptr<BoundSingleSourceProjector> projector(
-      new BoundSingleSourceProjector(schema));
+  auto projector = make_unique<BoundSingleSourceProjector>(schema);
 
   MockLookupIndex index(schema, projector.release());
   const BoundSingleSourceProjector& values = index.value_selector();
@@ -95,8 +93,7 @@ TEST(LookupIndexTest, ValueSelectorNoValues) {
   TupleSchema schema;
   schema.add_attribute(Attribute("col1", INT32, NOT_NULLABLE));
 
-  std::unique_ptr<BoundSingleSourceProjector> projector(
-      new BoundSingleSourceProjector(schema));
+  auto projector = make_unique<BoundSingleSourceProjector>(schema);
   ASSERT_TRUE(projector->Add(0));
 
   MockLookupIndex index(schema, projector.release());
@@ -108,8 +105,7 @@ TEST(LookupIndexTest, ValueSelectorNoValues) {
 TEST(LookupIndexTest, ValueSelectorNoSchema) {
   TupleSchema schema;
 
-  std::unique_ptr<BoundSingleSourceProjector> projector(
-      new BoundSingleSourceProjector(schema));
+  auto projector = make_unique<BoundSingleSourceProjector>(schema);
 
   MockLookupIndex index(schema, projector.release());
   const BoundSingleSourceProjector& values = index.value_selector();

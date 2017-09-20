@@ -16,8 +16,8 @@
 //
 // File containing several examples of operation benchmarks.
 
-#include <memory>
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/benchmark/examples/common_utils.h"
 #include "supersonic/cursor/core/merge_union_all.h"
 #include "supersonic/supersonic.h"
@@ -42,7 +42,7 @@ using util::gtl::Container;
 const size_t kInputRowCount = 1000000;
 const size_t kGroupNum = 50;
 
-Operation* CreateGroup() {
+unique_ptr<Operation> CreateGroup() {
   MTRandom random(0);
   BlockBuilder<STRING, INT32> builder;
   for (int64 i = 0; i < kInputRowCount; ++i) {
@@ -50,14 +50,14 @@ Operation* CreateGroup() {
                    random.Rand32());
   }
 
-  std::unique_ptr<Operation> group(GroupAggregate(
-      ProjectAttributeAt(0),
-      (new AggregationSpecification)->AddAggregation(MAX, "col1", "col1_maxes"),
-      NULL, new Table(builder.Build())));
-  return group.release();
+  auto agg = make_unique<AggregationSpecification>();
+  agg->AddAggregation(MAX, "col1", "col1_maxes");
+
+  return GroupAggregate(ProjectAttributeAt(0), std::move(agg),
+      nullptr, make_unique<Table>(builder.Build()));
 }
 
-Operation* CreateCompute() {
+unique_ptr<Operation> CreateCompute() {
   MTRandom random(0);
   BlockBuilder<INT32, INT64, DOUBLE> builder;
   for (int64 i = 0; i < kInputRowCount; ++i) {
@@ -67,16 +67,17 @@ Operation* CreateCompute() {
   return Compute(Multiply(AttributeAt(0),
                           Plus(Sin(AttributeAt(2)),
                                Exp(AttributeAt(1)))),
-                 new Table(builder.Build()));
+                 make_unique<Table>(builder.Build()));
 }
 
-SortOrder* CreateExampleSortOrder() {
-  return (new SortOrder)
-      ->add(ProjectAttributeAt(0), ASCENDING)
-      ->add(ProjectAttributeAt(1), DESCENDING);
+unique_ptr<SortOrder> CreateExampleSortOrder() {
+  auto order = make_unique<SortOrder>();
+  order->add(ProjectAttributeAt(0), ASCENDING)
+       ->add(ProjectAttributeAt(1), DESCENDING);
+  return order;
 }
 
-Operation* CreateSort(size_t input_row_count) {
+unique_ptr<Operation> CreateSort(size_t input_row_count) {
   MTRandom random(0);
   BlockBuilder<INT32, STRING> builder;
   for (int64 i = 0; i < input_row_count; ++i) {
@@ -87,34 +88,35 @@ Operation* CreateSort(size_t input_row_count) {
       CreateExampleSortOrder(),
       NULL,
       std::numeric_limits<size_t>::max(),
-      new Table(builder.Build()));
+      make_unique<Table>(builder.Build()));
 }
 
-Operation* CreateMergeUnion() {
-  return MergeUnionAll(CreateExampleSortOrder(),
-                       Container(CreateSort(kInputRowCount),
-                                 CreateSort(2 * kInputRowCount)));
+unique_ptr<Operation> CreateMergeUnion() {
+  vector<unique_ptr<Operation>> input;
+  input.emplace_back(CreateSort(kInputRowCount));
+  input.emplace_back(CreateSort(2 * kInputRowCount));
+
+  return MergeUnionAll(CreateExampleSortOrder(), std::move(input));
 }
 
-Operation* CreateHashJoin() {
-  std::unique_ptr<Operation> lhs(CreateSort(kInputRowCount));
-  std::unique_ptr<Operation> rhs(CreateGroup());
+unique_ptr<Operation> CreateHashJoin() {
+  unique_ptr<Operation> lhs(CreateSort(kInputRowCount));
+  unique_ptr<Operation> rhs(CreateGroup());
 
-  std::unique_ptr<CompoundMultiSourceProjector> projector(
-      new CompoundMultiSourceProjector());
+  auto projector = make_unique<CompoundMultiSourceProjector>();
   projector->add(0, ProjectAllAttributes("L."));
   projector->add(1, ProjectAllAttributes("R."));
 
-  return new HashJoinOperation(LEFT_OUTER,
+  return make_unique<HashJoinOperation>(LEFT_OUTER,
                                ProjectAttributeAt(1),
                                ProjectAttributeAt(0),
-                               projector.release(),
+                               std::move(projector),
                                UNIQUE,
-                               lhs.release(),
-                               rhs.release());
+                               std::move(lhs),
+                               std::move(rhs));
 }
 
-Operation* SimpleTreeExample() {
+unique_ptr<Operation> SimpleTreeExample() {
   MTRandom random(0);
   // col0, col1  , col2  , col3, col4
   // name, salary, intern, age , boss_name
@@ -127,67 +129,71 @@ Operation* SimpleTreeExample() {
                    StringPrintf("Name%lld", i % kGroupNum));
   }
 
-  std::unique_ptr<Operation> named_columns(Project(
+  auto named_columns = Project(
       ProjectRename(Container("name", "salary", "intern", "age", "boss_name"),
                     ProjectAllAttributes()),
-      new Table(builder.Build())));
+      make_unique<Table>(builder.Build()));
 
-  std::unique_ptr<Operation> filter1(Filter(NamedAttribute("intern"),
-                                            ProjectAllAttributes(),
-                                            named_columns.release()));
-  std::unique_ptr<Operation> compute(Compute(
-      (new CompoundExpression)
-          ->Add(NamedAttribute("name"))
-          ->Add(NamedAttribute("intern"))
-          ->Add(NamedAttribute("boss_name"))
-          ->AddAs("ratio",
-                  Divide(NamedAttribute("salary"), NamedAttribute("age"))),
-      filter1.release()));
+  auto filter1 = Filter(NamedAttribute("intern"), ProjectAllAttributes(),
+                        std::move(named_columns));
 
-  std::unique_ptr<Operation> group(GroupAggregate(
+  auto compound = make_unique<CompoundExpression>();
+  compound
+      ->Add(NamedAttribute("name"))
+      ->Add(NamedAttribute("intern"))
+      ->Add(NamedAttribute("boss_name"))
+      ->AddAs("ratio",
+              Divide(NamedAttribute("salary"),
+                     NamedAttribute("age")));
+
+  auto compute = Compute(std::move(compound), std::move(filter1));
+
+  auto agg = make_unique<AggregationSpecification>();
+  agg->AddAggregation(MAX, "ratio", "max_ratio");
+
+  auto group = GroupAggregate(
       ProjectNamedAttribute("boss_name"),
-      (new AggregationSpecification)->AddAggregation(MAX, "ratio", "max_ratio"),
-      NULL, compute.release()));
+      std::move(agg),
+      nullptr, std::move(compute));
 
   // Let every fourth pass.
-  std::unique_ptr<Operation> filter2(
+  auto filter2 =
       Filter(Equal(ConstInt32(0), Modulus(Sequence(), ConstInt32(4))),
-             ProjectAllAttributes(), new Table(builder.Build())));
+             ProjectAllAttributes(), make_unique<Table>(builder.Build()));
 
-  std::unique_ptr<CompoundMultiSourceProjector> projector(
-      new CompoundMultiSourceProjector());
+  auto projector = make_unique<CompoundMultiSourceProjector>();
   projector->add(0, ProjectAllAttributes("L."));
   projector->add(1, ProjectAllAttributes("R."));
 
-  return new HashJoinOperation(INNER,
+  return make_unique<HashJoinOperation>(INNER,
                                ProjectAttributeAt(0),
                                ProjectNamedAttribute("boss_name"),
-                               projector.release(),
+                               std::move(projector),
                                UNIQUE,
-                               filter2.release(),
-                               group.release());
+                               std::move(filter2),
+                               std::move(group));
 }
 
 typedef vector<Operation*>::iterator operation_iterator;
 
 void Run() {
-  vector<Operation*> operations(Container(
-      CreateGroup(),
-      CreateSort(kInputRowCount),
-      CreateCompute(),
-      CreateMergeUnion(),
-      CreateHashJoin(),
-      SimpleTreeExample()));
+  vector<unique_ptr<Operation>> operations;
+  operations.emplace_back(CreateGroup());
+  operations.emplace_back(CreateSort(kInputRowCount));
+  operations.emplace_back(CreateCompute());
+  operations.emplace_back(CreateMergeUnion());
+  operations.emplace_back(CreateHashJoin());
+  operations.emplace_back(SimpleTreeExample());
 
   GraphVisualisationOptions options(DOT_FILE);
-  for (int64 i = 0; i < operations.size(); ++i) {
+
+  for (int i=0; i < operations.size(); i++) {
     options.file_name = File::JoinPath(
         FLAGS_output_directory, StrCat("benchmark_", i, ".dot"));
 
-
     // Automatically disposes of the operations after having drawn DOT graphs.
     BenchmarkOperation(
-        operations[i],
+        std::move(operations[i]),
         "Operation Benchmark",
         options,
         /* 16KB (optimised for cache size) */ 16 * Cursor::kDefaultRowCount,

@@ -61,23 +61,23 @@ class BenchmarkDataWrapper {
  public:
   // Takes ownership of cursor, tree builder and node.
   BenchmarkDataWrapper(
-      Cursor* cursor,
-      BenchmarkTreeBuilder* builder,
-      BenchmarkTreeNode* node)
-      : cursor_(cursor),
-        tree_builder_(builder),
-        node_(node) {}
+      unique_ptr<Cursor> cursor,
+      unique_ptr<BenchmarkTreeBuilder> builder,
+      unique_ptr<BenchmarkTreeNode> node)
+      : cursor_(std::move(cursor)),
+        tree_builder_(std::move(builder)),
+        node_(std::move(node)) {}
 
   // Caller takes ownership of the result.
-  Cursor* release_cursor() { return cursor_.release(); }
+  unique_ptr<Cursor> move_cursor() { return std::move(cursor_); }
 
   // No ownership transfer.
   BenchmarkTreeNode* node() { return node_.get(); }
 
  private:
-  std::unique_ptr<Cursor> cursor_;
-  std::unique_ptr<BenchmarkTreeBuilder> tree_builder_;
-  std::unique_ptr<BenchmarkTreeNode> node_;
+  unique_ptr<Cursor> cursor_;
+  unique_ptr<BenchmarkTreeBuilder> tree_builder_;
+  unique_ptr<BenchmarkTreeNode> node_;
 };
 
 // Transforms the cursor tree, whose root is passed as the argument, by
@@ -93,7 +93,7 @@ class BenchmarkDataWrapper {
 // resident in the wrapper will take ownership of the argument cursor. The
 // caller will have to drain the transformed cursor before proceeding to
 // graph creation.
-BenchmarkDataWrapper* SetUpBenchmarkForCursor(Cursor* cursor);
+unique_ptr<BenchmarkDataWrapper> SetUpBenchmarkForCursor(unique_ptr<Cursor> cursor);
 
 // CreateGraph() is used to finalise the benchmarking process by drawing
 // a performance graph. It accepts the name of the benchmark, a pointer to
@@ -127,7 +127,7 @@ string CreateGraph(
 // is ready.
 string PerformBenchmark(
     const string& benchmark_name,
-    Cursor* cursor,
+    unique_ptr<Cursor> cursor,
     rowcount_t max_block_size,
     GraphVisualisationOptions options);
 

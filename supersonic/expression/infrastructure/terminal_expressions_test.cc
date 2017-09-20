@@ -40,7 +40,7 @@ class TerminalExpressionTest : public testing::Test {
   const View& input() const { return block_->view(); }
 
  private:
-  static Block* CreateBlock() {
+  static unique_ptr<Block> CreateBlock() {
     return BlockBuilder<STRING, INT32, DOUBLE>()
         .AddRow("1", 12, 5.1)
         .AddRow("2", 13, 6.2)
@@ -81,9 +81,8 @@ TEST_F(TerminalExpressionTest, SequenceProgresses) {
 }
 
 TEST_F(TerminalExpressionTest, RandInt32WithMTRandom) {
-  std::unique_ptr<RandomBase> gen(new MTRandom(0));
-  std::unique_ptr<BoundExpressionTree> random(
-      DefaultBind(input().schema(), 100, RandInt32(gen->Clone())));
+  auto gen = make_unique<MTRandom>(0);
+  auto random = DefaultBind(input().schema(), 100, RandInt32(gen->Clone()));
   EXPECT_TUPLE_SCHEMAS_EQUAL(
       TupleSchema::Singleton("RANDINT32", INT32, NOT_NULLABLE),
       random->result_schema());

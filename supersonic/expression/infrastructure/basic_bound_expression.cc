@@ -55,17 +55,16 @@ FailureOrVoid BasicBoundExpression::Init(rowcount_t row_capacity,
 
 FailureOrOwned<BoundExpression> InitBasicExpression(
     rowcount_t row_capacity,
-    BasicBoundExpression* expression,
+    unique_ptr<BasicBoundExpression> expression,
     BufferAllocator* allocator) {
-  std::unique_ptr<BasicBoundExpression> expression_ptr(expression);
-  if (expression_ptr->can_be_resolved()) {
+  if (expression->can_be_resolved()) {
     // This expression has only constant children, meaning we can precalculate
     // it now, and replace it with the appropriate constant. Thus we will
     // need to evaluate it only once (for a single row, to get the appropriate
     // constant value) - thus we initialize it for one row.
-    PROPAGATE_ON_FAILURE(expression_ptr->Init(1, allocator));
+    PROPAGATE_ON_FAILURE(expression->Init(1, allocator));
     FailureOrOwned<const Expression> resolved = ResolveToConstant(
-        expression_ptr.release());
+        std::move(expression));
     PROPAGATE_ON_FAILURE(resolved);
     // We usually should pass the input TupleSchema at binding. We know,
     // however, that the expression we are to bind is actually constant, and
@@ -82,57 +81,61 @@ FailureOrOwned<BoundExpression> InitBasicExpression(
     PROPAGATE_ON_FAILURE(bound_constant);
     // We know a priori that bound_constant is a BasicBoundExpression, namely
     // a ConstExpression, so we can downcast safely.
-    expression_ptr.reset(down_cast<BasicBoundExpression*>(
-        bound_constant.release()));
-    return Success(expression_ptr.release());
+    return Success(bound_constant.move());
   }
-  PROPAGATE_ON_FAILURE(expression_ptr->Init(row_capacity, allocator));
-  return Success(expression_ptr.release());
+  PROPAGATE_ON_FAILURE(expression->Init(row_capacity, allocator));
+  return Success(std::move(expression));
 }
 
 BoundUnaryExpression::BoundUnaryExpression(const TupleSchema& schema,
                                            BufferAllocator* allocator,
-                                           BoundExpression* arg,
-                                           const DataType expected_arg_type)
+                                           const DataType expected_arg_type,
+                                           unique_ptr<BoundExpression> arg)
     : BasicBoundExpression(schema, allocator),
-      arg_(CHECK_NOTNULL(arg)) {
-  CHECK_EQ(1, arg->result_schema().attribute_count());
-  CHECK_EQ(expected_arg_type, GetExpressionType(arg));
+      arg_(std::move(arg)) {
+  CHECK_NOTNULL(arg_.get());
+  CHECK_EQ(1, arg_->result_schema().attribute_count());
+  CHECK_EQ(expected_arg_type, GetExpressionType(arg_.get()));
 }
 
 BoundBinaryExpression::BoundBinaryExpression(const TupleSchema& schema,
                                              BufferAllocator* allocator,
-                                             BoundExpression* left,
+                                             unique_ptr<BoundExpression> left,
                                              const DataType expected_left_type,
-                                             BoundExpression* right,
+                                             unique_ptr<BoundExpression> right,
                                              const DataType expected_right_type)
     : BasicBoundExpression(schema, allocator),
-      left_(CHECK_NOTNULL(left)),
-      right_(CHECK_NOTNULL(right)) {
-  CHECK_EQ(1, left->result_schema().attribute_count());
-  CHECK_EQ(1, right->result_schema().attribute_count());
-  CHECK_EQ(expected_left_type, GetExpressionType(left));
-  CHECK_EQ(expected_right_type, GetExpressionType(right));
+      left_(std::move(left)),
+      right_(std::move(right)) {
+  CHECK_NOTNULL(left_.get());
+  CHECK_NOTNULL(right_.get());
+  CHECK_EQ(1, left_->result_schema().attribute_count());
+  CHECK_EQ(1, right_->result_schema().attribute_count());
+  CHECK_EQ(expected_left_type, GetExpressionType(left_.get()));
+  CHECK_EQ(expected_right_type, GetExpressionType(right_.get()));
 }
 
 BoundTernaryExpression::BoundTernaryExpression(const TupleSchema& schema,
                                                BufferAllocator* allocator,
-                                               BoundExpression* left,
                                                const DataType left_type,
-                                               BoundExpression* middle,
+                                               unique_ptr<BoundExpression> left,
                                                const DataType mid_type,
-                                               BoundExpression* right,
-                                               const DataType right_type)
+                                               unique_ptr<BoundExpression> middle,
+                                               const DataType right_type,
+                                               unique_ptr<BoundExpression> right)
     : BasicBoundExpression(schema, allocator),
-      left_(CHECK_NOTNULL(left)),
-      middle_(CHECK_NOTNULL(middle)),
-      right_(CHECK_NOTNULL(right)) {
-  CHECK_EQ(1, left->result_schema().attribute_count());
-  CHECK_EQ(1, middle->result_schema().attribute_count());
-  CHECK_EQ(1, right->result_schema().attribute_count());
-  CHECK_EQ(left_type, GetExpressionType(left));
-  CHECK_EQ(mid_type, GetExpressionType(middle));
-  CHECK_EQ(right_type, GetExpressionType(right));
+      left_(std::move(left)),
+      middle_(std::move(middle)),
+      right_(std::move(right)) {
+  CHECK_NOTNULL(left_.get());
+  CHECK_NOTNULL(middle_.get());
+  CHECK_NOTNULL(right_.get());
+  CHECK_EQ(1, left_->result_schema().attribute_count());
+  CHECK_EQ(1, middle_->result_schema().attribute_count());
+  CHECK_EQ(1, right_->result_schema().attribute_count());
+  CHECK_EQ(left_type, GetExpressionType(left_.get()));
+  CHECK_EQ(mid_type, GetExpressionType(middle_.get()));
+  CHECK_EQ(right_type, GetExpressionType(right_.get()));
 }
 
 template<DataType data_type>
@@ -283,10 +286,9 @@ FailureOrOwned<const Expression> ResolveColumnToConstant(
 // create a constant expression of the appropriate type and value.
 // Takes ownership of the bound expression.
 FailureOrOwned<const Expression> ResolveToConstant(
-    BoundExpression* expression_ptr) {
+    unique_ptr<BoundExpression> expression) {
   small_bool_array skip_array;
   *(skip_array.mutable_data()) = false;
-  std::unique_ptr<BoundExpression> expression(expression_ptr);
   // We evaluate the expression with an empty schema. This way we will get an
   // error (instead of random results) if the expression demands any input.
   TupleSchema schema;

@@ -16,6 +16,8 @@
 #ifndef SUPERSONIC_CURSOR_CORE_FOREIGN_FILTER_H_
 #define SUPERSONIC_CURSOR_CORE_FOREIGN_FILTER_H_
 
+#include "supersonic/utils/std_namespace.h"
+
 namespace supersonic {
 
 class SingleSourceProjector;
@@ -41,18 +43,20 @@ class Operation;
 // filter: [1], [3], [6]
 // result: [0, 'b'], [0, 'c'], [1, 'e']
 //
-Operation* ForeignFilter(const SingleSourceProjector* filter_key,
-                         const SingleSourceProjector* foreign_key,
-                         Operation* filter,
-                         Operation* input);
+unique_ptr<Operation> ForeignFilter(
+    unique_ptr<const SingleSourceProjector> filter_key,
+    unique_ptr<const SingleSourceProjector> foreign_key,
+    unique_ptr<Operation> filter,
+    unique_ptr<Operation> input);
 
 // 'Bound' version of the above, when schemas and cursors are already resolved.
 // Key columns are specified simply by indicating column indexes in the
 // filter and input cursors, respectively.
-Cursor* BoundForeignFilter(const int filter_key_column,
-                           const int input_foreign_key_column,
-                           Cursor* filter,
-                           Cursor* input);
+unique_ptr<Cursor> BoundForeignFilter(
+    const int filter_key_column,
+    const int input_foreign_key_column,
+    unique_ptr<Cursor> filter,
+    unique_ptr<Cursor> input);
 
 }  // namespace supersonic
 

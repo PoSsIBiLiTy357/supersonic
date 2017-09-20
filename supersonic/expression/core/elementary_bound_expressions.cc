@@ -13,17 +13,7 @@
 // limitations under the License.
 //
 
-#include "supersonic/expression/core/elementary_bound_expressions.h"
-
-#include <cstddef>
-#include <cstring>
-#include <algorithm>
-#include <memory>
-#include <set>
-#include <string>
 #include "supersonic/utils/std_namespace.h"
-namespace supersonic {using std::string; }
-using std::unique_ptr;
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
@@ -39,6 +29,7 @@ using std::unique_ptr;
 #include "supersonic/base/infrastructure/types_infrastructure.h"
 #include "supersonic/base/memory/memory.h"
 #include "supersonic/expression/base/expression.h"
+#include "supersonic/expression/core/elementary_bound_expressions.h"
 #include "supersonic/expression/infrastructure/basic_bound_expression.h"
 #include "supersonic/expression/infrastructure/expression_utils.h"
 #include "supersonic/expression/infrastructure/terminal_expressions.h"
@@ -58,15 +49,15 @@ namespace {
 class BoundIsNullExpression : public BoundUnaryExpression {
  public:
   BoundIsNullExpression(BufferAllocator* const allocator,
-                        BoundExpression* arg)
-      : BoundUnaryExpression(
+                        unique_ptr<BoundExpression> arg)
+      : BoundUnaryExpression{
             TupleSchema::Singleton(
                 "ISNULL(" + arg->result_schema().attribute(0).name() + ")",
                 BOOL,
                 NOT_NULLABLE),
             allocator,
-            arg,
-            arg->result_schema().attribute(0).type()),
+            arg->result_schema().attribute(0).type(),
+            std::move(arg)},
         local_skip_vector_storage_(1, allocator) {}
 
   // DoEvaluate does the following:
@@ -128,9 +119,9 @@ template<DataType type>
 class BoundIfNullExpression : public BoundBinaryExpression {
  public:
   BoundIfNullExpression(BufferAllocator* allocator,
-                        BoundExpression* expression,
-                        BoundExpression* substitute)
-      : BoundBinaryExpression(
+                        unique_ptr<BoundExpression> expression,
+                        unique_ptr<BoundExpression> substitute)
+      : BoundBinaryExpression{
             TupleSchema::Singleton(
                 StrCat("IFNULL(",
                        expression->result_schema().attribute(0).name(),
@@ -140,10 +131,10 @@ class BoundIfNullExpression : public BoundBinaryExpression {
                 type,
                 substitute->result_schema().attribute(0).nullability()),
             allocator,
-            expression,
+            std::move(expression),
             type,
-            substitute,
-            type),
+            std::move(substitute),
+            type},
         local_skip_vector_storage_(2, allocator),
         local_skip_vectors_(1) {}
 
@@ -408,10 +399,10 @@ class BoundBooleanBinaryExpression : public BoundBinaryExpression {
  public:
   explicit BoundBooleanBinaryExpression(const TupleSchema& result_schema,
                                         BufferAllocator* const allocator,
-                                        BoundExpression* left,
-                                        BoundExpression* right)
-      : BoundBinaryExpression(result_schema, allocator, left, BOOL,
-                              right, BOOL),
+                                        unique_ptr<BoundExpression> left,
+                                        unique_ptr<BoundExpression> right)
+      : BoundBinaryExpression(result_schema, allocator, std::move(left), BOOL,
+                              std::move(right), BOOL),
         local_skip_vector_storage_(5, allocator),
         local_skip_vectors_(1) {
     CHECK_EQ(1, result_schema.attribute_count());
@@ -845,14 +836,16 @@ struct CaseExpressionResolver {
 template<DataType output_type, bool is_nulling>
 class BoundIfExpression : public BoundTernaryExpression {
  public:
-  BoundIfExpression(BoundExpression* condition,
-                    BoundExpression* then,
-                    BoundExpression* otherwise,
+  BoundIfExpression(unique_ptr<BoundExpression> condition,
+                    unique_ptr<BoundExpression> then,
+                    unique_ptr<BoundExpression> otherwise,
                     BufferAllocator* allocator)
-      : BoundTernaryExpression(CreateIfSchema(condition, then, otherwise),
-                               allocator, condition, BOOL, then,
-                               GetExpressionType(then), otherwise,
-                               GetExpressionType(otherwise)),
+      : BoundTernaryExpression{CreateIfSchema(condition.get(), then.get(),
+                                              otherwise.get()),
+                               allocator,
+                               BOOL, std::move(condition),
+                               GetExpressionType(then.get()), std::move(then),
+                               GetExpressionType(otherwise.get()), std::move(otherwise)},
         local_skip_vector_storage_(is_nulling ? 3 : 4, allocator),
         local_skip_vectors_(1) {}
 
@@ -1050,31 +1043,32 @@ class BoundIfExpression : public BoundTernaryExpression {
 // (see types_infrastructure.h).
 template<bool is_nulling>
 struct BoundIfFactory {
-  BoundIfFactory(BoundExpression* condition,
-                 BoundExpression* then,
-                 BoundExpression* otherwise,
+  BoundIfFactory(unique_ptr<BoundExpression> condition,
+                 unique_ptr<BoundExpression> then,
+                 unique_ptr<BoundExpression> otherwise,
                  BufferAllocator* allocator,
                  rowcount_t row_capacity)
-      : condition_(condition),
-        then_(then),
-        otherwise_(otherwise),
+      : condition_(std::move(condition)),
+        then_(std::move(then)),
+        otherwise_(std::move(otherwise)),
         allocator_(allocator),
         row_capacity_(row_capacity) {}
 
   template <DataType data_type>
-  FailureOrOwned<BoundExpression> operator()() const {
+  FailureOrOwned<BoundExpression> operator()() {
     FailureOrOwned<BoundExpression> result = InitBasicExpression(
         row_capacity_,
-        new BoundIfExpression<data_type, is_nulling>(
-            condition_, then_, otherwise_, allocator_),
+        make_unique<BoundIfExpression<data_type, is_nulling>>(
+            std::move(condition_), std::move(then_), std::move(otherwise_),
+            allocator_),
         allocator_);
     PROPAGATE_ON_FAILURE(result);
-    return Success(result.release());
+    return Success(result.move());
   }
 
-  BoundExpression* condition_;
-  BoundExpression* then_;
-  BoundExpression* otherwise_;
+  unique_ptr<BoundExpression> condition_;
+  unique_ptr<BoundExpression> then_;
+  unique_ptr<BoundExpression> otherwise_;
   BufferAllocator* allocator_;
   rowcount_t row_capacity_;
 };
@@ -1082,55 +1076,51 @@ struct BoundIfFactory {
 // Create a Bound If expression.
 template<bool is_nulling>
 FailureOrOwned<BoundExpression> BoundIfInternal(
-    BoundExpression* condition,
-    BoundExpression* then,
-    BoundExpression* otherwise,
+    unique_ptr<BoundExpression> condition,
+    unique_ptr<BoundExpression> then,
+    unique_ptr<BoundExpression> otherwise,
     BufferAllocator* const allocator,
     rowcount_t row_capacity) {
-  unique_ptr<BoundExpression> condition_ptr(condition);
-  unique_ptr<BoundExpression> then_ptr(then);
-  unique_ptr<BoundExpression> otherwise_ptr(otherwise);
-
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       "IF", condition->result_schema(), 1));
   PROPAGATE_ON_FAILURE(CheckAttributeCount("IF", then->result_schema(), 1));
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       "IF", otherwise->result_schema(), 1));
-  PROPAGATE_ON_FAILURE(CheckExpressionType(BOOL, condition));
+  PROPAGATE_ON_FAILURE(CheckExpressionType(BOOL, condition.get()));
   // Type reconciliation for the inputs.
   FailureOr<DataType> output_type =
-      CalculateCommonExpressionType(then, otherwise);
+      CalculateCommonExpressionType(then.get(), otherwise.get());
   PROPAGATE_ON_FAILURE(output_type);
   FailureOrOwned<BoundExpression> resolved_then = BoundInternalCast(
-      allocator, row_capacity, then_ptr.release(), output_type.get(), true);
+      allocator, row_capacity, std::move(then), output_type.get(), true);
   PROPAGATE_ON_FAILURE(resolved_then);
   FailureOrOwned<BoundExpression> resolved_otherwise = BoundInternalCast(
-      allocator, row_capacity, otherwise_ptr.release(), output_type.get(),
+      allocator, row_capacity, std::move(otherwise), output_type.get(),
       true);
   PROPAGATE_ON_FAILURE(resolved_otherwise);
   // TypeSpecialization application.
   BoundIfFactory<is_nulling> factory(
-      condition_ptr.release(), resolved_then.release(),
-      resolved_otherwise.release(), allocator, row_capacity);
+      std::move(condition), resolved_then.move(),
+      resolved_otherwise.move(), allocator, row_capacity);
   FailureOrOwned<BoundExpression> result = TypeSpecialization<
       FailureOrOwned<BoundExpression>, BoundIfFactory<is_nulling> >(
-          output_type.get(), factory);
+          output_type.get(), std::move(factory));
   PROPAGATE_ON_FAILURE(result);
-  return Success(result.release());
+  return Success(result.move());
 }
 
 template <OperatorId op>
 FailureOrOwned<BoundExpression> BoundBooleanBinary(
-    BoundExpression* left,
-    BoundExpression* right,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* const allocator,
     rowcount_t row_capacity) {
   PROPAGATE_ON_FAILURE(CheckAttributeCount(BinaryExpressionTraits<op>::name(),
                                            left->result_schema(), 1));
   PROPAGATE_ON_FAILURE(CheckAttributeCount(BinaryExpressionTraits<op>::name(),
                                            right->result_schema(), 1));
-  PROPAGATE_ON_FAILURE(CheckExpressionType(BOOL, left));
-  PROPAGATE_ON_FAILURE(CheckExpressionType(BOOL, right));
+  PROPAGATE_ON_FAILURE(CheckExpressionType(BOOL, left.get()));
+  PROPAGATE_ON_FAILURE(CheckExpressionType(BOOL, right.get()));
 
   string description = BinaryExpressionTraits<op>::FormatBoundDescription(
       left->result_schema().attribute(0).name(), BOOL,
@@ -1141,57 +1131,56 @@ FailureOrOwned<BoundExpression> BoundBooleanBinary(
   TupleSchema result_schema =
       CreateSchema(description, BOOL, output_is_nullable);
 
-  BoundBooleanBinaryExpression<op>* result =
-      new BoundBooleanBinaryExpression<op>(result_schema, allocator,
-                                           left, right);
-  return InitBasicExpression(row_capacity, result, allocator);
+  auto result = make_unique<BoundBooleanBinaryExpression<op>>(
+      result_schema, allocator, std::move(left), std::move(right));
+  return InitBasicExpression(row_capacity, std::move(result), allocator);
 }
 
 // Generic.
 template<OperatorId op, DataType type>
 struct BoundStringParserResolverFn {
-  FailureOrOwned<BoundExpression> operator()(BoundExpression* child,
+  FailureOrOwned<BoundExpression> operator()(unique_ptr<BoundExpression> child,
                                              BufferAllocator* allocator,
                                              rowcount_t row_capacity) const {
     SpecializedUnaryFactory<op, STRING, type> factory;
-    return factory.create_expression(allocator, row_capacity, child);
+    return factory.create_expression(allocator, row_capacity, std::move(child));
   }
 };
 
 // Specialization for STRING, since parsing isn't defined for it.
 template<OperatorId op>
 struct BoundStringParserResolverFn<op, STRING> {
-  FailureOrOwned<BoundExpression> operator()(BoundExpression* child,
+  FailureOrOwned<BoundExpression> operator()(unique_ptr<BoundExpression> child,
                                              BufferAllocator* allocator,
                                              rowcount_t row_capacity) const {
-    return CheckTypeAndPassAlong(child, STRING);
+    return CheckTypeAndPassAlong(std::move(child), STRING);
   }
 };
 
 // Specialization for BINARY, since parsing isn't defined for it.
 template<OperatorId op>
 struct BoundStringParserResolverFn<op, BINARY> {
-  FailureOrOwned<BoundExpression> operator()(BoundExpression* child,
+  FailureOrOwned<BoundExpression> operator()(unique_ptr<BoundExpression> child,
                                              BufferAllocator* allocator,
                                              rowcount_t row_capacity) const {
     return CreateTypedBoundUnaryExpression<OPERATOR_COPY, STRING, BINARY>(
-        allocator, row_capacity, child);
+        allocator, row_capacity, std::move(child));
   }
 };
 
 template<OperatorId op>
 struct BoundStringParserResolver {
-  BoundStringParserResolver(BoundExpression* child,
+  BoundStringParserResolver(unique_ptr<BoundExpression> child,
                             BufferAllocator* allocator,
                             rowcount_t row_capacity)
-      : child(child),
+      : child(std::move(child)),
         allocator(allocator),
         row_capacity(row_capacity) {}
-  template<DataType type> FailureOrOwned<BoundExpression> operator()() const {
+  template<DataType type> FailureOrOwned<BoundExpression> operator()() {
     BoundStringParserResolverFn<op, type> resolver;
-    return resolver(child, allocator, row_capacity);
+    return resolver(std::move(child), allocator, row_capacity);
   }
-  BoundExpression* child;
+  unique_ptr<BoundExpression> child;
   BufferAllocator* allocator;
   rowcount_t row_capacity;
 };
@@ -1201,77 +1190,74 @@ struct BoundStringParserResolver {
 // ------------------------ Control expressions --------------------
 
 FailureOrOwned<BoundExpression> BoundCastTo(DataType to_type,
-                                            BoundExpression* source,
+                                            unique_ptr<BoundExpression> source,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count) {
-  return BoundInternalCast(allocator, max_row_count, source, to_type, false);
+  return BoundInternalCast(allocator, max_row_count, std::move(source), to_type, false);
 }
 
 FailureOrOwned<BoundExpression> BoundParseStringQuiet(
     DataType to_type,
-    BoundExpression* child,
+    unique_ptr<BoundExpression> child,
     BufferAllocator* allocator,
     rowcount_t row_capacity) {
   BoundStringParserResolver<OPERATOR_PARSE_STRING_QUIET> resolver(
-      child, allocator, row_capacity);
+      std::move(child), allocator, row_capacity);
   return TypeSpecialization<
       FailureOrOwned<BoundExpression>,
-      BoundStringParserResolver<OPERATOR_PARSE_STRING_QUIET> >(
-          to_type, resolver);
+      BoundStringParserResolver<OPERATOR_PARSE_STRING_QUIET>>(
+          to_type, std::move(resolver));
 }
 
 FailureOrOwned<BoundExpression> BoundParseStringNulling(
     DataType to_type,
-    BoundExpression* child,
+    unique_ptr<BoundExpression> child,
     BufferAllocator* allocator,
     rowcount_t row_capacity) {
   BoundStringParserResolver<OPERATOR_PARSE_STRING_NULLING> resolver(
-      child, allocator, row_capacity);
+      std::move(child), allocator, row_capacity);
   return TypeSpecialization<
       FailureOrOwned<BoundExpression>,
       BoundStringParserResolver<OPERATOR_PARSE_STRING_NULLING> >(
-          to_type, resolver);
+          to_type, std::move(resolver));
 }
 
 // This is a part of the TypeSpecialization pattern.
 struct BoundIfNullFactory {
   BoundIfNullFactory(BufferAllocator* allocator,
-                     BoundExpression* expression,
-                     BoundExpression* substitute)
+                     unique_ptr<BoundExpression> expression,
+                     unique_ptr<BoundExpression> substitute)
       : allocator_(allocator),
-        expression_(expression),
-        substitute_(substitute) {}
+        expression_(std::move(expression)),
+        substitute_(std::move(substitute)) {}
 
   template<DataType type>
-  BasicBoundExpression* operator()() const {
-    return new BoundIfNullExpression<type>(allocator_, expression_,
-                                           substitute_);
+  unique_ptr<BasicBoundExpression> operator()() {
+    return make_unique<BoundIfNullExpression<type>>(
+        allocator_, std::move(expression_), std::move(substitute_));
   }
 
   BufferAllocator* allocator_;
-  BoundExpression* expression_;
-  BoundExpression* substitute_;
+  unique_ptr<BoundExpression> expression_;
+  unique_ptr<BoundExpression> substitute_;
 };
 
-FailureOrOwned<BoundExpression> BoundIfNull(BoundExpression* expression_ptr,
-                                            BoundExpression* substitute_ptr,
+FailureOrOwned<BoundExpression> BoundIfNull(unique_ptr<BoundExpression> expression,
+                                            unique_ptr<BoundExpression> substitute,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> expression(expression_ptr);
-  unique_ptr<BoundExpression> substitute(substitute_ptr);
-
   // We have to convert both inputs to a common type.
   FailureOr<DataType> common_type =
       CalculateCommonExpressionType(expression.get(), substitute.get());
   PROPAGATE_ON_FAILURE(common_type);
 
   FailureOrOwned<BoundExpression> cast_expression =
-      BoundInternalCast(allocator, max_row_count, expression.release(),
+      BoundInternalCast(allocator, max_row_count, std::move(expression),
                         common_type.get(), true);
   PROPAGATE_ON_FAILURE(cast_expression);
 
   FailureOrOwned<BoundExpression> cast_substitute =
-      BoundInternalCast(allocator, max_row_count, substitute.release(),
+      BoundInternalCast(allocator, max_row_count, std::move(substitute),
                         common_type.get(), true);
   PROPAGATE_ON_FAILURE(cast_substitute);
 
@@ -1280,40 +1266,39 @@ FailureOrOwned<BoundExpression> BoundIfNull(BoundExpression* expression_ptr,
   // about a type-matching failure if it occurs, even if the left-hand-side
   // happens to be not-nullable.
   if (!cast_expression->result_schema().attribute(0).is_nullable()) {
-    return Success(cast_expression.release());
+    return Success(cast_expression.move());
   }
 
   // Now we specialize depending on the type: create, initialize and return a
   // BoundIfNull expression.
-  BoundIfNullFactory factory(allocator, cast_expression.release(),
-                             cast_substitute.release());
+  BoundIfNullFactory factory(allocator, cast_expression.move(),
+                             cast_substitute.move());
   return InitBasicExpression(
       max_row_count,
-      TypeSpecialization<BasicBoundExpression*, BoundIfNullFactory>(
-          common_type.get(), factory),
+      TypeSpecialization<unique_ptr<BasicBoundExpression>, BoundIfNullFactory>(
+          common_type.get(), std::move(factory)),
       allocator);
 }
 
-FailureOrOwned<BoundExpression> BoundCase(BoundExpressionList* bound_arguments,
+FailureOrOwned<BoundExpression> BoundCase(unique_ptr<BoundExpressionList> bound_arguments,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count) {
-  unique_ptr<BoundExpressionList> args_ptr(bound_arguments);
 
-  if (args_ptr->size() < 2) {
+  if (bound_arguments->size() < 2) {
     THROW(new Exception(
         supersonic::ERROR_INVALID_ARGUMENT_VALUE,
         "Case expects at least 2 arguments (make sense from 4 arguments)."));
   }
-  if (args_ptr->size() % 2 != 0) {
+  if (bound_arguments->size() % 2 != 0) {
     THROW(new Exception(
         supersonic::ERROR_INVALID_ARGUMENT_VALUE,
         "Case expects odd number of arguments."));
   }
 
-  DataType test_type = args_ptr->get(0)->result_schema().attribute(0).type();
-  DataType output_type = args_ptr->get(1)->result_schema().attribute(0).type();
-  for (size_t i = 2; i < args_ptr->size(); ++i) {
-    const TupleSchema& schema = args_ptr->get(i)->result_schema();
+  DataType test_type = bound_arguments->get(0)->result_schema().attribute(0).type();
+  DataType output_type = bound_arguments->get(1)->result_schema().attribute(0).type();
+  for (size_t i = 2; i < bound_arguments->size(); ++i) {
+    const TupleSchema& schema = bound_arguments->get(i)->result_schema();
     DataType* expected_type_ptr = (i % 2 == 0) ? &test_type : &output_type;
     DCHECK(expected_type_ptr != NULL);
     if (schema.attribute(0).type() != *expected_type_ptr) {
@@ -1337,94 +1322,97 @@ FailureOrOwned<BoundExpression> BoundCase(BoundExpressionList* bound_arguments,
 
   // After we have calculated common test_type and output_type, do another pass
   // and create new BoundExpressionList.
-  unique_ptr<BoundExpressionList> new_list(new BoundExpressionList());
-  for (size_t i = 0; i < args_ptr->size(); ++i) {
+  auto new_list = make_unique<BoundExpressionList>();
+  for (size_t i = 0; i < bound_arguments->size(); ++i) {
     DataType wanted_type = i % 2 == 0 ? test_type : output_type;
     FailureOrOwned<BoundExpression> cast_result =
-        BoundInternalCast(allocator, max_row_count, args_ptr->release(i),
+        BoundInternalCast(allocator, max_row_count, bound_arguments->move(i),
                           wanted_type, true);
     PROPAGATE_ON_FAILURE(cast_result);
-    new_list->add(cast_result.release());
+    new_list->add(cast_result.move());
   }
 
   CaseExpressionResolver resolver(allocator, new_list.release());
   unique_ptr<BasicBoundExpression> case_expression(
       TypeSpecialization<BasicBoundExpression*, CaseExpressionResolver>(
           test_type, resolver));
-  return InitBasicExpression(max_row_count, case_expression.release(),
+  return InitBasicExpression(max_row_count, std::move(case_expression),
                              allocator);
 }
 
-FailureOrOwned<BoundExpression> BoundIf(BoundExpression* condition,
-                                        BoundExpression* then,
-                                        BoundExpression* otherwise,
+FailureOrOwned<BoundExpression> BoundIf(unique_ptr<BoundExpression> condition,
+                                        unique_ptr<BoundExpression> then,
+                                        unique_ptr<BoundExpression> otherwise,
                                         BufferAllocator* allocator,
                                         rowcount_t max_row_count) {
-  return BoundIfInternal<false>(condition, then, otherwise, allocator,
-                                max_row_count);
+  return BoundIfInternal<false>(std::move(condition), std::move(then),
+                                std::move(otherwise), allocator, max_row_count);
 }
 
-FailureOrOwned<BoundExpression> BoundIfNulling(BoundExpression* condition,
-                                               BoundExpression* if_true,
-                                               BoundExpression* if_false,
-                                               BufferAllocator* allocator,
-                                               rowcount_t max_row_count) {
-  return BoundIfInternal<true>(condition, if_true, if_false, allocator,
-                               max_row_count);
+FailureOrOwned<BoundExpression> BoundIfNulling(
+    unique_ptr<BoundExpression> condition,
+    unique_ptr<BoundExpression> if_true,
+    unique_ptr<BoundExpression> if_false,
+    BufferAllocator* allocator,
+    rowcount_t max_row_count) {
+  return BoundIfInternal<true>(std::move(condition), std::move(if_true),
+                               std::move(if_false), allocator, max_row_count);
 }
 
 // --------------------------- Logic --------------------------------
-FailureOrOwned<BoundExpression> BoundNot(BoundExpression* arg,
-                                         BufferAllocator* allocator,
+FailureOrOwned<BoundExpression> BoundNot(unique_ptr<BoundExpression> arg,
+                                         BufferAllocator *allocator,
                                          rowcount_t max_row_count) {
-  return AbstractBoundUnary<OPERATOR_NOT, BOOL, BOOL>(arg, allocator,
+  return AbstractBoundUnary<OPERATOR_NOT, BOOL, BOOL>(std::move(arg), allocator,
                                                       max_row_count);
 }
 
-FailureOrOwned<BoundExpression> BoundOr(BoundExpression* left,
-                                        BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundOr(unique_ptr<BoundExpression> left,
+                                        unique_ptr<BoundExpression> right,
                                         BufferAllocator* const allocator,
                                         rowcount_t row_capacity) {
-  return BoundBooleanBinary<OPERATOR_OR>(left, right, allocator, row_capacity);
+  return BoundBooleanBinary<OPERATOR_OR>(std::move(left), std::move(right),
+                                         allocator, row_capacity);
 }
 
-FailureOrOwned<BoundExpression> BoundAnd(BoundExpression* left,
-                                         BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundAnd(unique_ptr<BoundExpression> left,
+                                         unique_ptr<BoundExpression> right,
                                          BufferAllocator* const allocator,
                                          rowcount_t row_capacity) {
-  return BoundBooleanBinary<OPERATOR_AND>(left, right, allocator, row_capacity);
+  return BoundBooleanBinary<OPERATOR_AND>(std::move(left), std::move(right),
+                                          allocator, row_capacity);
 }
 
-FailureOrOwned<BoundExpression> BoundAndNot(BoundExpression* left,
-                                            BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundAndNot(unique_ptr<BoundExpression> left,
+                                            unique_ptr<BoundExpression> right,
                                             BufferAllocator* const allocator,
                                             rowcount_t row_capacity) {
-  return BoundBooleanBinary<OPERATOR_AND_NOT>(left, right,
+  return BoundBooleanBinary<OPERATOR_AND_NOT>(std::move(left), std::move(right),
                                               allocator, row_capacity);
 }
 
-FailureOrOwned<BoundExpression> BoundXor(BoundExpression* left,
-                                         BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundXor(unique_ptr<BoundExpression> left,
+                                         unique_ptr<BoundExpression> right,
                                          BufferAllocator* const allocator,
                                          rowcount_t row_capacity) {
   return CreateTypedBoundBinaryExpression<OPERATOR_XOR, BOOL, BOOL, BOOL>(
-      allocator, row_capacity, left, right);
+      allocator, row_capacity, std::move(left), std::move(right));
 }
 
 // ----------------------- Unary comparisons and checks -------------------
-FailureOrOwned<BoundExpression> BoundIsNull(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundIsNull(unique_ptr<BoundExpression> arg,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count) {
   PROPAGATE_ON_FAILURE(CheckAttributeCount("ISNULL", arg->result_schema(), 1));
   if (!arg->result_schema().attribute(0).is_nullable()) {
-    unique_ptr<BoundExpression> arg_deleter(arg);
     unique_ptr<const Expression> const_bool(ConstBool(false));
     return const_bool->DoBind(arg->result_schema(),
                               allocator, max_row_count);
   } else {
-    return InitBasicExpression(max_row_count,
-                               new BoundIsNullExpression(allocator, arg),
-                               allocator);
+    return InitBasicExpression(
+        max_row_count,
+        make_unique<BoundIsNullExpression>(allocator, std::move(arg)),
+        allocator);
   }
 }
 
@@ -1470,12 +1458,10 @@ BinaryExpressionFactory* CreateIntegerInheritLeftBinaryFactory(DataType left,
 
 template<OperatorId op>
 FailureOrOwned<BoundExpression> CreateShiftExpression(
-    BoundExpression* left_ptr,
-    BoundExpression* right_ptr,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> left(left_ptr);
-  unique_ptr<BoundExpression> right(right_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       BinaryExpressionTraits<op>::name(), left->result_schema(), 1));
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
@@ -1483,14 +1469,13 @@ FailureOrOwned<BoundExpression> CreateShiftExpression(
   BinaryExpressionFactory* factory =
       CreateIntegerInheritLeftBinaryFactory<op>(GetExpressionType(left.get()),
                                                 GetExpressionType(right.get()));
-  return RunBinaryFactory(factory, allocator, max_row_count, left.release(),
-                          right.release(), BinaryExpressionTraits<op>::name());
+  return RunBinaryFactory(factory, allocator, max_row_count, std::move(left),
+                          std::move(right), BinaryExpressionTraits<op>::name());
 }
 
-FailureOrOwned<BoundExpression> BoundBitwiseNot(BoundExpression* argument_ptr,
+FailureOrOwned<BoundExpression> BoundBitwiseNot(unique_ptr<BoundExpression> argument,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> argument(argument_ptr);
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       UnaryExpressionTraits<OPERATOR_BITWISE_NOT>::name(),
       argument->result_schema(),
@@ -1498,56 +1483,56 @@ FailureOrOwned<BoundExpression> BoundBitwiseNot(BoundExpression* argument_ptr,
   UnaryExpressionFactory* factory =
       CreateIntegerUnaryFactory<OPERATOR_BITWISE_NOT>(
           GetExpressionType(argument.get()));
-  return RunUnaryFactory(factory, allocator, max_row_count, argument.release(),
+  return RunUnaryFactory(factory, allocator, max_row_count, std::move(argument),
                          UnaryExpressionTraits<OPERATOR_BITWISE_NOT>::name());
 }
 
-FailureOrOwned<BoundExpression> BoundBitwiseAnd(BoundExpression* left,
-                                                BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundBitwiseAnd(unique_ptr<BoundExpression> left,
+                                                unique_ptr<BoundExpression> right,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
   return CreateBinaryIntegerExpression<OPERATOR_BITWISE_AND>(
-      allocator, max_row_count, left, right);
+      allocator, max_row_count, std::move(left), std::move(right));
 }
 
-FailureOrOwned<BoundExpression> BoundBitwiseAndNot(BoundExpression* left,
-                                                   BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundBitwiseAndNot(unique_ptr<BoundExpression> left,
+                                                   unique_ptr<BoundExpression> right,
                                                    BufferAllocator* allocator,
                                                    rowcount_t max_row_count) {
   return CreateBinaryIntegerExpression<OPERATOR_BITWISE_ANDNOT>(
-      allocator, max_row_count, left, right);
+      allocator, max_row_count, std::move(left), std::move(right));
 }
 
-FailureOrOwned<BoundExpression> BoundBitwiseOr(BoundExpression* left,
-                                               BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundBitwiseOr(unique_ptr<BoundExpression> left,
+                                               unique_ptr<BoundExpression> right,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
   return CreateBinaryIntegerExpression<OPERATOR_BITWISE_OR>(
-      allocator, max_row_count, left, right);
+      allocator, max_row_count, std::move(left), std::move(right));
 }
 
-FailureOrOwned<BoundExpression> BoundBitwiseXor(BoundExpression* left,
-                                                BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundBitwiseXor(unique_ptr<BoundExpression> left,
+                                                unique_ptr<BoundExpression> right,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
   return CreateBinaryIntegerExpression<OPERATOR_BITWISE_XOR>(
-      allocator, max_row_count, left, right);
+      allocator, max_row_count, std::move(left), std::move(right));
 }
 
-FailureOrOwned<BoundExpression> BoundShiftLeft(BoundExpression* argument,
-                                               BoundExpression* shift,
+FailureOrOwned<BoundExpression> BoundShiftLeft(unique_ptr<BoundExpression> argument,
+                                               unique_ptr<BoundExpression> shift,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
   return CreateShiftExpression<OPERATOR_SHIFT_LEFT>(
-      argument, shift, allocator, max_row_count);
+      std::move(argument), std::move(shift), allocator, max_row_count);
 }
 
-FailureOrOwned<BoundExpression> BoundShiftRight(BoundExpression* argument,
-                                                BoundExpression* shift,
+FailureOrOwned<BoundExpression> BoundShiftRight(unique_ptr<BoundExpression> argument,
+                                                unique_ptr<BoundExpression> shift,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
   return CreateShiftExpression<OPERATOR_SHIFT_RIGHT>(
-      argument, shift, allocator, max_row_count);
+      std::move(argument), std::move(shift), allocator, max_row_count);
 }
 
 }  // namespace supersonic

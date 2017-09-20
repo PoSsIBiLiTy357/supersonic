@@ -35,8 +35,8 @@ class Expression;
 namespace {
 
 template<DataType to_type, bool is_implicit>
-const Expression* Cast(const Expression* const source) {
-  return InternalCast(to_type, source, is_implicit);
+unique_ptr<const Expression> Cast(unique_ptr<const Expression> source) {
+  return InternalCast(to_type, std::move(source), is_implicit);
 }
 
 // The main point of using this template is that it makes sure we make no

@@ -19,16 +19,8 @@
 #include "supersonic/expression/core/date_bound_expressions.h"
 
 #include <cstddef>
-
 #include <algorithm>
-#include <memory>
-#include <set>
-#include <string>
-#include <vector>
 #include "supersonic/utils/std_namespace.h"
-namespace supersonic {using std::string; }
-using std::vector;
-using std::unique_ptr;
 
 #include "supersonic/utils/integral_types.h"
 #include <glog/logging.h>
@@ -63,19 +55,19 @@ class BoundMakeDatetimeExpression : public BasicBoundExpression {
  public:
   BoundMakeDatetimeExpression(const string& name,
                               BufferAllocator* allocator,
-                              BoundExpression* year,
-                              BoundExpression* month,
-                              BoundExpression* day,
-                              BoundExpression* hour,
-                              BoundExpression* minute,
-                              BoundExpression* second)
+                              unique_ptr<BoundExpression> year,
+                              unique_ptr<BoundExpression> month,
+                              unique_ptr<BoundExpression> day,
+                              unique_ptr<BoundExpression> hour,
+                              unique_ptr<BoundExpression> minute,
+                              unique_ptr<BoundExpression> second)
       : BasicBoundExpression(CreateSchema(name, DATETIME, NULLABLE), allocator),
-        year_(year),
-        month_(month),
-        day_(day),
-        hour_(hour),
-        minute_(minute),
-        second_(second) {}
+        year_(std::move(year)),
+        month_(std::move(month)),
+        day_(std::move(day)),
+        hour_(std::move(hour)),
+        minute_(std::move(minute)),
+        second_(std::move(second)) {}
 
   virtual rowcount_t row_capacity() const {
     rowcount_t capacity = my_const_block()->row_capacity();
@@ -175,175 +167,177 @@ class BoundMakeDatetimeExpression : public BasicBoundExpression {
 };
 }  // namespace
 
-FailureOrOwned<BoundExpression> BoundUnixTimestamp(BoundExpression* e,
+FailureOrOwned<BoundExpression> BoundUnixTimestamp(unique_ptr<BoundExpression> e,
                                                    BufferAllocator* allocator,
                                                    rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_UNIXTIMESTAMP, DATETIME,
-    INT64>(allocator, max_row_count, e);
+    INT64>(allocator, max_row_count, std::move(e));
 }
 
-FailureOrOwned<BoundExpression> BoundFromUnixTime(BoundExpression* e,
+FailureOrOwned<BoundExpression> BoundFromUnixTime(unique_ptr<BoundExpression> e,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_FROMUNIXTIME, INT64,
-    DATETIME>(allocator, max_row_count, e);
+    DATETIME>(allocator, max_row_count, std::move(e));
 }
 
-FailureOrOwned<BoundExpression> BoundMakeDate(BoundExpression* year,
-                                              BoundExpression* month,
-                                              BoundExpression* day,
+FailureOrOwned<BoundExpression> BoundMakeDate(unique_ptr<BoundExpression> year,
+                                              unique_ptr<BoundExpression> month,
+                                              unique_ptr<BoundExpression> day,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count) {
-  return CreateTypedBoundTernaryExpression<OPERATOR_MAKEDATE, INT64,
-      INT64, INT64, DATETIME>(allocator, max_row_count, year, month, day);
+  return CreateTypedBoundTernaryExpression<OPERATOR_MAKEDATE, INT64, INT64,
+                                           INT64, DATETIME>(
+      allocator, max_row_count, std::move(year), std::move(month),
+      std::move(day));
 }
 
-FailureOrOwned<BoundExpression> BoundYear(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundYear(unique_ptr<BoundExpression> datetime,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_YEAR, DATETIME, INT32>(
-      allocator, max_row_count, datetime);
+      allocator, max_row_count, std::move(datetime));
 }
 
-FailureOrOwned<BoundExpression> BoundQuarter(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundQuarter(unique_ptr<BoundExpression> datetime,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_QUARTER, DATETIME, INT32>(
-      allocator, max_row_count, datetime);
+      allocator, max_row_count, std::move(datetime));
 }
 
-FailureOrOwned<BoundExpression> BoundMonth(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundMonth(unique_ptr<BoundExpression> datetime,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_MONTH, DATETIME, INT32>(
-      allocator, max_row_count, datetime);
+      allocator, max_row_count, std::move(datetime));
 }
 
-FailureOrOwned<BoundExpression> BoundDay(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundDay(unique_ptr<BoundExpression> datetime,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_DAY, DATETIME, INT32>(
-      allocator, max_row_count, datetime);
+      allocator, max_row_count, std::move(datetime));
 }
 
-FailureOrOwned<BoundExpression> BoundWeekday(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundWeekday(unique_ptr<BoundExpression> datetime,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_WEEKDAY, DATETIME, INT32>(
-      allocator, max_row_count, datetime);
+      allocator, max_row_count, std::move(datetime));
 }
 
-FailureOrOwned<BoundExpression> BoundYearDay(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundYearDay(unique_ptr<BoundExpression> datetime,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_YEARDAY, DATETIME, INT32>(
-      allocator, max_row_count, datetime);
+      allocator, max_row_count, std::move(datetime));
 }
 
-FailureOrOwned<BoundExpression> BoundHour(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundHour(unique_ptr<BoundExpression> datetime,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_HOUR, DATETIME, INT32>(
-      allocator, max_row_count, datetime);
+      allocator, max_row_count, std::move(datetime));
 }
 
-FailureOrOwned<BoundExpression> BoundMinute(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundMinute(unique_ptr<BoundExpression> datetime,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_MINUTE, DATETIME, INT32>(
-      allocator, max_row_count, datetime);
+      allocator, max_row_count, std::move(datetime));
 }
 
-FailureOrOwned<BoundExpression> BoundSecond(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundSecond(unique_ptr<BoundExpression> datetime,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_SECOND, DATETIME, INT32>(
-      allocator, max_row_count, datetime);
+      allocator, max_row_count, std::move(datetime));
 }
 
-FailureOrOwned<BoundExpression> BoundMicrosecond(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundMicrosecond(unique_ptr<BoundExpression> datetime,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_MICROSECOND, DATETIME, INT32>(
-      allocator, max_row_count, datetime);
+      allocator, max_row_count, std::move(datetime));
 }
 
-FailureOrOwned<BoundExpression> BoundYearLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundYearLocal(unique_ptr<BoundExpression> datetime,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_YEAR_LOCAL, DATETIME, INT32>(
-      allocator, max_row_count, datetime);
+      allocator, max_row_count, std::move(datetime));
 }
 
-FailureOrOwned<BoundExpression> BoundQuarterLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundQuarterLocal(unique_ptr<BoundExpression> datetime,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_QUARTER_LOCAL, DATETIME,
-      INT32>(allocator, max_row_count, datetime);
+      INT32>(allocator, max_row_count, std::move(datetime));
 }
-FailureOrOwned<BoundExpression> BoundMonthLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundMonthLocal(unique_ptr<BoundExpression> datetime,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_MONTH_LOCAL, DATETIME, INT32>(
-      allocator, max_row_count, datetime);
+      allocator, max_row_count, std::move(datetime));
 }
-FailureOrOwned<BoundExpression> BoundDayLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundDayLocal(unique_ptr<BoundExpression> datetime,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_DAY_LOCAL, DATETIME, INT32>(
-      allocator, max_row_count, datetime);
+      allocator, max_row_count, std::move(datetime));
 }
-FailureOrOwned<BoundExpression> BoundWeekdayLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundWeekdayLocal(unique_ptr<BoundExpression> datetime,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_WEEKDAY_LOCAL, DATETIME,
-      INT32>(allocator, max_row_count, datetime);
+      INT32>(allocator, max_row_count, std::move(datetime));
 }
-FailureOrOwned<BoundExpression> BoundYearDayLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundYearDayLocal(unique_ptr<BoundExpression> datetime,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_YEARDAY_LOCAL, DATETIME,
-      INT32>(allocator, max_row_count, datetime);
+      INT32>(allocator, max_row_count, std::move(datetime));
 }
-FailureOrOwned<BoundExpression> BoundHourLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundHourLocal(unique_ptr<BoundExpression> datetime,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_HOUR_LOCAL, DATETIME, INT32>(
-      allocator, max_row_count, datetime);
+      allocator, max_row_count, std::move(datetime));
 }
-FailureOrOwned<BoundExpression> BoundMinuteLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundMinuteLocal(unique_ptr<BoundExpression> datetime,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count) {
   return CreateTypedBoundUnaryExpression<OPERATOR_MINUTE_LOCAL, DATETIME,
-      INT32>(allocator, max_row_count, datetime);
+      INT32>(allocator, max_row_count, std::move(datetime));
 }
 
-FailureOrOwned<BoundExpression> BoundMakeDatetime(BoundExpression* year,
-                                                  BoundExpression* month,
-                                                  BoundExpression* day,
-                                                  BoundExpression* hour,
-                                                  BoundExpression* minute,
-                                                  BoundExpression* second,
+FailureOrOwned<BoundExpression> BoundMakeDatetime(unique_ptr<BoundExpression> year,
+                                                  unique_ptr<BoundExpression> month,
+                                                  unique_ptr<BoundExpression> day,
+                                                  unique_ptr<BoundExpression> hour,
+                                                  unique_ptr<BoundExpression> minute,
+                                                  unique_ptr<BoundExpression> second,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count) {
-  string name = StrCat("MAKE_DATETIME(", GetExpressionName(year),  ", ",
-                       GetExpressionName(month), ", ", GetExpressionName(day),
-                       StrCat(", ", GetExpressionName(hour), ", ",
-                              GetExpressionName(minute), ", ",
-                              GetExpressionName(second), ")"));
+  string name = StrCat("MAKE_DATETIME(", GetExpressionName(year.get()),  ", ",
+                       GetExpressionName(month.get()), ", ", GetExpressionName(day.get()),
+                       StrCat(", ", GetExpressionName(hour.get()), ", ",
+                              GetExpressionName(minute.get()), ", ",
+                              GetExpressionName(second.get()), ")"));
 
   FailureOrOwned<BoundExpression> year_result =
-      BoundInternalCast(allocator, max_row_count, year, INT64, true);
+      BoundInternalCast(allocator, max_row_count, std::move(year), INT64, true);
   FailureOrOwned<BoundExpression> month_result =
-      BoundInternalCast(allocator, max_row_count, month, INT64, true);
+      BoundInternalCast(allocator, max_row_count, std::move(month), INT64, true);
   FailureOrOwned<BoundExpression> day_result =
-      BoundInternalCast(allocator, max_row_count, day, INT64, true);
+      BoundInternalCast(allocator, max_row_count, std::move(day), INT64, true);
   FailureOrOwned<BoundExpression> hour_result =
-      BoundInternalCast(allocator, max_row_count, hour, INT64, true);
+      BoundInternalCast(allocator, max_row_count, std::move(hour), INT64, true);
   FailureOrOwned<BoundExpression> minute_result =
-      BoundInternalCast(allocator, max_row_count, minute, INT64, true);
+      BoundInternalCast(allocator, max_row_count, std::move(minute), INT64, true);
   FailureOrOwned<BoundExpression> second_result =
-      BoundInternalCast(allocator, max_row_count, second, INT64, true);
+      BoundInternalCast(allocator, max_row_count, std::move(second), INT64, true);
   // We first process all the inputs, and only then propagate failures, as
   // a side-effect of the processing is taking ownership, and we don't want the
   // inputs to leak in case of a failure.
@@ -356,27 +350,27 @@ FailureOrOwned<BoundExpression> BoundMakeDatetime(BoundExpression* year,
 
   return InitBasicExpression(
       max_row_count,
-      new BoundMakeDatetimeExpression(
-          name, allocator, year_result.release(), month_result.release(),
-          day_result.release(), hour_result.release(), minute_result.release(),
-          second_result.release()),
+      make_unique<BoundMakeDatetimeExpression>(
+          name, allocator, year_result.move(), month_result.move(),
+          day_result.move(), hour_result.move(), minute_result.move(),
+          second_result.move()),
       allocator);
 }
 
-FailureOrOwned<BoundExpression> BoundDateFormat(BoundExpression* datetime,
-                                                BoundExpression* format,
+FailureOrOwned<BoundExpression> BoundDateFormat(unique_ptr<BoundExpression> datetime,
+                                                unique_ptr<BoundExpression> format,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
   return CreateTypedBoundBinaryExpression<OPERATOR_DATEFORMAT, DATETIME, STRING,
-      STRING>(allocator, max_row_count, datetime, format);
+      STRING>(allocator, max_row_count, std::move(datetime), std::move(format));
 }
 
-FailureOrOwned<BoundExpression> BoundDateFormatLocal(BoundExpression* datetime,
-                                                     BoundExpression* format,
+FailureOrOwned<BoundExpression> BoundDateFormatLocal(unique_ptr<BoundExpression> datetime,
+                                                     unique_ptr<BoundExpression> format,
                                                      BufferAllocator* allocator,
                                                      rowcount_t max_row_count) {
   return CreateTypedBoundBinaryExpression<OPERATOR_DATEFORMAT_LOCAL, DATETIME,
-      STRING, STRING>(allocator, max_row_count, datetime, format);
+      STRING, STRING>(allocator, max_row_count, std::move(datetime), std::move(format));
 }
 
 }  // namespace supersonic

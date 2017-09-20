@@ -18,8 +18,7 @@
 
 #include "supersonic/benchmark/examples/common_utils.h"
 
-#include <memory>
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/infrastructure/projector.h"
 #include "supersonic/benchmark/manager/benchmark_manager.h"
 #include "supersonic/cursor/base/operation.h"
@@ -30,26 +29,23 @@
 
 namespace supersonic {
 
-void BenchmarkOperation(Operation* operation,
+void BenchmarkOperation(unique_ptr<Operation> operation,
                         const string& benchmark_name,
                         GraphVisualisationOptions options,
                         rowcount_t max_block_size,
                         bool log_result) {
-  std::unique_ptr<Operation> operation_owner(operation);
   string operation_info;
-  operation_owner->AppendDebugDescription(&operation_info);
+  operation->AppendDebugDescription(&operation_info);
   LOG(INFO) << "Benchmarking: " << operation_info;
 
-  FailureOrOwned<Cursor> cursor_owner = operation_owner->CreateCursor();
+  FailureOrOwned<Cursor> cursor_owner = operation->CreateCursor();
   CHECK(cursor_owner.is_success())
       << cursor_owner.exception().PrintStackTrace();
 
   ViewPrinter printer;
 
-  std::unique_ptr<BenchmarkDataWrapper> data_wrapper(
-      SetUpBenchmarkForCursor(cursor_owner.release()));
-
-  std::unique_ptr<Cursor> benchmarked_cursor(data_wrapper->release_cursor());
+  auto data_wrapper = SetUpBenchmarkForCursor(cursor_owner.move());
+  auto benchmarked_cursor = data_wrapper->move_cursor();
 
   while (true) {
     ResultView view = benchmarked_cursor->Next(max_block_size);

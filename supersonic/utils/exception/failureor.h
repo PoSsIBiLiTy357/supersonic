@@ -89,6 +89,7 @@ namespace common {
 
 struct VoidPropagator {};
 template<typename Result> struct ReferencePropagator;
+template<typename Result> struct UniquePtrPropagator;
 template<typename Result> struct ConstReferencePropagator;
 template<typename Exception> struct FailurePropagator;
 
@@ -150,19 +151,21 @@ class CheckedFlag {
 // The first parameter in this function is there only for the purpose of
 // template type matching.
 template<typename Exception, typename ObservedException>
-Exception* ConvertException(Exception* /* dummy */,
-                            ObservedException* observed) {
-  if (observed == NULL) {
-    return NULL;
+std::unique_ptr<Exception> ConvertException(
+    std::unique_ptr<Exception> /* dummy */,
+    std::unique_ptr<ObservedException> observed) {
+  if (observed == nullptr) {
+    return nullptr;
   }
-  std::unique_ptr<ObservedException> observed_scoped(observed);
   return new Exception(*observed);
 }
 
 // Partial specialization so we do not do copy when exception is already of the
 // same type.
 template<typename Exception>
-Exception* ConvertException(Exception* /* dummy */, Exception* observed) {
+std::unique_ptr<Exception> ConvertException(
+    std::unique_ptr<Exception> /* dummy */,
+    std::unique_ptr<Exception> observed) {
   return observed;
 }
 
@@ -222,9 +225,9 @@ class FailureOrVoid {
 
   // If is_failure() is true, releases the associated exception object and
   // returns it to the caller. Otherwise, returns NULL.
-  Exception* release_exception() {
+  std::unique_ptr<Exception> move_exception() {
     mark_checked();
-    return exception_.release();
+    return std::unique_ptr<Exception>(exception_.release());
   }
 
  protected:
@@ -359,6 +362,11 @@ class FailureOrOwned : public FailureOrVoid<Exception> {
         result_(result.result) {}
 
   template<typename ObservedResult>
+  FailureOrOwned(UniquePtrPropagator<ObservedResult>&& result)    // NOLINT
+      : FailureOrVoid<Exception>(Success()),
+        result_(result.result.release()) {}
+
+  template<typename ObservedResult>
   FailureOrOwned(
       const ConstReferencePropagator<ObservedResult>& result)          // NOLINT
       : FailureOrVoid<Exception>(Success()),
@@ -412,9 +420,8 @@ class FailureOrOwned : public FailureOrVoid<Exception> {
   // Returns the enclosed result, passing the ownership to the caller.
   // Can be called only once on this FailureOrOwned object or any of its copies.
   // (Subsequent calls will cause crash).
-  Result* release() {
-    FailureOrVoid<Exception>::EnsureSuccess();
-    return result_.release();
+  std::unique_ptr<Result> move() {
+    return std::unique_ptr<Result>(result_.release());
   }
 
  private:
@@ -458,10 +465,10 @@ Result& SucceedOrDie(FailureOrReference<Result, Exception> result) {
 }
 
 // The ownership is passed to the caller.
-template<typename Result, typename Exception>
-Result* SucceedOrDie(FailureOrOwned<Result, Exception> result) {
+template <typename Result, typename Exception>
+std::unique_ptr<Result> SucceedOrDie(FailureOrOwned<Result, Exception> result) {
   CHECK(result.is_success()) << result.exception().PrintStackTrace();
-  return result.release();
+  return result.move();
 }
 
 // Like SuccceedOrDie(FailureOrVoid<Exception>), but no-op in opt mode.
@@ -487,6 +494,12 @@ struct ReferencePropagator {
 };
 
 template<typename Result>
+struct UniquePtrPropagator {
+  explicit UniquePtrPropagator(std::unique_ptr<Result> result) : result(std::move(result)) {}  // NOLINT
+  std::unique_ptr<Result> result;
+};
+
+template<typename Result>
 struct ConstReferencePropagator {
   explicit ConstReferencePropagator(const Result& result) : result(result) {}
   const Result& result;
@@ -499,11 +512,21 @@ FailurePropagator<Exception> Failure(Exception* exception) {
   return FailurePropagator<Exception>(exception);
 }
 
+template<typename Exception>
+FailurePropagator<Exception> Failure(std::unique_ptr<Exception> exception) {
+  return FailurePropagator<Exception>(exception.release());
+}
+
 inline VoidPropagator Success() { return VoidPropagator(); }
 
 template<typename Result>
 ReferencePropagator<Result> Success(Result& result) {  // NOLINT
   return ReferencePropagator<Result>(result);
+}
+
+template<typename Result>
+UniquePtrPropagator<Result> Success(std::unique_ptr<Result>&& result) {  // NOLINT
+  return UniquePtrPropagator<Result>(std::move(result));
 }
 
 template<typename Result>

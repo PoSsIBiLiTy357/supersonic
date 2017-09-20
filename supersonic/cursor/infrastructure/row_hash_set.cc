@@ -207,7 +207,7 @@ class RowComparator {
 
 // A helper function that creates a key selector that selects all attributes
 // from schema.
-const BoundSingleSourceProjector* CreateAllAttributeSelector(
+unique_ptr<const BoundSingleSourceProjector> CreateAllAttributeSelector(
     const TupleSchema& schema) {
   std::unique_ptr<const SingleSourceProjector> projector(
       ProjectAllAttributes());
@@ -234,7 +234,7 @@ class RowHashSetImpl {
   RowHashSetImpl(
       const TupleSchema& block_schema,
       BufferAllocator* const allocator,
-      const BoundSingleSourceProjector* key_selector,
+      unique_ptr<const BoundSingleSourceProjector> key_selector,
       bool is_multiset,
       const int64 max_unique_keys_in_result);
 
@@ -336,17 +336,23 @@ class RowHashSetImpl {
   friend class RowIdSetIterator;
 };
 
+// Project everything if no selector is specified
+static
+unique_ptr<const BoundSingleSourceProjector>
+key_selector_or_default(unique_ptr<const BoundSingleSourceProjector> key_selector, const TupleSchema& schema) {
+  if ((bool) key_selector) {
+    return key_selector;
+  }
+  return CreateAllAttributeSelector(schema);
+}
 
 RowHashSetImpl::RowHashSetImpl(
     const TupleSchema& block_schema,
     BufferAllocator* const allocator,
-    const BoundSingleSourceProjector* key_selector,
+    unique_ptr<const BoundSingleSourceProjector> key_selector,
     bool is_multiset,
     const int64 max_unique_keys_in_result)
-    : key_selector_(
-          key_selector
-              ? key_selector
-              : CreateAllAttributeSelector(block_schema)),
+    : key_selector_(key_selector_or_default(std::move(key_selector), block_schema)),
       index_(block_schema, allocator),
       index_appender_(&index_, true),
       index_key_(key_selector_->result_schema()),
@@ -612,7 +618,7 @@ void RowHashSetImpl::Clear() {
   // Be more aggresive in freeing memory. Otherwise clients like
   // BestEffortGroupAggregate may end up with memory_limit->Available() == 0
   // after clearing RowHashSet.
-  delete index_.extract_block();
+  index_.move_block();
   key_selector_->Project(index_.view(), &index_key_);
   hash_.clear();
   std::fill(last_row_id_.get(), last_row_id_.get() + last_row_id_size_, -1);
@@ -660,23 +666,22 @@ RowHashSet::RowHashSet(const TupleSchema& block_schema,
 RowHashSet::RowHashSet(
     const TupleSchema& block_schema,
     BufferAllocator* const allocator,
-    const BoundSingleSourceProjector* key_selector)
-    : impl_(new RowHashSetImpl(block_schema, allocator, key_selector, false,
+    unique_ptr<const BoundSingleSourceProjector> key_selector)
+    : impl_(new RowHashSetImpl(block_schema, allocator, std::move(key_selector), false,
                                kint64max)) {}
 
-RowHashSet::RowHashSet(const TupleSchema& block_schema,
-                       BufferAllocator* const allocator,
+RowHashSet::RowHashSet(const TupleSchema &block_schema,
+                       BufferAllocator *const allocator,
                        const int64 max_unique_keys_in_result)
     : impl_(new RowHashSetImpl(block_schema, allocator, NULL, false,
                                max_unique_keys_in_result)) {}
 
 RowHashSet::RowHashSet(
-    const TupleSchema& block_schema,
-    BufferAllocator* const allocator,
-    const BoundSingleSourceProjector* key_selector,
+    const TupleSchema &block_schema, BufferAllocator *const allocator,
+    unique_ptr<const BoundSingleSourceProjector> key_selector,
     const int64 max_unique_keys_in_result)
-    : impl_(new RowHashSetImpl(block_schema, allocator, key_selector, false,
-                               max_unique_keys_in_result)) {}
+    : impl_(new RowHashSetImpl(block_schema, allocator, std::move(key_selector),
+                               false, max_unique_keys_in_result)) {}
 
 RowHashSet::~RowHashSet() {
   delete impl_;
@@ -728,19 +733,16 @@ rowcount_t RowHashSet::size() const { return indexed_view().row_count(); }
 
 RowHashMultiSet::RowHashMultiSet(const TupleSchema& block_schema,
                                  BufferAllocator* const allocator)
-    : impl_(new RowHashSetImpl(block_schema, allocator, NULL, true,
+    : impl_(make_unique<RowHashSetImpl>(block_schema, allocator, nullptr, true,
                                kint64max)) {}
 
-RowHashMultiSet::RowHashMultiSet(
-    const TupleSchema& block_schema,
-    BufferAllocator* const allocator,
-    const BoundSingleSourceProjector* key_selector) :
-    impl_(new RowHashSetImpl(block_schema, allocator, key_selector, true,
-                             kint64max)) {}
+RowHashMultiSet::RowHashMultiSet(const TupleSchema &block_schema,
+                                 BufferAllocator *const allocator,
+                                 unique_ptr<const BoundSingleSourceProjector> key_selector)
+    : impl_(make_unique<RowHashSetImpl>(
+          block_schema, allocator, std::move(key_selector), true, kint64max)) {}
 
-RowHashMultiSet::~RowHashMultiSet() {
-  delete impl_;
-}
+RowHashMultiSet::~RowHashMultiSet() { }
 
 bool RowHashMultiSet::ReserveRowCapacity(rowcount_t capacity) {
   return impl_->ReserveRowCapacity(capacity);

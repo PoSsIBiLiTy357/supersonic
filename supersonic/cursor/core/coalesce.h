@@ -18,9 +18,7 @@
 #ifndef SUPERSONIC_CURSOR_CORE_COALESCE_H_
 #define SUPERSONIC_CURSOR_CORE_COALESCE_H_
 
-#include <vector>
-using std::vector;
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/exception/result.h"
 
 namespace supersonic {
@@ -30,14 +28,14 @@ class Operation;
 
 // Creates a coalesce operation. Takes ownership of the child operations.
 // Caller takes ownership of the returned operation.
-Operation* Coalesce(const vector<Operation*>& children);
+unique_ptr<Operation> Coalesce(vector<unique_ptr<Operation>> children);
 
 // Creates a coalesce cursor that has all attributes of all child cursors.
 // Returns an Exception if the schemata of the child cursors contain
 // duplicated attribute names. Does not check if the children vector contains
 // only valid (non-NULL) pointers, and can fail at runtime if it doesn't.
 // If successful, takes ownership of the child cursors.
-FailureOrOwned<Cursor> BoundCoalesce(const vector<Cursor*>& children);
+FailureOrOwned<Cursor> BoundCoalesce(vector<unique_ptr<Cursor>> children);
 
 // TODO(user): Add the following functions:
 //  BoundCoalesceUsingProjector(const BoundMultiSourceProjector*, ...)

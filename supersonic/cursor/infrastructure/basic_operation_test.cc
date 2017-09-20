@@ -24,8 +24,9 @@ namespace supersonic {
 class BasicOperationForTest : public BasicOperation {
  public:
   BasicOperationForTest() {}
-  BasicOperationForTest(Operation* child1, Operation* child2)
-     : BasicOperation(child1, child2) {}
+  BasicOperationForTest(unique_ptr<Operation> child1,
+                        unique_ptr<Operation> child2)
+     : BasicOperation(std::move(child1), std::move(child2)) {}
 
   using BasicOperation::SetBufferAllocator;
   using BasicOperation::buffer_allocator;
@@ -36,13 +37,15 @@ TEST(BasicOperationTest, SetBufferAllocatorTest) {
       HeapBufferAllocator::Get());
   MemoryLimit allocator1;
   MemoryLimit allocator2;
-  BasicOperationForTest* operation_left(new BasicOperationForTest);
-  BasicOperationForTest* operation_right_left(new BasicOperationForTest);
-  BasicOperationForTest* operation_right_right(new BasicOperationForTest);
-  BasicOperationForTest* operation_right(new BasicOperationForTest(
-      operation_right_left, operation_right_right));
-  std::unique_ptr<BasicOperationForTest> operation(
-      new BasicOperationForTest(operation_left, operation_right));
+  auto operation_left = new BasicOperationForTest;
+  auto operation_right_left = new BasicOperationForTest;
+  auto operation_right_right = new BasicOperationForTest;
+  auto operation_right = new BasicOperationForTest(
+      unique_ptr<Operation>(operation_right_left),
+      unique_ptr<Operation>(operation_right_right));
+  auto operation = make_unique<BasicOperationForTest>(
+      unique_ptr<Operation>(operation_left),
+      unique_ptr<Operation>(operation_right));
   EXPECT_TRUE(default_allocator == operation->buffer_allocator());
   EXPECT_TRUE(default_allocator == operation_left->buffer_allocator());
   EXPECT_TRUE(default_allocator == operation_right->buffer_allocator());

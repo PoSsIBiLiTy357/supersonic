@@ -19,6 +19,8 @@
 #ifndef SUPERSONIC_CURSOR_CORE_PROJECT_H_
 #define SUPERSONIC_CURSOR_CORE_PROJECT_H_
 
+#include "supersonic/utils/std_namespace.h"
+
 namespace supersonic {
 
 class BoundSingleSourceProjector;
@@ -27,14 +29,16 @@ class Operation;
 class SingleSourceProjector;
 
 // Creates project operation. Takes ownership of the projector and the child.
-Operation* Project(const SingleSourceProjector* projector,
-                   Operation* child);
+unique_ptr<Operation> Project(
+    unique_ptr<const SingleSourceProjector> projector,
+    unique_ptr<Operation> child);
 
 // Creates project cursor that returns all rows from child cursor but with
 // columns restricted to these specified by projector. Takes ownership of
 // the projector and the child.
-Cursor* BoundProject(const BoundSingleSourceProjector* projector,
-                     Cursor* child);
+unique_ptr<Cursor> BoundProject(
+    unique_ptr<const BoundSingleSourceProjector> projector,
+    unique_ptr<Cursor> child);
 
 }  // namespace supersonic
 

@@ -32,111 +32,111 @@ namespace supersonic {
 class BoundExpression;
 class BufferAllocator;
 
-FailureOrOwned<BoundExpression> BoundUnixTimestamp(BoundExpression* date,
+FailureOrOwned<BoundExpression> BoundUnixTimestamp(unique_ptr<BoundExpression> date,
                                                    BufferAllocator* allocator,
                                                    rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundFromUnixTime(BoundExpression* timestamp,
+FailureOrOwned<BoundExpression> BoundFromUnixTime(unique_ptr<BoundExpression> timestamp,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundMakeDate(BoundExpression* year,
-                                              BoundExpression* month,
-                                              BoundExpression* day,
+FailureOrOwned<BoundExpression> BoundMakeDate(unique_ptr<BoundExpression> year,
+                                              unique_ptr<BoundExpression> month,
+                                              unique_ptr<BoundExpression> day,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundMakeDatetime(BoundExpression* year,
-                                                  BoundExpression* month,
-                                                  BoundExpression* day,
-                                                  BoundExpression* hour,
-                                                  BoundExpression* minute,
-                                                  BoundExpression* second,
+FailureOrOwned<BoundExpression> BoundMakeDatetime(unique_ptr<BoundExpression> year,
+                                                  unique_ptr<BoundExpression> month,
+                                                  unique_ptr<BoundExpression> day,
+                                                  unique_ptr<BoundExpression> hour,
+                                                  unique_ptr<BoundExpression> minute,
+                                                  unique_ptr<BoundExpression> second,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count);
 
 // Date specifics retrieval - UTC versions.
-FailureOrOwned<BoundExpression> BoundYear(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundYear(unique_ptr<BoundExpression> datetime,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundQuarter(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundQuarter(unique_ptr<BoundExpression> datetime,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundMonth(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundMonth(unique_ptr<BoundExpression> datetime,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundDay(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundDay(unique_ptr<BoundExpression> datetime,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundWeekday(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundWeekday(unique_ptr<BoundExpression> datetime,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundYearDay(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundYearDay(unique_ptr<BoundExpression> datetime,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundHour(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundHour(unique_ptr<BoundExpression> datetime,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundMinute(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundMinute(unique_ptr<BoundExpression> datetime,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundSecond(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundSecond(unique_ptr<BoundExpression> datetime,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundMicrosecond(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundMicrosecond(unique_ptr<BoundExpression> datetime,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count);
 
 // Date specifics retrieval - local timezone versions. Deprecated.
-FailureOrOwned<BoundExpression> BoundYearLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundYearLocal(unique_ptr<BoundExpression> datetime,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundQuarterLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundQuarterLocal(unique_ptr<BoundExpression> datetime,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundMonthLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundMonthLocal(unique_ptr<BoundExpression> datetime,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundDayLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundDayLocal(unique_ptr<BoundExpression> datetime,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundWeekdayLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundWeekdayLocal(unique_ptr<BoundExpression> datetime,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundYearDayLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundYearDayLocal(unique_ptr<BoundExpression> datetime,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundHourLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundHourLocal(unique_ptr<BoundExpression> datetime,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundMinuteLocal(BoundExpression* datetime,
+FailureOrOwned<BoundExpression> BoundMinuteLocal(unique_ptr<BoundExpression> datetime,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count);
 
 // Dateformat expressions.
-FailureOrOwned<BoundExpression> BoundDateFormat(BoundExpression* datetime,
-                                                BoundExpression* format,
+FailureOrOwned<BoundExpression> BoundDateFormat(unique_ptr<BoundExpression> datetime,
+                                                unique_ptr<BoundExpression> format,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundDateFormatLocal(BoundExpression* datetime,
-                                                     BoundExpression* format,
+FailureOrOwned<BoundExpression> BoundDateFormatLocal(unique_ptr<BoundExpression> datetime,
+                                                     unique_ptr<BoundExpression> format,
                                                      BufferAllocator* allocator,
                                                      rowcount_t max_row_count);
 

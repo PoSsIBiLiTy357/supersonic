@@ -76,41 +76,44 @@ TEST(ComparisonBoundExpressionsTest, BoundIsEven) {
 // Helper factory functions (in BoundUnaryExpressionFactory format) for
 // the testing of BoundInExpressionSet. This one gives a 3-element set.
 FailureOrOwned<BoundExpression> BoundInExpressionSet(
-    BoundExpression* arg_base,
-    BoundExpression* arg_set0,
-    BoundExpression* arg_set1,
-    BoundExpression* arg_set2,
+    unique_ptr<BoundExpression> arg_base,
+    unique_ptr<BoundExpression> arg_set0,
+    unique_ptr<BoundExpression> arg_set1,
+    unique_ptr<BoundExpression> arg_set2,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  BoundExpressionList* explist = new BoundExpressionList();
-  explist->add(arg_set0);
-  explist->add(arg_set1);
-  explist->add(arg_set2);
-  return BoundInSet(arg_base, explist, allocator, max_row_count);
+  auto explist = make_unique<BoundExpressionList>();
+  explist->add(std::move(arg_set0));
+  explist->add(std::move(arg_set1));
+  explist->add(std::move(arg_set2));
+  return BoundInSet(std::move(arg_base), std::move(explist), allocator,
+                    max_row_count);
 }
 
 
 // Helper factory functions (in BoundUnaryExpressionFactory format) for
 // the testing of BoundInExpressionSet. This one gives a 2-element set.
 FailureOrOwned<BoundExpression> BoundInExpressionSetSmaller(
-    BoundExpression* arg_base,
-    BoundExpression* arg_set0,
-    BoundExpression* arg_set1,
+    unique_ptr<BoundExpression> arg_base,
+    unique_ptr<BoundExpression> arg_set0,
+    unique_ptr<BoundExpression> arg_set1,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  BoundExpressionList* explist = new BoundExpressionList();
-  explist->add(arg_set0);
-  explist->add(arg_set1);
-  return BoundInSet(arg_base, explist, allocator, max_row_count);
+  auto explist = make_unique<BoundExpressionList>();
+  explist->add(std::move(arg_set0));
+  explist->add(std::move(arg_set1));
+  return BoundInSet(std::move(arg_base), std::move(explist), allocator,
+                    max_row_count);
 }
 
 // Same as above, but empty.
 FailureOrOwned<BoundExpression> BoundInExpressionSetEmpty(
-    BoundExpression* arg_base,
+    unique_ptr<BoundExpression> arg_base,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  BoundExpressionList* explist = new BoundExpressionList();
-  return BoundInSet(arg_base, explist, allocator, max_row_count);
+  auto explist = make_unique<BoundExpressionList>();
+  return BoundInSet(std::move(arg_base), std::move(explist), allocator,
+                    max_row_count);
 }
 
 

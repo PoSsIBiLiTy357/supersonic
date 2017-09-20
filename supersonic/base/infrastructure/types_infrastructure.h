@@ -103,7 +103,7 @@ namespace supersonic {
 // ------------------------------------------------------------
 template<typename ReturnType, typename Functor>
 ReturnType TypeSpecialization(const DataType type,
-                              const Functor functor = Functor()) {
+                              Functor functor = Functor()) {
   switch (type) {
     case INT32:     return functor.template operator()<INT32>();
     case INT64:     return functor.template operator()<INT64>();
@@ -138,7 +138,7 @@ ReturnType TypeSpecialization(const DataType type,
 // it when a type mismatch occurs.
 template<typename ReturnType, typename Functor>
 ReturnType IntegerTypeSpecialization(
-    const DataType type, const Functor functor = Functor()) {
+    const DataType type, Functor functor = Functor()) {
   switch (type) {
     case INT32:     return functor.template operator()<INT32>();
     case INT64:     return functor.template operator()<INT64>();
@@ -168,7 +168,7 @@ ReturnType IntegerTypeSpecialization(
 // the todo at IntegerTypeSpecialization.
 template<typename ReturnType, typename Functor>
 ReturnType NumericTypeSpecialization(
-    const DataType type, const Functor functor = Functor()) {
+    const DataType type, Functor functor = Functor()) {
   switch (type) {
     case INT32:     return functor.template operator()<INT32>();
     case INT64:     return functor.template operator()<INT64>();

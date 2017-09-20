@@ -19,10 +19,6 @@
 #ifndef SUPERSONIC_CURSOR_CORE_OWNERSHIP_TAKER_H_
 #define SUPERSONIC_CURSOR_CORE_OWNERSHIP_TAKER_H_
 
-#include <memory>
-#include <string>
-namespace supersonic {using std::string; }
-#include <utility>
 #include "supersonic/utils/std_namespace.h"
 
 #include "supersonic/utils/macros.h"
@@ -39,8 +35,8 @@ class OwnershipTaker : public Cursor {
  public:
   virtual ~OwnershipTaker() {}
 
-  static OwnershipTaker* Create(Cursor* child, Owned* owned) {
-    return new OwnershipTaker(child, owned);
+  static unique_ptr<OwnershipTaker> Create(unique_ptr<Cursor> child, unique_ptr<Owned> owned) {
+    return make_unique<OwnershipTaker>(std::move(child), std::move(owned));
   }
 
   virtual const TupleSchema& schema() const { return child_->schema(); }
@@ -57,22 +53,24 @@ class OwnershipTaker : public Cursor {
 
   virtual CursorId GetCursorId() const { return OWNERSHIP_TAKER; }
 
- private:
-  OwnershipTaker(Cursor* child, Owned* owned)
-      : owned_(owned),
-        child_(child) {}
+  OwnershipTaker(unique_ptr<Cursor> child, unique_ptr<Owned> owned)
+      : owned_(std::move(owned)),
+        child_(std::move(child))
+  {}
+
+private:
   // Defining owned_ field first, so it will outlive child_.
-  std::unique_ptr<Owned> owned_;
-  const std::unique_ptr<Cursor> child_;
+  unique_ptr<Owned> owned_;
+  const unique_ptr<Cursor> child_;
   DISALLOW_COPY_AND_ASSIGN(OwnershipTaker);
 };
 
 namespace internal {
 
 template<typename A, typename B>
-pair<linked_ptr<A>, linked_ptr<B> >* new_linked_pair(A* a, B* b) {
-  return new pair<linked_ptr<A>, linked_ptr<B> >(make_linked_ptr(a),
-                                                 make_linked_ptr(b));
+auto new_linked_pair(unique_ptr<A> a, unique_ptr<B> b) {
+  return make_unique<pair<linked_ptr<A>, linked_ptr<B>>>(
+      make_linked_ptr(a.release()), make_linked_ptr(b.release()));
 }
 
 }  // namespace internal
@@ -82,51 +80,29 @@ pair<linked_ptr<A>, linked_ptr<B> >* new_linked_pair(A* a, B* b) {
 // the objects specified as arguments.
 
 template<typename T>
-Cursor* TakeOwnership(Cursor* child, T* owned) {
-  return OwnershipTaker<T>::Create(child, owned);
+unique_ptr<Cursor> TakeOwnership(unique_ptr<Cursor> child, unique_ptr<T> owned) {
+  return OwnershipTaker<T>::Create(std::move(child), std::move(owned));
 }
 
-template<typename A, typename B>
-Cursor* TakeOwnership(Cursor* child, A* a, B* b) {
-  return TakeOwnership(child, internal::new_linked_pair(a, b));
-}
-
-template<typename A, typename B, typename C>
-Cursor* TakeOwnership(Cursor* child, A* a, B* b, C* c) {
-  return TakeOwnership(child, internal::new_linked_pair(a, b), c);
-}
-
-template<typename A, typename B, typename C, typename D>
-Cursor* TakeOwnership(Cursor* child, A* a, B* b, C* c, D* d) {
-  return TakeOwnership(child,
-                       internal::new_linked_pair(a, b),
-                       internal::new_linked_pair(c, d));
-}
-
-template<typename A, typename B, typename C, typename D, typename E>
-Cursor* TakeOwnership(Cursor* child, A* a, B* b, C* c, D* d, E* e) {
-  return TakeOwnership(child,
-                       internal::new_linked_pair(a, b),
-                       internal::new_linked_pair(c, d), e);
-}
-
-template<typename A, typename B, typename C, typename D, typename E, typename F>
-Cursor* TakeOwnership(Cursor* child, A* a, B* b, C* c, D* d, E* e, F* f) {
-  return TakeOwnership(child,
-                       internal::new_linked_pair(a, b),
-                       internal::new_linked_pair(c, d),
-                       internal::new_linked_pair(e, f));
+template<typename T, typename T2, typename... Args>
+unique_ptr<Cursor> TakeOwnership(
+    unique_ptr<Cursor> child,
+    unique_ptr<T> a, unique_ptr<T2> b,
+    Args&&... args) {
+  return TakeOwnership(
+      std::move(child),
+      internal::new_linked_pair(std::move(a), std::move(b)),
+      std::forward<Args>(args)...);
 }
 
 // Takes a dynamically-allocated operation and 'turns it' into a cursor;
 // i.e., it creates a cursor from it, and make it the owner of the operation.
 // The operation gets deleted when the cursor is deleted. You should not use
 // the operation directly after having passed it to this function.
-inline FailureOrOwned<Cursor> TurnIntoCursor(Operation* operation) {
-  std::unique_ptr<Operation> operation_ptr(operation);
-  FailureOrOwned<Cursor> result = operation_ptr->CreateCursor();
+inline FailureOrOwned<Cursor> TurnIntoCursor(unique_ptr<Operation> operation) {
+  FailureOrOwned<Cursor> result = operation->CreateCursor();
   PROPAGATE_ON_FAILURE(result);
-  return Success(TakeOwnership(result.release(), operation_ptr.release()));
+  return Success(TakeOwnership(result.move(), std::move(operation)));
 }
 
 }  // namespace supersonic

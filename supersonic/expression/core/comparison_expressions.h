@@ -16,61 +16,55 @@
 #ifndef SUPERSONIC_EXPRESSION_CORE_COMPARISON_EXPRESSIONS_H_
 #define SUPERSONIC_EXPRESSION_CORE_COMPARISON_EXPRESSIONS_H_
 
-#include <string>
-namespace supersonic {using std::string; }
-#include <vector>
-using std::vector;
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/integral_types.h"
+#include "supersonic/expression/base/expression.h"
 
 namespace supersonic {
 
 // Creates an expression that will compare two subexpressions for equality.
 // Returns NULL if any subexpression is NULL. Otherwise, returns a semantic
 // equivalent of the "a == b" test.
-class Expression;
-class ExpressionList;
-
-const Expression* Equal(const Expression* const a,
-                        const Expression* const b);
+unique_ptr<const Expression> Equal(unique_ptr<const Expression> a,
+                        unique_ptr<const Expression> b);
 
 // Creates an expression that will compare two subexpressions for inequality.
 // Returns NULL if any subexpression is NULL. Otherwise, returns a semantic
 // equivalent of the "a != b" test.
-const Expression* NotEqual(const Expression* const a,
-                           const Expression* const b);
+unique_ptr<const Expression> NotEqual(unique_ptr<const Expression> a,
+                           unique_ptr<const Expression> b);
 
 // Creates an expression that will 'less'-compare two subexpressions.
 // Returns NULL if any subexpression is NULL. Otherwise, returns a semantic
 // equivalent of the "a < b" test.
-const Expression* Less(const Expression* const a,
-                       const Expression* const b);
+unique_ptr<const Expression> Less(unique_ptr<const Expression> a,
+                       unique_ptr<const Expression> b);
 
 // Creates an expression that will 'less-or-equal'-compare two subexpressions.
 // Returns NULL if any subexpression is NULL. Otherwise, returns a semantic
 // equivalent of the "a <= b" test.
-const Expression* LessOrEqual(const Expression* const a,
-                              const Expression* const b);
+unique_ptr<const Expression> LessOrEqual(unique_ptr<const Expression> a,
+                              unique_ptr<const Expression> b);
 
 // Creates an expression that will 'greater'-compare two subexpressions.
 // Returns NULL if any subexpression is NULL. Otherwise, returns a semantic
 // equivalent of the "a > b" test.
-const Expression* Greater(const Expression* const a,
-                          const Expression* const b);
+unique_ptr<const Expression> Greater(unique_ptr<const Expression> a,
+                          unique_ptr<const Expression> b);
 
 // Creates an expression that will 'greater-or-equal'-compare two
 // subexpressions. Returns NULL if any subexpression is NULL. Otherwise,
 // returns a semantic equivalent of the "a >= b" test.
-const Expression* GreaterOrEqual(const Expression* const a,
-                                 const Expression* const b);
+unique_ptr<const Expression> GreaterOrEqual(unique_ptr<const Expression> a,
+                                 unique_ptr<const Expression> b);
 
 // Creates an expression that will return true if the argument is odd.
 // Requires the argument to be integer.
-const Expression* IsOdd(const Expression* const arg);
+unique_ptr<const Expression> IsOdd(unique_ptr<const Expression> arg);
 
 // Creates an expression that will return true if the argument is even.
 // Requires the argument to be integer.
-const Expression* IsEven(const Expression* const arg);
+unique_ptr<const Expression> IsEven(unique_ptr<const Expression> arg);
 
 // expr IN (value, ...)
 //
@@ -85,8 +79,8 @@ const Expression* IsEven(const Expression* const arg);
 
 // Creates an IN expression as described above.
 // Takes ownership of arguments.
-const Expression* In(const Expression* const needle_expression,
-                     const ExpressionList* haystack_arguments);
+unique_ptr<const Expression> In(unique_ptr<const Expression> needle_expression,
+                     unique_ptr<const ExpressionList> haystack_arguments);
 }  // namespace supersonic
 
 #endif  // SUPERSONIC_EXPRESSION_CORE_COMPARISON_EXPRESSIONS_H_

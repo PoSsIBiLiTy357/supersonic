@@ -62,6 +62,8 @@ using std::pair;
 
 // From <memory>.
 using std::shared_ptr; //  NOLINT
+using std::unique_ptr;
+using std::make_unique;
 
 }  // namespace supersonic
 

@@ -30,33 +30,33 @@ namespace {
 
 using util::gtl::Container;
 
-FailureOrOwned<BoundExpression> FullRegexpPatterned(BoundExpression* arg,
+FailureOrOwned<BoundExpression> FullRegexpPatterned(unique_ptr<BoundExpression> arg,
                                                     BufferAllocator* allocator,
                                                     rowcount_t max_row_count) {
-  return BoundRegexpFullMatch(arg, "X", allocator, max_row_count);
+  return BoundRegexpFullMatch(std::move(arg), "X", allocator, max_row_count);
 }
 
 FailureOrOwned<BoundExpression> PartialRegexpPatterned(
-    BoundExpression* arg,
+    unique_ptr<BoundExpression> arg,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  return BoundRegexpPartialMatch(arg, "_", allocator, max_row_count);
+  return BoundRegexpPartialMatch(std::move(arg), "_", allocator, max_row_count);
 }
 
 FailureOrOwned<BoundExpression> RegexpExtractPatterned(
-    BoundExpression* arg,
+    unique_ptr<BoundExpression> arg,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  return BoundRegexpExtract(arg, "X", allocator, max_row_count);
+  return BoundRegexpExtract(std::move(arg), "X", allocator, max_row_count);
 }
 
 FailureOrOwned<BoundExpression> RegexpReplacePatterned(
-    BoundExpression* haystack,
-    BoundExpression* substitute,
+    unique_ptr<BoundExpression> haystack,
+    unique_ptr<BoundExpression> substitute,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  return BoundRegexpReplace(haystack, "X", substitute, allocator,
-                            max_row_count);
+  return BoundRegexpReplace(std::move(haystack), "X", std::move(substitute),
+                            allocator, max_row_count);
 }
 
 TEST(StringBoundExpressionsTest, BoundRegexpFull) {

@@ -18,8 +18,7 @@
 
 #include "supersonic/benchmark/infrastructure/benchmark_transformer.h"
 
-#include <memory>
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/benchmark/infrastructure/benchmark_listener.h"
 #include "supersonic/cursor/base/cursor.h"
 
@@ -42,21 +41,21 @@ class SpyCursorBenchmarkTransformer
   // available to retrieve from the history. The entry inserted into the history
   // will take ownership of the listener, but not of the cursor. The transformer
   // takes ownership of the entries.
-  virtual Cursor* Transform(Cursor* cursor) {
+  virtual unique_ptr<Cursor> Transform(unique_ptr<Cursor> cursor) {
     string id;
     cursor->AppendDebugDescription(&id);
-    std::unique_ptr<BenchmarkListener> listener(CreateBenchmarkListener());
+    unique_ptr<BenchmarkListener> listener(CreateBenchmarkListener());
     BenchmarkListener* ptr_to_listener = listener.get();
-    run_history_->emplace_back(
-        new CursorWithBenchmarkListener(cursor, listener.release()));
-    return BoundSpy(id, ptr_to_listener, cursor);
+    run_history_.emplace_back(make_unique<CursorWithBenchmarkListener>(
+        cursor.get(), listener.release()));
+    return BoundSpy(id, ptr_to_listener, std::move(cursor));
   }
 };
 
 }  // namespace
 
-CursorTransformerWithBenchmarkHistory* BenchmarkSpyTransformer() {
-  return new SpyCursorBenchmarkTransformer();
+unique_ptr<CursorTransformerWithBenchmarkHistory> BenchmarkSpyTransformer() {
+  return std::make_unique<SpyCursorBenchmarkTransformer>();
 }
 
 }  // namespace supersonic

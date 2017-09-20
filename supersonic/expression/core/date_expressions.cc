@@ -16,11 +16,7 @@
 
 #include "supersonic/expression/core/date_expressions.h"
 
-#include <memory>
-#include <string>
-namespace supersonic {using std::string; }
-using std::unique_ptr;
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/walltime.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -48,14 +44,18 @@ namespace {
 // this is implemented separately.
 class MakeDatetimeExpression : public Expression {
  public:
-  MakeDatetimeExpression(const Expression* const year,
-                         const Expression* const month,
-                         const Expression* const day,
-                         const Expression* const hour,
-                         const Expression* const minute,
-                         const Expression* const second)
-      : year_(year), month_(month), day_(day), hour_(hour), minute_(minute),
-        second_(second) {}
+  MakeDatetimeExpression(unique_ptr<const Expression> year,
+                         unique_ptr<const Expression> month,
+                         unique_ptr<const Expression> day,
+                         unique_ptr<const Expression> hour,
+                         unique_ptr<const Expression> minute,
+                         unique_ptr<const Expression> second)
+      : year_(std::move(year)),
+        month_(std::move(month)),
+        day_(std::move(day)),
+        hour_(std::move(hour)),
+        minute_(std::move(minute)),
+        second_(std::move(second)) {}
  private:
   virtual FailureOrOwned<BoundExpression> DoBind(
       const TupleSchema& input_schema,
@@ -85,9 +85,9 @@ class MakeDatetimeExpression : public Expression {
         input_schema, allocator, max_row_count);
     PROPAGATE_ON_FAILURE(bound_second);
 
-    return BoundMakeDatetime(bound_year.release(), bound_month.release(),
-                             bound_day.release(), bound_hour.release(),
-                             bound_minute.release(), bound_second.release(),
+    return BoundMakeDatetime(bound_year.move(), bound_month.move(),
+                             bound_day.move(), bound_hour.move(),
+                             bound_minute.move(), bound_second.move(),
                              allocator, max_row_count);
   }
 
@@ -110,7 +110,7 @@ class MakeDatetimeExpression : public Expression {
 
 }  // namespace
 
-const Expression* ConstDateTime(const StringPiece& value) {
+unique_ptr<const Expression> ConstDateTime(const StringPiece& value) {
   // This implementation looks bad, because it looks like the resolving of the
   // parsing will be performed at evaluation time, for each row separately.
   // Fortunately, we do have constant folding in Supersonic, so actually this
@@ -119,182 +119,189 @@ const Expression* ConstDateTime(const StringPiece& value) {
   return ParseStringNulling(DATETIME, ConstString(value));
 }
 
-const Expression* ConstDateTimeFromMicrosecondsSinceEpoch(const int64& value) {
+unique_ptr<const Expression> ConstDateTimeFromMicrosecondsSinceEpoch(const int64& value) {
   return ConstDateTime(value);
 }
 
-const Expression* ConstDateTimeFromSecondsSinceEpoch(const double& value) {
+unique_ptr<const Expression> ConstDateTimeFromSecondsSinceEpoch(const double& value) {
   return ConstDateTime(static_cast<int64>(value * 1000000.));
 }
 
-const Expression* Now() {
+unique_ptr<const Expression> Now() {
   return ConstDateTime(static_cast<int64>(WallTime_Now() * 1000000.));
 }
 
-const Expression* UnixTimestamp(const Expression* const datetime) {
+unique_ptr<const Expression> UnixTimestamp(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundUnixTimestamp, "UNIXTIMESTAMP($0)");
+      std::move(datetime), &BoundUnixTimestamp, "UNIXTIMESTAMP($0)");
 }
 
-const Expression* FromUnixTime(const Expression* const timestamp) {
+unique_ptr<const Expression> FromUnixTime(unique_ptr<const Expression> timestamp) {
   return CreateExpressionForExistingBoundFactory(
-      timestamp, &BoundFromUnixTime, "FROMUNIXTIME($0)");
+      std::move(timestamp), &BoundFromUnixTime, "FROMUNIXTIME($0)");
 }
 
-const Expression* MakeDate(const Expression* const year,
-                           const Expression* const month,
-                           const Expression* const day) {
+unique_ptr<const Expression> MakeDate(unique_ptr<const Expression> year,
+                                      unique_ptr<const Expression> month,
+                                      unique_ptr<const Expression> day) {
   return CreateExpressionForExistingBoundFactory(
-      year, month, day, &BoundMakeDate, "MAKEDATE($0, $1, $2)");
+      std::move(year), std::move(month), std::move(day), &BoundMakeDate,
+      "MAKEDATE($0, $1, $2)");
 }
 
-const Expression* MakeDatetime(const Expression* const year,
-                               const Expression* const month,
-                               const Expression* const day,
-                               const Expression* const hour,
-                               const Expression* const minute,
-                               const Expression* const second) {
-  return new MakeDatetimeExpression(year, month, day, hour, minute, second);
+unique_ptr<const Expression> MakeDatetime(unique_ptr<const Expression> year,
+                               unique_ptr<const Expression> month,
+                               unique_ptr<const Expression> day,
+                               unique_ptr<const Expression> hour,
+                               unique_ptr<const Expression> minute,
+                               unique_ptr<const Expression> second) {
+  return make_unique<MakeDatetimeExpression>(
+      std::move(year),
+      std::move(month),
+      std::move(day),
+      std::move(hour),
+      std::move(minute),
+      std::move(second));
 }
 
-const Expression* Year(const Expression* const datetime) {
+unique_ptr<const Expression> Year(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundYear, "YEAR($0)");
+      std::move(datetime), &BoundYear, "YEAR($0)");
 }
 
-const Expression* Quarter(const Expression* const datetime) {
+unique_ptr<const Expression> Quarter(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundQuarter, "QUARTER($0)");
+      std::move(datetime), &BoundQuarter, "QUARTER($0)");
 }
 
-const Expression* Month(const Expression* const datetime) {
+unique_ptr<const Expression> Month(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundMonth, "MONTH($0)");
+      std::move(datetime), &BoundMonth, "MONTH($0)");
 }
 
-const Expression* Day(const Expression* const datetime) {
+unique_ptr<const Expression> Day(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundDay, "DAY($0)");
+      std::move(datetime), &BoundDay, "DAY($0)");
 }
 
-const Expression* AddMinutes(const Expression* const datetime,
-                             const Expression* const number_of_minutes) {
-  return new TypedBinaryExpression<OPERATOR_ADD_MINUTES, DATETIME,
-      INT64, DATETIME>(datetime, number_of_minutes);
+unique_ptr<const Expression> AddMinutes(unique_ptr<const Expression> datetime,
+                             unique_ptr<const Expression> number_of_minutes) {
+  return make_unique<TypedBinaryExpression<OPERATOR_ADD_MINUTES, DATETIME,
+      INT64, DATETIME>>(std::move(datetime), std::move(number_of_minutes));
 }
 
-const Expression* AddMinute(const Expression* const datetime) {
-  return AddMinutes(datetime, ConstInt64(1LL));
+unique_ptr<const Expression> AddMinute(unique_ptr<const Expression> datetime) {
+  return AddMinutes(std::move(datetime), ConstInt64(1LL));
 }
 
-const Expression* AddDays(const Expression* const datetime,
-                          const Expression* const number_of_days) {
-  return new TypedBinaryExpression<OPERATOR_ADD_DAYS, DATETIME,
-      INT64, DATETIME>(datetime, number_of_days);
+unique_ptr<const Expression> AddDays(unique_ptr<const Expression> datetime,
+                          unique_ptr<const Expression> number_of_days) {
+  return make_unique<TypedBinaryExpression<OPERATOR_ADD_DAYS, DATETIME,
+      INT64, DATETIME>>(std::move(datetime), std::move(number_of_days));
 }
 
-const Expression* AddDay(const Expression* const datetime) {
-  return AddDays(datetime, ConstInt64(1LL));
+unique_ptr<const Expression> AddDay(unique_ptr<const Expression> datetime) {
+  return AddDays(std::move(datetime), ConstInt64(1LL));
 }
 
-const Expression* AddMonths(const Expression* const datetime,
-                                  const Expression* const number_of_months) {
-  return new TypedBinaryExpression<OPERATOR_ADD_MONTHS, DATETIME,
-      INT64, DATETIME>(datetime, number_of_months);
+unique_ptr<const Expression> AddMonths(unique_ptr<const Expression> datetime,
+                                  unique_ptr<const Expression> number_of_months) {
+  return make_unique<TypedBinaryExpression<OPERATOR_ADD_MONTHS, DATETIME,
+      INT64, DATETIME>>(std::move(datetime), std::move(number_of_months));
 }
 
-const Expression* AddMonth(const Expression* const datetime) {
-  return AddMonths(datetime, ConstInt64(1LL));
+unique_ptr<const Expression> AddMonth(unique_ptr<const Expression> datetime) {
+  return AddMonths(std::move(datetime), ConstInt64(1LL));
 }
 
-const Expression* Weekday(const Expression* const datetime) {
+unique_ptr<const Expression> Weekday(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundWeekday, "WEEKDAY($0)");
+      std::move(datetime), &BoundWeekday, "WEEKDAY($0)");
 }
 
-const Expression* YearDay(const Expression* const datetime) {
+unique_ptr<const Expression> YearDay(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundYearDay, "YEARDAY($0)");
+      std::move(datetime), &BoundYearDay, "YEARDAY($0)");
 }
 
-const Expression* Hour(const Expression* const datetime) {
+unique_ptr<const Expression> Hour(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundHour, "HOUR($0)");
+      std::move(datetime), &BoundHour, "HOUR($0)");
 }
 
-const Expression* Minute(const Expression* const datetime) {
+unique_ptr<const Expression> Minute(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundMinute, "MINUTE($0)");
+      std::move(datetime), &BoundMinute, "MINUTE($0)");
 }
 
-const Expression* Second(const Expression* const datetime) {
+unique_ptr<const Expression> Second(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundSecond, "SECOND($0)");
+      std::move(datetime), &BoundSecond, "SECOND($0)");
 }
 
-const Expression* Microsecond(const Expression* const datetime) {
+unique_ptr<const Expression> Microsecond(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundMicrosecond, "MICROSECOND($0)");
+      std::move(datetime), &BoundMicrosecond, "MICROSECOND($0)");
 }
 
-const Expression* YearLocal(const Expression* const datetime) {
+unique_ptr<const Expression> YearLocal(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundYearLocal, "YEAR_LOCAL($0)");
+      std::move(datetime), &BoundYearLocal, "YEAR_LOCAL($0)");
 }
 
-const Expression* QuarterLocal(const Expression* const datetime) {
+unique_ptr<const Expression> QuarterLocal(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundQuarterLocal, "QUARTER_LOCAL($0)");
+      std::move(datetime), &BoundQuarterLocal, "QUARTER_LOCAL($0)");
 }
 
-const Expression* MonthLocal(const Expression* const datetime) {
+unique_ptr<const Expression> MonthLocal(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundMonthLocal, "MONTH_LOCAL($0)");
+      std::move(datetime), &BoundMonthLocal, "MONTH_LOCAL($0)");
 }
 
-const Expression* DayLocal(const Expression* const datetime) {
+unique_ptr<const Expression> DayLocal(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundDayLocal, "DAY_LOCAL($0)");
+      std::move(datetime), &BoundDayLocal, "DAY_LOCAL($0)");
 }
 
-const Expression* WeekdayLocal(const Expression* const datetime) {
+unique_ptr<const Expression> WeekdayLocal(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundWeekdayLocal, "WEEKDAY_LOCAL($0)");
+      std::move(datetime), &BoundWeekdayLocal, "WEEKDAY_LOCAL($0)");
 }
 
-const Expression* YearDayLocal(const Expression* const datetime) {
+unique_ptr<const Expression> YearDayLocal(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundYearDayLocal, "YEAR_DAY_LOCAL($0)");
+      std::move(datetime), &BoundYearDayLocal, "YEAR_DAY_LOCAL($0)");
 }
 
-const Expression* HourLocal(const Expression* const datetime) {
+unique_ptr<const Expression> HourLocal(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundHourLocal, "HOUR_LOCAL($0)");
+      std::move(datetime), &BoundHourLocal, "HOUR_LOCAL($0)");
 }
 
-const Expression* MinuteLocal(const Expression* const datetime) {
+unique_ptr<const Expression> MinuteLocal(unique_ptr<const Expression> datetime) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, &BoundMinuteLocal, "MINUTE_LOCAL($0)");
+      std::move(datetime), &BoundMinuteLocal, "MINUTE_LOCAL($0)");
 }
 
-const Expression* SecondLocal(const Expression* const datetime) {
-  return Second(datetime);
+unique_ptr<const Expression> SecondLocal(unique_ptr<const Expression> datetime) {
+  return Second(std::move(datetime));
 }
 
-const Expression* MicrosecondLocal(const Expression* const datetime) {
-  return Microsecond(datetime);
+unique_ptr<const Expression> MicrosecondLocal(unique_ptr<const Expression> datetime) {
+  return Microsecond(std::move(datetime));
 }
 
-const Expression* DateFormat(const Expression* const datetime,
-                             const Expression* const format) {
+unique_ptr<const Expression> DateFormat(unique_ptr<const Expression> datetime,
+                             unique_ptr<const Expression> format) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, format, &BoundDateFormat, "DATE_FORMAT($0, $1)");
+      std::move(datetime), std::move(format), &BoundDateFormat, "DATE_FORMAT($0, $1)");
 }
 
-const Expression* DateFormatLocal(const Expression* const datetime,
-                                  const Expression* const format) {
+unique_ptr<const Expression> DateFormatLocal(unique_ptr<const Expression> datetime,
+                                  unique_ptr<const Expression> format) {
   return CreateExpressionForExistingBoundFactory(
-      datetime, format, &BoundDateFormatLocal, "DATE_FORMAT_LOCAL($0, $1)");
+      std::move(datetime), std::move(format), &BoundDateFormatLocal, "DATE_FORMAT_LOCAL($0, $1)");
 }
 
 }  // namespace supersonic

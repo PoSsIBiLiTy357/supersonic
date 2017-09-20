@@ -16,12 +16,8 @@
 
 #include "supersonic/expression/core/regexp_bound_expressions.h"
 
-#include <memory>
-#include <string>
-namespace supersonic {using std::string; }
-using std::unique_ptr;
-
 #include <glog/logging.h>
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/exception/failureor.h"
@@ -54,15 +50,15 @@ class BoundRegexpExpression : public BoundUnaryExpression {
   // Takes over the ownership of the pattern.
   BoundRegexpExpression(const string& output_name,
                         BufferAllocator* const allocator,
-                        BoundExpression* arg,
-                        const RE2* pattern)
-      : BoundUnaryExpression(
-            CreateSchema(output_name, BOOL, arg,
+                        unique_ptr<BoundExpression> arg,
+                        unique_ptr<const RE2> pattern)
+      : BoundUnaryExpression{
+            CreateSchema(output_name, BOOL, arg.get(),
                          UnaryExpressionTraits<op>::can_return_null
                              ? NULLABLE
                              : NOT_NULLABLE),
-            allocator, arg, STRING),
-        pattern_(pattern) {}
+            allocator, STRING, std::move(arg)},
+        pattern_(std::move(pattern)) {}
 
  private:
   virtual EvaluationResult DoEvaluate(const View& input,
@@ -109,11 +105,11 @@ class BoundRegexpExtractExpression : public BoundUnaryExpression {
   // Takes over the ownership of the pattern.
   BoundRegexpExtractExpression(const string& output_name,
                                BufferAllocator* const allocator,
-                               BoundExpression* arg,
-                               const RE2* pattern)
-      : BoundUnaryExpression(CreateSchema(output_name, STRING, NULLABLE),
-                             allocator, arg, STRING),
-        pattern_(pattern) {}
+                               unique_ptr<BoundExpression> arg,
+                               unique_ptr<const RE2> pattern)
+      : BoundUnaryExpression{CreateSchema(output_name, STRING, NULLABLE),
+                             allocator, STRING, std::move(arg)},
+        pattern_(std::move(pattern)) {}
 
  private:
   virtual EvaluationResult DoEvaluate(const View& input,
@@ -157,12 +153,12 @@ class BoundRegexpReplaceExpression : public BoundBinaryExpression {
   // Takes over the ownership of the pattern.
   BoundRegexpReplaceExpression(const string& output_name,
                                BufferAllocator* const allocator,
-                               BoundExpression* left,
-                               BoundExpression* right,
-                               const RE2* pattern)
-      : BoundBinaryExpression(CreateSchema(output_name, STRING, left, right),
-                              allocator, left, STRING, right, STRING),
-        pattern_(pattern) {}
+                               unique_ptr<BoundExpression> left,
+                               unique_ptr<BoundExpression> right,
+                               unique_ptr<const RE2> pattern)
+      : BoundBinaryExpression{CreateSchema(output_name, STRING, left.get(), right.get()),
+                              allocator, std::move(left), STRING, std::move(right), STRING},
+        pattern_(std::move(pattern)) {}
 
  private:
   virtual EvaluationResult DoEvaluate(const View& input,
@@ -227,11 +223,10 @@ class BoundRegexpReplaceExpression : public BoundBinaryExpression {
 // ------------------------ Internal -------------------------------------------
 
 template<OperatorId operation_type>
-FailureOrOwned<BoundExpression> BoundGeneralRegexp(BoundExpression* child_ptr,
+FailureOrOwned<BoundExpression> BoundGeneralRegexp(unique_ptr<BoundExpression> child,
                                                    const StringPiece& pattern,
                                                    BufferAllocator* allocator,
                                                    rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> child(child_ptr);
   string name = UnaryExpressionTraits<operation_type>::FormatDescription(
       child->result_schema().attribute(0).name());
 
@@ -250,55 +245,53 @@ FailureOrOwned<BoundExpression> BoundGeneralRegexp(BoundExpression* child_ptr,
   }
   return InitBasicExpression(
       max_row_count,
-      new BoundRegexpExpression<operation_type>(name, allocator,
-                                                child.release(),
-                                                pattern_.release()),
+      make_unique<BoundRegexpExpression<operation_type>>(
+          name, allocator, std::move(child), std::move(pattern_)),
       allocator);
 }
 
 template FailureOrOwned<BoundExpression>
-BoundGeneralRegexp<OPERATOR_REGEXP_PARTIAL>(BoundExpression* child_ptr,
+BoundGeneralRegexp<OPERATOR_REGEXP_PARTIAL>(unique_ptr<BoundExpression> child_ptr,
                                             const StringPiece& pattern,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count);
 
 template FailureOrOwned<BoundExpression>
-BoundGeneralRegexp<OPERATOR_REGEXP_FULL>(BoundExpression* child_ptr,
+BoundGeneralRegexp<OPERATOR_REGEXP_FULL>(unique_ptr<BoundExpression> child_ptr,
                                          const StringPiece& pattern,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundRegexpPartialMatch(
-    BoundExpression* str,
+    unique_ptr<BoundExpression> str,
     const StringPiece& pattern,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  return BoundGeneralRegexp<OPERATOR_REGEXP_PARTIAL>(str, pattern, allocator,
-                                                     max_row_count);
+  return BoundGeneralRegexp<OPERATOR_REGEXP_PARTIAL>(std::move(str), pattern,
+                                                     allocator, max_row_count);
 }
 
 FailureOrOwned<BoundExpression> BoundRegexpFullMatch(
-    BoundExpression* str,
+    unique_ptr<BoundExpression> str,
     const StringPiece& pattern,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  return BoundGeneralRegexp<OPERATOR_REGEXP_FULL>(str, pattern, allocator,
+  return BoundGeneralRegexp<OPERATOR_REGEXP_FULL>(std::move(str), pattern, allocator,
                                                   max_row_count);
 }
 
 FailureOrOwned<BoundExpression> BoundRegexpExtract(
-    BoundExpression* child_ptr,
+    unique_ptr<BoundExpression> child,
     const StringPiece& pattern,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> child(child_ptr);
   string name =
       UnaryExpressionTraits<OPERATOR_REGEXP_EXTRACT>::FormatDescription(
           GetExpressionName(child.get()));
 
   FailureOrVoid input_check = CheckExpressionType(STRING, child.get());
   PROPAGATE_ON_FAILURE(input_check);
-  unique_ptr<const RE2> pattern_(new RE2(pattern.ToString()));
+  auto pattern_ = make_unique<RE2>(pattern.ToString());
   if (!pattern_->ok()) {
     string message = StrCat("Malformed regexp: ", pattern, ", parse error: ",
                             pattern_->error(), " in ", name);
@@ -306,28 +299,26 @@ FailureOrOwned<BoundExpression> BoundRegexpExtract(
   }
   return InitBasicExpression(
       max_row_count,
-      new BoundRegexpExtractExpression(name, allocator, child.release(),
-                                       pattern_.release()),
+      make_unique<BoundRegexpExtractExpression>(
+          name, allocator, std::move(child), std::move(pattern_)),
       allocator);
 }
 
 FailureOrOwned<BoundExpression> BoundRegexpReplace(
-    BoundExpression* haystack_ptr,
+    unique_ptr<BoundExpression> haystack,
     const StringPiece& pattern,
-    BoundExpression* substitute_ptr,
+    unique_ptr<BoundExpression> substitute,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  unique_ptr<BoundExpression> haystack(haystack_ptr);
-  unique_ptr<BoundExpression> substitute(substitute_ptr);
   string name =
       BinaryExpressionTraits<OPERATOR_REGEXP_REPLACE>::FormatDescription(
-          GetExpressionName(haystack_ptr), GetExpressionName(substitute_ptr));
+          GetExpressionName(haystack.get()), GetExpressionName(substitute.get()));
 
   FailureOrVoid haystack_check = CheckExpressionType(STRING, haystack.get());
   PROPAGATE_ON_FAILURE(haystack_check);
   FailureOrVoid sub_check = CheckExpressionType(STRING, substitute.get());
   PROPAGATE_ON_FAILURE(sub_check);
-  unique_ptr<const RE2> pattern_(new RE2(pattern.ToString()));
+  auto pattern_ = make_unique<RE2>(pattern.ToString());
   if (!pattern_->ok()) {
     string message = StrCat("Malformed regexp: ", pattern, ", parse error: ",
                             pattern_->error(), " in ", name);
@@ -335,9 +326,9 @@ FailureOrOwned<BoundExpression> BoundRegexpReplace(
   }
   return InitBasicExpression(
       max_row_count,
-      new BoundRegexpReplaceExpression(name, allocator, haystack.release(),
-                                       substitute.release(),
-                                       pattern_.release()),
+      make_unique<BoundRegexpReplaceExpression>(
+          name, allocator, std::move(haystack), std::move(substitute),
+          std::move(pattern_)),
       allocator);
 }
 

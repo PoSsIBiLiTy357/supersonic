@@ -67,8 +67,8 @@ FailureOr<rowcount_t> Writer::WriteAll(Sink* sink) {
   return Write(sink, std::numeric_limits<rowcount_t>::max());
 }
 
-FailureOrVoid WriteCursor(Cursor* cursor, Sink* sink) {
-  Writer writer(cursor);
+FailureOrVoid WriteCursor(unique_ptr<Cursor> cursor, Sink* sink) {
+  Writer writer(std::move(cursor));
   FailureOr<rowcount_t> result = writer.WriteAll(sink);
   PROPAGATE_ON_FAILURE(result);
   if (writer.is_waiting_on_barrier()) {

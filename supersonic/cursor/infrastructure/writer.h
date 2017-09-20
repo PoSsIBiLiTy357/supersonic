@@ -16,6 +16,7 @@
 #ifndef SUPERSONIC_CURSOR_INFRASTRUCTURE_WRITER_H_
 #define SUPERSONIC_CURSOR_INFRASTRUCTURE_WRITER_H_
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/types.h"
@@ -58,7 +59,7 @@ class Sink {
 class Writer {
  public:
   // Takes ownership of the cursor.
-  explicit Writer(Cursor* cursor) : iterator_(cursor) {}
+  explicit Writer(unique_ptr<Cursor> cursor) : iterator_(std::move(cursor)) {}
 
   // Attempts to write up-to max_row_count rows from the cursor into the
   // specified sink. If either the cursor iteration (i.e. a call to Next()) or
@@ -120,7 +121,7 @@ class Writer {
 
 // A convenience method to write the entire content of the cursor into the
 // specified sink, or fail trying. Takes ownership (and deletes) the cursor.
-FailureOrVoid WriteCursor(Cursor* cursor, Sink* sink);
+FailureOrVoid WriteCursor(unique_ptr<Cursor> cursor, Sink* sink);
 
 }  // namespace supersonic
 

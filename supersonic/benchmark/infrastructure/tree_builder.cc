@@ -18,8 +18,9 @@
 
 #include "supersonic/benchmark/infrastructure/tree_builder.h"
 
-#include <memory>
 
+#include "supersonic/utils/std_namespace.h"
+#include "supersonic/utils/pointer_vector.h"
 #include "supersonic/benchmark/base/benchmark_types.h"
 #include "supersonic/benchmark/infrastructure/benchmark_listener.h"
 #include "supersonic/benchmark/infrastructure/benchmark_transformer.h"
@@ -27,7 +28,6 @@
 #include "supersonic/benchmark/infrastructure/node.h"
 #include "supersonic/cursor/base/cursor.h"
 
-#include "supersonic/utils/pointer_vector.h"
 
 namespace supersonic {
 
@@ -155,20 +155,20 @@ BenchmarkTreeNode* BenchmarkTreeBuilder::ConstructNodeForCursor(
   return new BenchmarkTreeNode(stats.release());
 }
 
-BenchmarkResult* BenchmarkTreeBuilder::CreateTree(Cursor* cursor) {
+unique_ptr<BenchmarkResult> BenchmarkTreeBuilder::CreateTree(unique_ptr<Cursor> cursor) {
   CHECK(!tree_created_) << "BenchmarkTreeBuilder can only be used to build"
       " a tree for one cursor.";
 
   // Create a transformer which will be used to position spies in
   // the cursor tree.
-  std::unique_ptr<Transformer> transformer(BenchmarkSpyTransformer());
-  std::unique_ptr<Cursor> wrapped_cursor(transformer->Transform(cursor));
+  auto transformer = BenchmarkSpyTransformer();
+  auto wrapped_cursor = transformer->Transform(std::move(cursor));
 
   CHECK_EQ(1, transformer->GetHistoryLength())
       << "There should only be one root node in history.";
 
-  std::unique_ptr<PointerVector<Entry>> history(transformer->ReleaseHistory());
-  std::unique_ptr<Entry> root_entry(history->front().release());
+  auto history = transformer->ReleaseHistory();
+  std::unique_ptr<Entry> root_entry(history.front().release());
 
   std::unique_ptr<BenchmarkTreeNode> result_node(
       CreateTreeNode(root_entry.get(), transformer.get(),
@@ -181,7 +181,7 @@ BenchmarkResult* BenchmarkTreeBuilder::CreateTree(Cursor* cursor) {
   // Set a flag to note that the object has already been used.
   tree_created_ = true;
 
-  return new BenchmarkResult(result_node.release(), wrapped_cursor.release());
+  return make_unique<BenchmarkResult>(std::move(result_node), std::move(wrapped_cursor));
 }
 
 typedef vector<Entry*>::iterator entry_iterator;
@@ -221,13 +221,12 @@ typedef PointerVector<Entry>::iterator entry_ptr_iterator;
 
 void BenchmarkTreeBuilder::RecoverHistory(Transformer* transformer,
                                           vector<Entry*>* output_history) {
-  std::unique_ptr<PointerVector<Entry>> history(transformer->ReleaseHistory());
+  auto history = transformer->ReleaseHistory();
 
   // Transfer ownership of all Entry objects to the BenchmarkTreeBuilder class
   // and populate the output_history vector.
-  for (entry_ptr_iterator ptr_to_entry = history->begin();
-       ptr_to_entry != history->end(); ++ptr_to_entry) {
-    entries_.emplace_back(ptr_to_entry->release());
+  for (auto&& it: history) {
+    entries_.emplace_back(std::move(it));
     output_history->push_back(entries_.back().get());
   }
 }

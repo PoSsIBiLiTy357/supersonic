@@ -19,11 +19,8 @@
 #define SUPERSONIC_EXPRESSION_BASE_EXPRESSION_H_
 
 #include <set>
+
 #include "supersonic/utils/std_namespace.h"
-#include <string>
-namespace supersonic {using std::string; }
-#include <vector>
-using std::vector;
 
 #include "supersonic/utils/macros.h"
 #include "supersonic/base/exception/result.h"
@@ -96,9 +93,9 @@ class BoundExpressionTree {
  public:
   // Note - a BoundExpressionTree is _not_ ready to use immediately after
   // creation! It will not be ready to use until Init is ran on it.
-  explicit BoundExpressionTree(BoundExpression* root,
+  explicit BoundExpressionTree(unique_ptr<BoundExpression> root,
                                BufferAllocator* allocator)
-      : root_(root),
+      : root_(std::move(root)),
         skip_vector_storage_(root_->result_schema().attribute_count(),
                              allocator) {}
 
@@ -138,7 +135,7 @@ class BoundExpressionTree {
 // Creates and initializes a BoundExpressionTree that wraps the given
 // BoundExpression. Takes ownership of the expression.
 FailureOrOwned<BoundExpressionTree>
-    CreateBoundExpressionTree(BoundExpression* expression,
+    CreateBoundExpressionTree(unique_ptr<BoundExpression> expression,
                               BufferAllocator* allocator,
                               rowcount_t max_row_count);
 
@@ -179,16 +176,36 @@ class Expression {
 // Support for expressions that take variable lists of parameters (e.g. Concat).
 
 // A list of bound expressions.
-class BoundExpressionList {
+class BoundExpressionList final : private vector<unique_ptr<BoundExpression>> {
+  using Inner = unique_ptr<BoundExpression>;
+
  public:
+  using vector<Inner>::size;
+  using vector<Inner>::operator[];
+  using vector<Inner>::begin;
+  using vector<Inner>::end;
+
   BoundExpressionList() {}
-  BoundExpressionList* add(BoundExpression* expression) {
-    expressions_.push_back(make_linked_ptr(expression));
+
+  template<typename... Args>
+  BoundExpressionList(Args&&... args) {
+    add(std::forward<Args>(args)...);
+  }
+
+  BoundExpressionList* add(Inner expression) {
+    emplace_back(std::move(expression));
     return this;
   }
-  int size() const { return expressions_.size(); }
-  BoundExpression* get(int pos) const { return expressions_[pos].get(); }
-  BoundExpression* release(int pos) { return expressions_[pos].release(); }
+
+  template<typename... Args>
+  BoundExpressionList* add(Inner expression, Args&&... args) {
+    emplace_back(std::move(expression));
+    add(std::forward<Args>(args)...);
+    return this;
+  }
+
+  BoundExpression* get(int pos) const { return this->operator[](pos).get(); }
+  unique_ptr<BoundExpression> move(int pos) { return std::move(this->operator[](pos)); }
 
   // Formats as: expr1, expr2, ... .
   const string ToString(bool verbose) const;
@@ -199,7 +216,7 @@ class BoundExpressionList {
       const;
 
  private:
-  vector<linked_ptr<BoundExpression> > expressions_;
+
   DISALLOW_COPY_AND_ASSIGN(BoundExpressionList);
 };
 
@@ -207,10 +224,23 @@ class BoundExpressionList {
 class ExpressionList {
  public:
   ExpressionList() {}
-  ExpressionList* add(const Expression* e) {
-    expressions_.push_back(linked_ptr<const Expression>(e));
+
+  template<typename... Args>
+  ExpressionList(Args&&... args)
+  { add(std::forward<Args>(args)...); }
+
+  template<typename... Args>
+  ExpressionList* add(unique_ptr<const Expression> e, Args&&... args) {
+    add(std::move(e));
+    add(std::forward<Args>(args)...);
     return this;
   }
+
+  ExpressionList* add(unique_ptr<const Expression> e) {
+    expressions_.emplace_back(std::move(e));
+    return this;
+  }
+
   int size() const { return expressions_.size(); }
 
   FailureOrOwned<BoundExpressionList> DoBind(const TupleSchema& input_schema,
@@ -218,8 +248,9 @@ class ExpressionList {
                                              rowcount_t max_row_count) const;
   // Formats as: expr1, expr2, ... .
   const string ToString(bool verbose) const;
+
  private:
-  vector<linked_ptr<const Expression> > expressions_;
+  vector<unique_ptr<const Expression>> expressions_;
   DISALLOW_COPY_AND_ASSIGN(ExpressionList);
 };
 

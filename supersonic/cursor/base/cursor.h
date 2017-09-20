@@ -100,7 +100,7 @@ class ResultView {
 
   // Obtains and releases the exception, if any. Ownership is passed to the
   // caller.
-  Exception* release_exception() { return result_.release_exception(); }
+  unique_ptr<Exception> move_exception() { return result_.move_exception(); }
 
  protected:
   ResultView(const View* view, ReturnCode status)

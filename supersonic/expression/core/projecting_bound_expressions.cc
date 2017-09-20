@@ -15,20 +15,8 @@
 
 #include "supersonic/expression/core/projecting_bound_expressions.h"
 
-#include <cstdint>
-
-#include <algorithm>
-#include <memory>
-#include <set>
-#include <string>
-#include <vector>
-#include "supersonic/utils/std_namespace.h"
-namespace supersonic {using std::string; }
-using std::make_unique;
-using std::unique_ptr;
-using std::vector;
-
 #include <glog/logging.h>
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/exception/failureor.h"
@@ -54,9 +42,9 @@ namespace {
 class BoundInputProjectionExpression : public BoundExpression {
  public:
   explicit BoundInputProjectionExpression(
-      const BoundSingleSourceProjector* projector)
+      unique_ptr<const BoundSingleSourceProjector> projector)
       : BoundExpression(projector->result_schema()),
-        projector_(projector) {}
+        projector_(std::move(projector)) {}
 
   virtual ~BoundInputProjectionExpression() {}
 
@@ -101,11 +89,11 @@ class BoundInputProjectionExpression : public BoundExpression {
 // Projection on sub-expressions.
 class BoundProjectionExpression : public BoundExpression {
  public:
-  explicit BoundProjectionExpression(const BoundMultiSourceProjector* projector,
-                                     BoundExpressionList* arguments)
+  explicit BoundProjectionExpression(unique_ptr<const BoundMultiSourceProjector> projector,
+                                     unique_ptr<BoundExpressionList> arguments)
       : BoundExpression(projector->result_schema()),
-        projector_(projector),
-        arguments_(arguments),
+        projector_(std::move(projector)),
+        arguments_(std::move(arguments)),
         // TODO(onufry): pass the allocator here and remove the reference to the
         // HeapBufferAllocator.
         // For each input we need to pass a set of skip vectors. For each
@@ -118,13 +106,13 @@ class BoundProjectionExpression : public BoundExpression {
         // prefilled with true values (meaning skip all), which will be passed
         // along to any columns that do not get projected onto the output.
         local_skip_vector_storage_(MaxNumberOfMultiProjectedColumns(
-            arguments, projector) + 1, HeapBufferAllocator::Get()) {
-          local_skip_vector_list_.resize(arguments->size());
-          for (int i = 0; i < arguments->size(); ++i) {
+            arguments_.get(), projector_.get()) + 1, HeapBufferAllocator::Get()) {
+          local_skip_vector_list_.resize(arguments_->size());
+          for (int i = 0; i < arguments_->size(); ++i) {
             // For each input expression we allocate a BoolView that will hold
             // its skip vectors.
             local_skip_vector_list_[i] = make_unique<BoolView>(
-                arguments->get(i)->result_schema().attribute_count());
+                (*arguments_)[i]->result_schema().attribute_count());
           }
         }
 
@@ -302,25 +290,25 @@ FailureOrOwned<BoundExpression> BoundInputAttributeProjection(
   FailureOrOwned<const BoundSingleSourceProjector> result =
       projector.Bind(schema);
   PROPAGATE_ON_FAILURE(result);
-  return Success(new BoundInputProjectionExpression(result.release()));
+  return Success(make_unique<BoundInputProjectionExpression>(result.move()));
 }
 
 // ---------------------------- Expression projections -------------------------
 
 FailureOrOwned<BoundExpression> BoundProjection(
-    const BoundMultiSourceProjector* projector,
-    BoundExpressionList* arguments) {
-  return Success(new BoundProjectionExpression(projector, arguments));
+    unique_ptr<const BoundMultiSourceProjector> projector,
+    unique_ptr<BoundExpressionList> arguments) {
+  return Success(make_unique<BoundProjectionExpression>(
+      std::move(projector), std::move(arguments)));
 }
 
 FailureOrOwned<BoundExpression> BoundRenameCompoundExpression(
     const vector<string>& names,
-    BoundExpressionList* expressions) {
-  unique_ptr<BoundExpressionList> expressions_ptr(expressions);
+    unique_ptr<BoundExpressionList> expressions) {
 
   vector<const TupleSchema*> schemas;
-  for (int i = 0; i < expressions_ptr->size(); ++i) {
-    schemas.push_back(&expressions_ptr->get(i)->result_schema());
+  for (int i = 0; i < expressions->size(); ++i) {
+    schemas.push_back(&expressions->get(i)->result_schema());
   }
   unique_ptr<BoundMultiSourceProjector> projector(
       new BoundMultiSourceProjector(schemas));
@@ -330,16 +318,15 @@ FailureOrOwned<BoundExpression> BoundRenameCompoundExpression(
       projector->AddAs(i, j, names[name_pos++]);
     }
   }
-  return BoundProjection(projector.release(), expressions_ptr.release());
+  return BoundProjection(std::move(projector), std::move(expressions));
 }
 
 FailureOrOwned<BoundExpression> BoundCompoundExpression(
-    BoundExpressionList* expressions) {
-  unique_ptr<BoundExpressionList> expressions_ptr(expressions);
+    unique_ptr<BoundExpressionList> expressions) {
 
   vector<const TupleSchema*> schemas;
-  for (int i = 0; i < expressions_ptr->size(); ++i) {
-    schemas.push_back(&expressions_ptr->get(i)->result_schema());
+  for (int i = 0; i < expressions->size(); ++i) {
+    schemas.push_back(&expressions->get(i)->result_schema());
   }
   unique_ptr<BoundMultiSourceProjector> projector(
       new BoundMultiSourceProjector(schemas));
@@ -348,18 +335,21 @@ FailureOrOwned<BoundExpression> BoundCompoundExpression(
       projector->Add(i, j);
     }
   }
-  return BoundProjection(projector.release(), expressions_ptr.release());
+  return BoundProjection(std::move(projector), std::move(expressions));
 }
 
 FailureOrOwned<BoundExpression> BoundAlias(const string& new_name,
-                                           BoundExpression* argument,
+                                           unique_ptr<BoundExpression> argument,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count) {
   PROPAGATE_ON_FAILURE(CheckAttributeCount("ALIAS", argument->result_schema(),
                                            /* expected argument count = */ 1));
-  return BoundRenameCompoundExpression(
-      vector<string>(1, new_name),
-      (new BoundExpressionList())->add(argument));
+
+  auto exp_list = make_unique<BoundExpressionList>();
+  exp_list->add(std::move(argument));
+
+  return BoundRenameCompoundExpression(vector<string>(1, new_name),
+                                       std::move(exp_list));
 }
 
 

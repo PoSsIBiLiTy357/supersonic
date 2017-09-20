@@ -13,280 +13,289 @@
 // limitations under the License.
 //
 
-#include "supersonic/expression/core/math_expressions.h"
 
 #include <cmath>
 
 #include "supersonic/expression/core/math_bound_expressions.h"
-#include "supersonic/expression/core/math_evaluators.h"  // IWYU pragma: keep
+#include "supersonic/expression/core/math_evaluators.h" // IWYU pragma: keep
 #include "supersonic/expression/infrastructure/basic_expressions.h"
 #include "supersonic/expression/infrastructure/terminal_expressions.h"
+#include "supersonic/expression/core/math_expressions.h"
 
 namespace supersonic {
 
 // Exponent and logarithm.
 class Expression;
 
-const Expression* Exp(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundExp, "EXP($0)");
+unique_ptr<const Expression> Exp(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument), &BoundExp,
+                                                 "EXP($0)");
 }
 
-const Expression* LnNulling(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundLnNulling, "LN($0)");
+unique_ptr<const Expression> LnNulling(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundLnNulling, "LN($0)");
 }
 
-const Expression* LnQuiet(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundLnQuiet, "LN($0)");
+unique_ptr<const Expression> LnQuiet(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundLnQuiet, "LN($0)");
 }
 
-const Expression* Log10Nulling(const Expression* const argument) {
+unique_ptr<const Expression>
+Log10Nulling(unique_ptr<const Expression> argument) {
   return CreateExpressionForExistingBoundFactory(
-      argument, &BoundLog10Nulling, "LOG10($0)");
+      std::move(argument), &BoundLog10Nulling, "LOG10($0)");
 }
 
-const Expression* Log10Quiet(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundLog10Quiet, "LOG10($0)");
+unique_ptr<const Expression> Log10Quiet(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundLog10Quiet, "LOG10($0)");
 }
 
-const Expression* Log2Nulling(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundLog2Nulling, "LOG2($0)");
+unique_ptr<const Expression>
+Log2Nulling(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundLog2Nulling, "LOG2($0)");
 }
 
-const Expression* Log2Quiet(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundLog2Quiet, "LOG2($0)");
+unique_ptr<const Expression> Log2Quiet(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundLog2Quiet, "LOG2($0)");
 }
 
-const Expression* LogNulling(const Expression* base,
-                             const Expression* argument) {
+unique_ptr<const Expression> LogNulling(unique_ptr<const Expression> base,
+                                        unique_ptr<const Expression> argument) {
   return CreateExpressionForExistingBoundFactory(
-      base, argument, &BoundLogNulling, "LOG($0, $1)");
+      std::move(base), std::move(argument), &BoundLogNulling, "LOG($0, $1)");
 }
 
-const Expression* LogQuiet(const Expression* base,
-                           const Expression* argument) {
+unique_ptr<const Expression> LogQuiet(unique_ptr<const Expression> base,
+                                      unique_ptr<const Expression> argument) {
   return CreateExpressionForExistingBoundFactory(
-      base, argument, &BoundLogQuiet, "LOG($0, $1)");
+      std::move(base), std::move(argument), &BoundLogQuiet, "LOG($0, $1)");
 }
 
 // Absolute value.
-const Expression* Abs(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundAbs, "ABS($0)");
+unique_ptr<const Expression> Abs(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument), &BoundAbs,
+                                                 "ABS($0)");
 }
 
 // Various rounding functions.
-const Expression* Floor(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundFloor, "FLOOR($0)");
+unique_ptr<const Expression> Floor(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundFloor, "FLOOR($0)");
 }
 
-const Expression* Ceil(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundCeil, "CEIL($0)");
+unique_ptr<const Expression> Ceil(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundCeil, "CEIL($0)");
 }
 
-const Expression* CeilToInt(const Expression* const argument) {
+unique_ptr<const Expression> CeilToInt(unique_ptr<const Expression> argument) {
   return CreateExpressionForExistingBoundFactory(
-      argument, &BoundCeilToInt, "CEIL_TO_INT($0)");
+      std::move(argument), &BoundCeilToInt, "CEIL_TO_INT($0)");
 }
 
-const Expression* FloorToInt(const Expression* const argument) {
+unique_ptr<const Expression> FloorToInt(unique_ptr<const Expression> argument) {
   return CreateExpressionForExistingBoundFactory(
-      argument, &BoundFloorToInt, "FLOOR_TO_INT($0)");
+      std::move(argument), &BoundFloorToInt, "FLOOR_TO_INT($0)");
 }
 
-const Expression* Trunc(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundTrunc, "TRUNC($0)");
+unique_ptr<const Expression> Trunc(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundTrunc, "TRUNC($0)");
 }
 
-const Expression* Round(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundRound, "ROUND($0)");
+unique_ptr<const Expression> Round(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundRound, "ROUND($0)");
 }
 
-const Expression* RoundToInt(const Expression* const argument) {
+unique_ptr<const Expression> RoundToInt(unique_ptr<const Expression> argument) {
   return CreateExpressionForExistingBoundFactory(
-      argument, &BoundRoundToInt, "ROUND_TO_INT($0)");
+      std::move(argument), &BoundRoundToInt, "ROUND_TO_INT($0)");
 }
 
-const Expression* RoundWithPrecision(const Expression* const argument,
-                                     const Expression* const precision) {
+unique_ptr<const Expression>
+RoundWithPrecision(unique_ptr<const Expression> argument,
+                   unique_ptr<const Expression> precision) {
   return CreateExpressionForExistingBoundFactory(
-      argument, precision, &BoundRoundWithPrecision,
+      std::move(argument), std::move(precision), &BoundRoundWithPrecision,
       "ROUND_WITH_PRECISION($0, $1)");
 }
 
 // Square root.
-const Expression* SqrtSignaling(const Expression* const argument) {
+unique_ptr<const Expression>
+SqrtSignaling(unique_ptr<const Expression> argument) {
   return CreateExpressionForExistingBoundFactory(
-      argument, &BoundSqrtSignaling, "SQRT($0)");
+      std::move(argument), &BoundSqrtSignaling, "SQRT($0)");
 }
 
-const Expression* SqrtNulling(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundSqrtNulling, "SQRT($0)");
+unique_ptr<const Expression>
+SqrtNulling(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundSqrtNulling, "SQRT($0)");
 }
 
-const Expression* SqrtQuiet(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundSqrtQuiet, "SQRT($0)");
+unique_ptr<const Expression> SqrtQuiet(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundSqrtQuiet, "SQRT($0)");
 }
 
 // Power.
-const Expression* PowerSignaling(const Expression* const base,
-                                 const Expression* const exponent) {
+unique_ptr<const Expression>
+PowerSignaling(unique_ptr<const Expression> base,
+               unique_ptr<const Expression> exponent) {
   return CreateExpressionForExistingBoundFactory(
-      base, exponent, &BoundPowerSignaling, "POW($0, $1)");
+      std::move(base), std::move(exponent), &BoundPowerSignaling,
+      "POW($0, $1)");
 }
 
-const Expression* PowerNulling(const Expression* const base,
-                               const Expression* const exponent) {
+unique_ptr<const Expression>
+PowerNulling(unique_ptr<const Expression> base,
+             unique_ptr<const Expression> exponent) {
   return CreateExpressionForExistingBoundFactory(
-      base, exponent, &BoundPowerNulling, "POW($0, $1)");
+      std::move(base), std::move(exponent), &BoundPowerNulling, "POW($0, $1)");
 }
 
-const Expression* PowerQuiet(const Expression* const base,
-                             const Expression* const exponent) {
+unique_ptr<const Expression>
+PowerQuiet(unique_ptr<const Expression> base,
+           unique_ptr<const Expression> exponent) {
   return CreateExpressionForExistingBoundFactory(
-      base, exponent, &BoundPowerQuiet, "POW($0, $1)");
+      std::move(base), std::move(exponent), &BoundPowerQuiet, "POW($0, $1)");
 }
 
 // Trigonometry.
-const Expression* Sin(const Expression* const radians) {
-  return CreateExpressionForExistingBoundFactory(
-      radians, &BoundSin, "SIN($0)");
+unique_ptr<const Expression> Sin(unique_ptr<const Expression> radians) {
+  return CreateExpressionForExistingBoundFactory(std::move(radians), &BoundSin,
+                                                 "SIN($0)");
 }
 
-const Expression* Cos(const Expression* const radians) {
-  return CreateExpressionForExistingBoundFactory(
-      radians, &BoundCos, "COS($0)");
+unique_ptr<const Expression> Cos(unique_ptr<const Expression> radians) {
+  return CreateExpressionForExistingBoundFactory(std::move(radians), &BoundCos,
+                                                 "COS($0)");
 }
 
-const Expression* Tan(const Expression* const radians) {
-  return CreateExpressionForExistingBoundFactory(
-      radians, &BoundTanQuiet, "TAN($0)");
+unique_ptr<const Expression> Tan(unique_ptr<const Expression> radians) {
+  return CreateExpressionForExistingBoundFactory(std::move(radians),
+                                                 &BoundTanQuiet, "TAN($0)");
 }
 
-const Expression* Cot(const Expression* const radians) {
-  return CreateExpressionForExistingBoundFactory(
-      radians, &BoundCot, "COT($0)");
+unique_ptr<const Expression> Cot(unique_ptr<const Expression> radians) {
+  return CreateExpressionForExistingBoundFactory(std::move(radians), &BoundCot,
+                                                 "COT($0)");
 }
 
-const Expression* Asin(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundAsin, "ASIN($0)");
+unique_ptr<const Expression> Asin(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundAsin, "ASIN($0)");
 }
 
-const Expression* Acos(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundAcos, "ACOS($0)");
+unique_ptr<const Expression> Acos(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundAcos, "ACOS($0)");
 }
 
-const Expression* Atan(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundAtan, "ATAN($0)");
+unique_ptr<const Expression> Atan(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundAtan, "ATAN($0)");
 }
 
-const Expression* Atan2(const Expression* const x,
-                        const Expression* const y) {
-  return CreateExpressionForExistingBoundFactory(
-      x, y, &BoundAtan2, "ATAN2($0, $1)");
+unique_ptr<const Expression> Atan2(unique_ptr<const Expression> x,
+                                   unique_ptr<const Expression> y) {
+  return CreateExpressionForExistingBoundFactory(std::move(x), std::move(y),
+                                                 &BoundAtan2, "ATAN2($0, $1)");
 }
 
-const Expression* Sinh(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundSinh, "SINH($0)");
+unique_ptr<const Expression> Sinh(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundSinh, "SINH($0)");
 }
 
-const Expression* Cosh(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundCosh, "COSH($0)");
+unique_ptr<const Expression> Cosh(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundCosh, "COSH($0)");
 }
 
-const Expression* Tanh(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundTanh, "TANH($0)");
+unique_ptr<const Expression> Tanh(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundTanh, "TANH($0)");
 }
 
-const Expression* Asinh(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundAsinh, "ASINH($0)");
+unique_ptr<const Expression> Asinh(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundAsinh, "ASINH($0)");
 }
 
-const Expression* Acosh(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundAcosh, "ACOSH($0)");
+unique_ptr<const Expression> Acosh(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundAcosh, "ACOSH($0)");
 }
 
-const Expression* Atanh(const Expression* const argument) {
-  return CreateExpressionForExistingBoundFactory(
-      argument, &BoundAtanh, "ATANH($0)");
+unique_ptr<const Expression> Atanh(unique_ptr<const Expression> argument) {
+  return CreateExpressionForExistingBoundFactory(std::move(argument),
+                                                 &BoundAtanh, "ATANH($0)");
 }
 
-const Expression* ToDegrees(const Expression* const radians) {
+unique_ptr<const Expression> ToDegrees(unique_ptr<const Expression> radians) {
   return CreateExpressionForExistingBoundFactory(
-      radians, &BoundToDegrees, "DEGREES($0)");
+      std::move(radians), &BoundToDegrees, "DEGREES($0)");
 }
 
-const Expression* ToRadians(const Expression* const degrees) {
+unique_ptr<const Expression> ToRadians(unique_ptr<const Expression> degrees) {
   return CreateExpressionForExistingBoundFactory(
-      degrees, &BoundToRadians, "RADIANS($0)");
+      std::move(degrees), &BoundToRadians, "RADIANS($0)");
 }
 
-const Expression* Pi() {
-  return ConstDouble(M_PI);
-}
+unique_ptr<const Expression> Pi() { return ConstDouble(M_PI); }
 
 // IEEE checks.
-const Expression* IsFinite(const Expression* number) {
+unique_ptr<const Expression> IsFinite(unique_ptr<const Expression> number) {
   return CreateExpressionForExistingBoundFactory(
-      number, &BoundIsFinite, "IS_FINITE($0)");
+      std::move(number), &BoundIsFinite, "IS_FINITE($0)");
 }
 
-const Expression* IsInf(const Expression* number) {
-  return CreateExpressionForExistingBoundFactory(
-      number, &BoundIsInf, "IS_INF($0)");
+unique_ptr<const Expression> IsInf(unique_ptr<const Expression> number) {
+  return CreateExpressionForExistingBoundFactory(std::move(number), &BoundIsInf,
+                                                 "IS_INF($0)");
 }
 
-const Expression* IsNaN(const Expression* number) {
-  return CreateExpressionForExistingBoundFactory(
-      number, &BoundIsNaN, "IS_NAN($0)");
+unique_ptr<const Expression> IsNaN(unique_ptr<const Expression> number) {
+  return CreateExpressionForExistingBoundFactory(std::move(number), &BoundIsNaN,
+                                                 "IS_NAN($0)");
 }
 
-const Expression* IsNormal(const Expression* number) {
+unique_ptr<const Expression> IsNormal(unique_ptr<const Expression> number) {
   return CreateExpressionForExistingBoundFactory(
-      number, &BoundIsNormal, "IS_NORMAL($0)");
+      std::move(number), &BoundIsNormal, "IS_NORMAL($0)");
 }
 
 // Other.
-const Expression* Format(const Expression* number,
-                         const Expression* precision) {
+unique_ptr<const Expression> Format(unique_ptr<const Expression> number,
+                                    unique_ptr<const Expression> precision) {
   return CreateExpressionForExistingBoundFactory(
-      number, precision, &BoundFormatSignaling, "FORMAT($0, $1)");
+      std::move(number), std::move(precision), &BoundFormatSignaling,
+      "FORMAT($0, $1)");
 }
 
 // Deprecated.
-const Expression* Sqrt(const Expression* const e) {
-  return SqrtQuiet(e);
+unique_ptr<const Expression> Sqrt(unique_ptr<const Expression> e) {
+  return SqrtQuiet(std::move(e));
 }
 
-const Expression* Ln(const Expression* const e) {
-  return LnNulling(e);
+unique_ptr<const Expression> Ln(unique_ptr<const Expression> e) {
+  return LnNulling(std::move(e));
 }
 
-const Expression* Log10(const Expression* const e) {
-  return Log10Nulling(e);
+unique_ptr<const Expression> Log10(unique_ptr<const Expression> e) {
+  return Log10Nulling(std::move(e));
 }
 
-const Expression* Log(const Expression* base, const Expression* argument) {
-  return LogNulling(base, argument);
+unique_ptr<const Expression> Log(unique_ptr<const Expression> base,
+                                 unique_ptr<const Expression> argument) {
+  return LogNulling(std::move(base), std::move(argument));
 }
 
-}  // namespace supersonic
+} // namespace supersonic

@@ -67,14 +67,10 @@ class FilterCursor : public BasicCursor {
   // Takes ownership of the predicate and child_cursor, doens't take
   // ownership of buffer_allocator.
   static FailureOrOwned<Cursor> Create(
-      BoundExpressionTree* predicate,
-      const BoundSingleSourceProjector* projector,
-      Cursor* child_cursor,
+      unique_ptr<BoundExpressionTree> predicate,
+      unique_ptr<const BoundSingleSourceProjector> projector,
+      unique_ptr<Cursor> child_cursor,
       BufferAllocator* buffer_allocator) {
-    std::unique_ptr<BoundExpressionTree> predicate_holder(predicate);
-    std::unique_ptr<const BoundSingleSourceProjector> projector_holder(
-        projector);
-    std::unique_ptr<Cursor> child_holder(child_cursor);
     const TupleSchema& predicate_schema = predicate->result_schema();
     if (predicate_schema.attribute_count() != 1 ||
         predicate_schema.attribute(0).type() != BOOL) {
@@ -84,13 +80,33 @@ class FilterCursor : public BasicCursor {
               ERROR_ATTRIBUTE_TYPE_MISMATCH,
           "Predicate has to return exactly one column of type BOOL"));
     }
-    std::unique_ptr<FilterCursor> cursor(
-        new FilterCursor(buffer_allocator, predicate_holder.release(),
-                         projector_holder.release(), child_holder.release()));
-    PROPAGATE_ON_FAILURE(cursor->Init(std::min(Cursor::kDefaultRowCount,
-                                               predicate->row_capacity())));
-    return Success(cursor.release());
+
+    auto capacity = predicate->row_capacity();
+    auto cursor = std::make_unique<FilterCursor>(
+        buffer_allocator, std::move(predicate),
+        std::move(projector), std::move(child_cursor));
+    PROPAGATE_ON_FAILURE(cursor->Init(std::min(Cursor::kDefaultRowCount, capacity)));
+    return Success(std::move(cursor));
   }
+
+  FilterCursor(BufferAllocator *allocator, unique_ptr<BoundExpressionTree> predicate,
+               unique_ptr<const BoundSingleSourceProjector> projector,
+               unique_ptr<Cursor> child_cursor)
+      : BasicCursor(projector->result_schema(), std::move(child_cursor)),
+        predicate_(std::move(predicate)),
+        projector_(std::move(projector)),
+        predicate_capacity_(predicate_->row_capacity()),
+        deep_copier_(projector_.get(), true),
+        shallow_copier_(projector_.get(), false),
+        input_row_ids_(
+            TupleSchema::Singleton("row ids", kRowidDatatype, NOT_NULLABLE),
+            allocator),
+        input_row_ids_count_(0),
+        eos_(false),
+        result_block_(projector_->result_schema(), allocator),
+        current_view_(NULL),
+        read_pointer_(0),
+        write_pointer_(0) {}
 
   virtual ResultView Next(rowcount_t max_row_count) {
     rowcount_t effective_max_row_count =
@@ -131,26 +147,6 @@ class FilterCursor : public BasicCursor {
   virtual CursorId GetCursorId() const { return FILTER; }
 
  private:
-  FilterCursor(BufferAllocator* allocator,
-               BoundExpressionTree* predicate,
-               const BoundSingleSourceProjector* projector,
-               Cursor* child_cursor)
-      : BasicCursor(projector->result_schema(), child_cursor),
-        predicate_(predicate),
-        predicate_capacity_(predicate->row_capacity()),
-        deep_copier_(projector, true),
-        shallow_copier_(projector, false),
-        input_row_ids_(
-            TupleSchema::Singleton("row ids", kRowidDatatype, NOT_NULLABLE),
-            allocator),
-        input_row_ids_count_(0),
-        eos_(false),
-        result_block_(projector->result_schema(), allocator),
-        current_view_(NULL),
-        read_pointer_(0),
-        write_pointer_(0),
-        projector_(projector) {}
-
   // Allocates memory for internal buffers.
   FailureOrVoid Init(rowcount_t capacity) {
     if (!result_block_.Reallocate(capacity)) {
@@ -244,7 +240,9 @@ class FilterCursor : public BasicCursor {
   }
 
   // Predicate to evaluate on the data.
-  std::unique_ptr<BoundExpressionTree> predicate_;
+  unique_ptr<BoundExpressionTree> predicate_;
+  // Not used, only to keep it around (and destroy properly).
+  unique_ptr<const BoundSingleSourceProjector> projector_;
   // Cached capacity of the predicate, to avoid recalculation at each call to
   // Next().
   rowcount_t predicate_capacity_;
@@ -267,19 +265,20 @@ class FilterCursor : public BasicCursor {
   // Index of first free space in the result_block_.
   rowcount_t write_pointer_;
 
-  // Not used, only to keep it around (and destroy properly).
-  std::unique_ptr<const BoundSingleSourceProjector> projector_;
 };
 
 class FilterOperation : public BasicOperation {
  public:
   // Takes ownership of predicate and projector.
-  FilterOperation(const Expression* predicate,
-                  const SingleSourceProjector* projector,
-                  Operation* child)
-      : BasicOperation(child),
-        predicate_(CHECK_NOTNULL(predicate)),
-        projector_(CHECK_NOTNULL(projector)) {}
+  FilterOperation(unique_ptr<const Expression> predicate,
+                  unique_ptr<const SingleSourceProjector> projector,
+                  unique_ptr<Operation> child)
+      : BasicOperation(std::move(child)),
+        predicate_(std::move(predicate)),
+        projector_(std::move(projector)) {
+    CHECK_NOTNULL(projector_.get());
+    CHECK_NOTNULL(predicate_.get());
+  }
 
   virtual ~FilterOperation() {}
 
@@ -294,32 +293,34 @@ class FilterOperation : public BasicOperation {
     FailureOrOwned<const BoundSingleSourceProjector> projector =
         projector_->Bind(child_cursor->schema());
     PROPAGATE_ON_FAILURE(projector);
-    return FilterCursor::Create(predicate.release(),
-                                projector.release(),
-                                child_cursor.release(),
+    return FilterCursor::Create(predicate.move(),
+                                projector.move(),
+                                child_cursor.move(),
                                 buffer_allocator());
   }
 
  private:
-  std::unique_ptr<const Expression> predicate_;
-  std::unique_ptr<const SingleSourceProjector> projector_;
+  unique_ptr<const Expression> predicate_;
+  unique_ptr<const SingleSourceProjector> projector_;
 };
 
 }  // namespace
 
-Operation* Filter(const Expression* predicate,
-                  const SingleSourceProjector* projector,
-                  Operation* child) {
-  return new FilterOperation(predicate, projector, child);
+unique_ptr<Operation> Filter(
+    unique_ptr<const Expression> predicate,
+    unique_ptr<const SingleSourceProjector> projector,
+    unique_ptr<Operation> child) {
+  return make_unique<FilterOperation>(std::move(predicate), std::move(projector),
+                                      std::move(child));
 }
 
-FailureOrOwned<Cursor> BoundFilter(BoundExpressionTree* predicate,
-                                   const BoundSingleSourceProjector* projector,
-                                   BufferAllocator* buffer_allocator,
-                                   Cursor* child_cursor) {
-  return FilterCursor::Create(predicate,
-                              projector,
-                              child_cursor,
+FailureOrOwned<Cursor> BoundFilter(
+    unique_ptr<BoundExpressionTree> predicate,
+    unique_ptr<const BoundSingleSourceProjector> projector,
+    BufferAllocator* buffer_allocator,
+    unique_ptr<Cursor> child_cursor) {
+  return FilterCursor::Create(std::move(predicate), std::move(projector),
+                              std::move(child_cursor),
                               buffer_allocator);
 }
 

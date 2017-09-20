@@ -16,8 +16,7 @@
 
 #include "supersonic/expression/core/stateful_expressions.h"
 
-#include <string>
-namespace supersonic {using std::string; }
+#include "supersonic/utils/std_namespace.h"
 
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/result.h"

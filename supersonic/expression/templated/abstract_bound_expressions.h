@@ -50,13 +50,13 @@ class AbstractBoundUnaryExpression : public BoundUnaryExpression {
  public:
   AbstractBoundUnaryExpression(const string& output_name,
                                BufferAllocator* const allocator,
-                               BoundExpression* arg)
-      : BoundUnaryExpression(
-          CreateSchema(output_name, output_type, arg,
+                               unique_ptr<BoundExpression> arg)
+      : BoundUnaryExpression{
+          CreateSchema(output_name, output_type, arg.get(),
                        UnaryExpressionTraits<op>::can_return_null
                            ? NULLABLE
                            : NOT_NULLABLE),
-          allocator, arg, input_type) {
+          allocator, input_type, std::move(arg)} {
   }
 
   virtual EvaluationResult DoEvaluate(const View& input,
@@ -77,6 +77,9 @@ class AbstractBoundUnaryExpression : public BoundUnaryExpression {
   }
 
  private:
+
+
+ private:
   typedef typename TypeTraits<input_type>::cpp_type CppFrom;
   typedef typename TypeTraits<output_type>::cpp_type CppTo;
 
@@ -91,10 +94,9 @@ class AbstractBoundUnaryExpression : public BoundUnaryExpression {
 // operator.
 template<OperatorId op, DataType input_type, DataType output_type>
 FailureOrOwned<BoundExpression> AbstractBoundUnary(
-    BoundExpression* argument_ptr,
+    unique_ptr<BoundExpression> argument,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  std::unique_ptr<BoundExpression> argument(argument_ptr);
   PROPAGATE_ON_FAILURE(
       CheckAttributeCount(UnaryExpressionTraits<op>::name(),
                           argument->result_schema(), 1));
@@ -103,8 +105,8 @@ FailureOrOwned<BoundExpression> AbstractBoundUnary(
       argument->result_schema().attribute(0).name(), input_type, output_type);
   return InitBasicExpression(
       max_row_count,
-      new AbstractBoundUnaryExpression<op, input_type, output_type>(
-          description, allocator, argument.release()),
+      make_unique<AbstractBoundUnaryExpression<op, input_type, output_type>>(
+          description, allocator, std::move(argument)),
       allocator);
 }
 
@@ -120,10 +122,10 @@ class AbstractBoundBinaryExpression : public BoundBinaryExpression {
   // Takes ownership of expressions.
   AbstractBoundBinaryExpression(const TupleSchema& result_schema,
                                 BufferAllocator* const allocator,
-                                BoundExpression* left,
-                                BoundExpression* right)
-      : BoundBinaryExpression(result_schema, allocator, left, left_type,
-                              right, right_type) {}
+                                unique_ptr<BoundExpression> left,
+                                unique_ptr<BoundExpression> right)
+      : BoundBinaryExpression(result_schema, allocator, std::move(left), left_type,
+                              std::move(right), right_type) {}
 
   virtual EvaluationResult DoEvaluate(const View& input,
                                       const BoolView& skip_vectors) {
@@ -154,12 +156,10 @@ class AbstractBoundBinaryExpression : public BoundBinaryExpression {
 template<OperatorId op, DataType left_type, DataType right_type,
     DataType output_type>
 FailureOrOwned<BoundExpression> CreateAbstractBoundBinaryExpression(
-    BoundExpression* left_ptr,
-    BoundExpression* right_ptr,
+    unique_ptr<BoundExpression> left,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* allocator,
     rowcount_t max_row_count) {
-  std::unique_ptr<BoundExpression> left(left_ptr);
-  std::unique_ptr<BoundExpression> right(right_ptr);
   const string op_name = BinaryExpressionTraits<op>::name();
   PROPAGATE_ON_FAILURE(CheckAttributeCount(op_name, left->result_schema(), 1));
   PROPAGATE_ON_FAILURE(CheckAttributeCount(op_name, right->result_schema(), 1));
@@ -171,16 +171,14 @@ FailureOrOwned<BoundExpression> CreateAbstractBoundBinaryExpression(
       right->result_schema().attribute(0).name(),
       right->result_schema().attribute(0).type(),
       output_type);
-  AbstractBoundBinaryExpression<op, output_type,
-                                left_type, right_type>* result =
-      new AbstractBoundBinaryExpression<op, output_type,
-                                        left_type, right_type> (
+  auto result = make_unique<AbstractBoundBinaryExpression<
+      op, output_type, left_type, right_type>> (
           CreateSchema(expression_name, output_type, left.get(), right.get(),
                        BinaryExpressionTraits<op>::can_return_null
                            ? NULLABLE
                            : NOT_NULLABLE),
-          allocator, left.release(), right.release());
-  return InitBasicExpression(max_row_count, result, allocator);
+          allocator, std::move(left), std::move(right));
+  return InitBasicExpression(max_row_count, std::move(result), allocator);
 }
 
 // -------------- Abstract Ternary Expressions (without assignment) ---------
@@ -194,15 +192,19 @@ class AbstractBoundTernaryExpression : public BoundTernaryExpression {
  public:
   AbstractBoundTernaryExpression(const string& output_name,
                                  BufferAllocator* const allocator,
-                                 BoundExpression* left,
-                                 BoundExpression* middle,
-                                 BoundExpression* right)
-      : BoundTernaryExpression(
-          CreateSchema(output_name, output_type, left, middle, right,
+                                 unique_ptr<BoundExpression> left,
+                                 unique_ptr<BoundExpression> middle,
+                                 unique_ptr<BoundExpression> right)
+      : BoundTernaryExpression{
+          CreateSchema(output_name, output_type, left.get(), middle.get(),
+                       right.get(),
                        TernaryExpressionTraits<op>::can_return_null
                            ? NULLABLE
                            : NOT_NULLABLE),
-           allocator, left, left_type, middle, middle_type, right, right_type) {
+           allocator,
+          left_type, std::move(left),
+          middle_type, std::move(middle),
+          right_type, std::move(right)} {
   }
 
   virtual EvaluationResult DoEvaluate(const View& input,
@@ -241,7 +243,8 @@ class AbstractBoundTernaryExpression : public BoundTernaryExpression {
 template<OperatorId op, DataType left_type, DataType middle_type,
          DataType right_type, DataType output_type>
 FailureOrOwned<BoundExpression> CreateAbstractBoundTernaryExpression(
-    BoundExpression* left, BoundExpression* middle, BoundExpression* right,
+    unique_ptr<BoundExpression> left, unique_ptr<BoundExpression> middle,
+    unique_ptr<BoundExpression> right,
     BufferAllocator* allocator, rowcount_t max_row_count) {
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       TernaryExpressionTraits<op>::name(), left->result_schema(), 1));
@@ -250,21 +253,24 @@ FailureOrOwned<BoundExpression> CreateAbstractBoundTernaryExpression(
   PROPAGATE_ON_FAILURE(CheckAttributeCount(
       TernaryExpressionTraits<op>::name(), right->result_schema(), 1));
 
-  PROPAGATE_ON_FAILURE(CheckExpressionType(left_type, left));
-  PROPAGATE_ON_FAILURE(CheckExpressionType(middle_type, middle));
-  PROPAGATE_ON_FAILURE(CheckExpressionType(right_type, right));
+  PROPAGATE_ON_FAILURE(CheckExpressionType(left_type, left.get()));
+  PROPAGATE_ON_FAILURE(CheckExpressionType(middle_type, middle.get()));
+  PROPAGATE_ON_FAILURE(CheckExpressionType(right_type, right.get()));
 
-  return InitBasicExpression(max_row_count,
-      new AbstractBoundTernaryExpression<op, left_type, middle_type,
-                                         right_type, output_type> (
-          TernaryExpressionTraits<op>::FormatBoundDescription(
-              left->result_schema().attribute(0).name(),
-              left->result_schema().attribute(0).type(),
-              middle->result_schema().attribute(0).name(),
-              middle->result_schema().attribute(0).type(),
-              right->result_schema().attribute(0).name(),
-              right->result_schema().attribute(0).type(), output_type),
-          allocator, left, middle, right), allocator);
+  auto format = TernaryExpressionTraits<op>::FormatBoundDescription(
+      left->result_schema().attribute(0).name(),
+      left->result_schema().attribute(0).type(),
+      middle->result_schema().attribute(0).name(),
+      middle->result_schema().attribute(0).type(),
+      right->result_schema().attribute(0).name(),
+      right->result_schema().attribute(0).type(), output_type);
+
+  return InitBasicExpression(
+      max_row_count,
+      make_unique<AbstractBoundTernaryExpression<op, left_type, middle_type,
+                                                 right_type, output_type>>(
+          format, allocator, std::move(left), std::move(middle), std::move(right)),
+      allocator);
 }
 
 }  // namespace supersonic

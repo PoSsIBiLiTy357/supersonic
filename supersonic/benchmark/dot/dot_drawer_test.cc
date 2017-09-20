@@ -71,7 +71,7 @@ class DOTDrawerTest : public testing::Test {
     entries_.push_back(
         new CursorWithBenchmarkListener(NULL, new MockBenchmarkListener));
 
-    std::unique_ptr<CursorStatistics> stats(
+    unique_ptr<CursorStatistics> stats(
         (new FakeCursorStatistics(entries_.back().get()))->SetFakeData(data));
     return new BenchmarkTreeNode(stats.release());
   }
@@ -101,8 +101,7 @@ class DOTDrawerTest : public testing::Test {
 TEST_F(DOTDrawerTest, TinyTest) {
 
   string output_dot;
-  std::unique_ptr<DOTDrawer> string_drawer(
-      new DOTDrawer(CreateStringOutputWriter(&output_dot), "DrawerTest"));
+  auto string_drawer = make_unique<DOTDrawer>(CreateStringOutputWriter(&output_dot), "DrawerTest");
 
   BenchmarkData data1;
   BenchmarkData data2;
@@ -122,8 +121,8 @@ TEST_F(DOTDrawerTest, TinyTest) {
   data2.set_rows_processed(350);
   data2.set_return_rate(45.0);
 
-  std::unique_ptr<BenchmarkTreeNode> node1(GetNodeForData(data1));
-  std::unique_ptr<BenchmarkTreeNode> node2(GetNodeForData(data2));
+  unique_ptr<BenchmarkTreeNode> node1(GetNodeForData(data1));
+  unique_ptr<BenchmarkTreeNode> node2(GetNodeForData(data2));
   node1->AddChild(node2.release());
 
 
@@ -139,8 +138,7 @@ TEST_F(DOTDrawerTest, TinyTest) {
 TEST_F(DOTDrawerTest, RunMediumTreeExample) {
 
   string output_dot;
-  std::unique_ptr<DOTDrawer> string_drawer(
-      new DOTDrawer(CreateStringOutputWriter(&output_dot), "DrawerTest"));
+  auto string_drawer = make_unique<DOTDrawer>(CreateStringOutputWriter(&output_dot), "DrawerTest");
 
   BenchmarkData data1;
   SetCommonBenchmarkData(&data1,
@@ -208,13 +206,13 @@ TEST_F(DOTDrawerTest, RunMediumTreeExample) {
   data1_1_2_1.set_cursor_name("UnknownCursor");
   data1_1_2_1.set_cursor_type(BenchmarkData::UNRECOGNISED);
 
-  std::unique_ptr<BenchmarkTreeNode> node1(GetNodeForData(data1));
-  std::unique_ptr<BenchmarkTreeNode> node1_1(GetNodeForData(data1_1));
-  std::unique_ptr<BenchmarkTreeNode> node1_2(GetNodeForData(data1_2));
-  std::unique_ptr<BenchmarkTreeNode> node1_1_1(GetNodeForData(data1_1_1));
-  std::unique_ptr<BenchmarkTreeNode> node1_1_2(GetNodeForData(data1_1_2));
-  std::unique_ptr<BenchmarkTreeNode> node1_2_1(GetNodeForData(data1_2_1));
-  std::unique_ptr<BenchmarkTreeNode> node1_1_2_1(GetNodeForData(data1_1_2_1));
+  unique_ptr<BenchmarkTreeNode> node1(GetNodeForData(data1));
+  unique_ptr<BenchmarkTreeNode> node1_1(GetNodeForData(data1_1));
+  unique_ptr<BenchmarkTreeNode> node1_2(GetNodeForData(data1_2));
+  unique_ptr<BenchmarkTreeNode> node1_1_1(GetNodeForData(data1_1_1));
+  unique_ptr<BenchmarkTreeNode> node1_1_2(GetNodeForData(data1_1_2));
+  unique_ptr<BenchmarkTreeNode> node1_2_1(GetNodeForData(data1_2_1));
+  unique_ptr<BenchmarkTreeNode> node1_1_2_1(GetNodeForData(data1_1_2_1));
 
   node1_1_2->AddChild(node1_1_2_1.release());
 
@@ -246,11 +244,10 @@ TEST_F(DOTDrawerTest, RunMediumTreeExample) {
 
 TEST_F(DOTDrawerTest, MultipleUseFail) {
   string output_dot;
-  std::unique_ptr<DOTDrawer> string_drawer(
-      new DOTDrawer(CreateStringOutputWriter(&output_dot), "DrawerTest"));
+  auto string_drawer = make_unique<DOTDrawer>(CreateStringOutputWriter(&output_dot), "DrawerTest");
 
   BenchmarkData data;
-  std::unique_ptr<BenchmarkTreeNode> node(GetNodeForData(data));
+  unique_ptr<BenchmarkTreeNode> node(GetNodeForData(data));
 
   string_drawer->DrawDOT(*node);
   EXPECT_DEATH(string_drawer->DrawDOT(*node),

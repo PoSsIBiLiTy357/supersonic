@@ -120,6 +120,11 @@ class FailureOrOwned : public common::FailureOrOwned<T, Exception> {
 
   template<typename ObservedResult>
   FailureOrOwned(
+      common::UniquePtrPropagator<ObservedResult>&& result)       // NOLINT
+      : common::FailureOrOwned<T, Exception>(std::move(result)) {}
+
+  template<typename ObservedResult>
+  FailureOrOwned(
       const common::ConstReferencePropagator<ObservedResult>& result)  // NOLINT
       : common::FailureOrOwned<T, Exception>(result) {}
   // Copyable.

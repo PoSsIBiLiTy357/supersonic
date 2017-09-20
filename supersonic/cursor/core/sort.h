@@ -86,24 +86,26 @@ void SortPermutation(const BoundSortOrder& sort_order,
 //
 // This way transition to d-server or other storage would be easier. Even for
 // testing it might be helpful.
-Operation* Sort(const SortOrder* sort_order,
-                const SingleSourceProjector* result_projector,
-                size_t memory_limit,  // in bytes
-                Operation* child);
+unique_ptr<Operation> Sort(
+    unique_ptr<const SortOrder> sort_order,
+    unique_ptr<const SingleSourceProjector> result_projector,
+    size_t memory_limit,  // in bytes
+    unique_ptr<Operation> child);
 
-Operation* SortWithTempDirPrefix(const SortOrder* sort_order,
-                                 const SingleSourceProjector* result_projector,
-                                 size_t memory_limit,
-                                 StringPiece temporary_directory_prefix,
-                                 Operation* child);
+unique_ptr<Operation> SortWithTempDirPrefix(
+    unique_ptr<const SortOrder> sort_order,
+    unique_ptr<const SingleSourceProjector> result_projector,
+    size_t memory_limit,
+    StringPiece temporary_directory_prefix,
+    unique_ptr<Operation> child);
 
 // Identical with Sort, but supports case insensitivity and limit on the number
 // of returned elements. Also, unlike sort, its parameter is serializable.
 // Takes ownership of all input.
-Operation* ExtendedSort(const ExtendedSortSpecification* specification,
+unique_ptr<Operation> ExtendedSort(const ExtendedSortSpecification* specification,
                         const SingleSourceProjector* result_projector,
                         size_t memory_limit,
-                        Operation* child);
+                        unique_ptr<Operation> child);
 
 // Creates a new sort cursor. It will emit data from the child cursor, ordered
 // according to the sort_order, and projected via result_projector. Takes
@@ -112,12 +114,12 @@ Operation* ExtendedSort(const ExtendedSortSpecification* specification,
 // storing sorted parts of the data in temporary files and merging them all at
 // the end.
 FailureOrOwned<Cursor> BoundSort(
-    const BoundSortOrder* sort_order,
-    const BoundSingleSourceProjector* result_projector,
+    unique_ptr<const BoundSortOrder> sort_order,
+    unique_ptr<const BoundSingleSourceProjector> result_projector,
     size_t memory_limit,  // in bytes
     StringPiece temporary_directory_prefix,
     BufferAllocator* allocator,
-    Cursor* child_cursor);
+    unique_ptr<Cursor> child_cursor);
 
 // Similar to above, but supports case insensitive sorting and sorting with
 // limit.
@@ -128,7 +130,7 @@ FailureOrOwned<Cursor> BoundExtendedSort(
     StringPiece temporary_directory_prefix,
     BufferAllocator* allocator,
     rowcount_t max_row_count,
-    Cursor* child);
+    unique_ptr<Cursor> child);
 
 // An interface for storing sorted parts of data for later merging.
 class Merger {
@@ -139,13 +141,13 @@ class Merger {
   // returning (this is important, for example, when the cursor iterates over a
   // block it does not own, and the block is changed later). This method does
   // not support the cursor returning WAITING_ON_BARRIER.
-  virtual FailureOrVoid AddSorted(Cursor* cursor) = 0;
+  virtual FailureOrVoid AddSorted(unique_ptr<Cursor> cursor) = 0;
 
   // Final merge of the sorted parts. The "additional" cursor, if not null, is
   // merged together with the stored data. It should be ordered according to
   // sort_order too. Takes ownership of sort_order and additional.
-  virtual FailureOrOwned<Cursor> Merge(const BoundSortOrder* sort_order,
-                                       Cursor* additional) = 0;
+  virtual FailureOrOwned<Cursor> Merge(unique_ptr<const BoundSortOrder> sort_order,
+                                       unique_ptr<Cursor> additional) = 0;
 
   // Returns true iff there was no data added to Merger. Adding an empty cursor
   // counts as not empty.
@@ -160,9 +162,9 @@ class Merger {
 
 // Create a Merger instance that stores the data in files, using Supersonic's
 // FileInput/FileOutput, in the specified directory.
-Merger* CreateMerger(TupleSchema schema,
-                     StringPiece temporary_directory_prefix,
-                     BufferAllocator* allocator);
+unique_ptr<Merger> CreateMerger(TupleSchema schema,
+                                StringPiece temporary_directory_prefix,
+                                BufferAllocator* allocator);
 
 // Sorter accepts an arbitrary(*) amount of unordered data and produces a sorted
 // Cursor with the same rows. The implementation buffers data into chunks that
@@ -193,18 +195,18 @@ class Sorter {
 // Creates an unbuffered Sorter object with a given schema, sort order and a
 // location for temporary files. Every View passed to Write is separately sorted
 // and written to a file.
-Sorter* CreateUnbufferedSorter(const TupleSchema& schema,
-                               const BoundSortOrder* sort_order,
-                               StringPiece temporary_directory_prefix,
-                               BufferAllocator* allocator);
+unique_ptr<Sorter> CreateUnbufferedSorter(const TupleSchema& schema,
+                                          unique_ptr<const BoundSortOrder> sort_order,
+                                          StringPiece temporary_directory_prefix,
+                                          BufferAllocator* allocator);
 
 // Creates a buffering Sorter object with a given schema, sort order, memory
 // limit and a location for temporary files.
-Sorter* CreateBufferingSorter(const TupleSchema& schema,
-                              const BoundSortOrder* sort_order,
-                              size_t memory_quota,
-                              StringPiece temporary_directory_prefix,
-                              BufferAllocator* allocator);
+unique_ptr<Sorter> CreateBufferingSorter(const TupleSchema& schema,
+                                         unique_ptr<const BoundSortOrder> sort_order,
+                                         size_t memory_quota,
+                                         StringPiece temporary_directory_prefix,
+                                         BufferAllocator* allocator);
 
 // Sink class for Sorter. Allows using Writer with Sorter.
 class SorterSink : public Sink {

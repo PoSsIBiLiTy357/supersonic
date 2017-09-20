@@ -274,11 +274,11 @@ class OwnedColumn {
   // constant.
   Column* column_;
   // Holds data.
-  std::unique_ptr<Buffer> data_buffer_;
+  unique_ptr<Buffer> data_buffer_;
   // Holds info about NULLs in column. Can be NULL for non-null columns.
   bool_array is_null_array_;
   // Holds variable length data. Null for other columns.
-  std::unique_ptr<Arena> arena_;
+  unique_ptr<Arena> arena_;
 
   DISALLOW_COPY_AND_ASSIGN(OwnedColumn);
 };
@@ -396,7 +396,7 @@ class View {
   View& operator=(const View& other);
 
   const TupleSchema schema_;
-  std::unique_ptr<Column[]> columns_;
+  unique_ptr<Column[]> columns_;
   rowcount_t row_count_;
   // Views are copyable.
 };
@@ -483,7 +483,7 @@ class Block {
   }
 
   BufferAllocator* const allocator_;
-  std::unique_ptr<OwnedColumn[]> columns_;
+  unique_ptr<OwnedColumn[]> columns_;
   View view_;  // Full view on the entire block.
   DISALLOW_COPY_AND_ASSIGN(Block);
 };

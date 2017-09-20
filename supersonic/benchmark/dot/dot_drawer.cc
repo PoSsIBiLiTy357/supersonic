@@ -354,7 +354,7 @@ class FileOutputWriter : public DOTOutputWriter {
 
  private:
   string file_name_;
-  std::unique_ptr<FileCloser> out_file_closer_;
+  unique_ptr<FileCloser> out_file_closer_;
 };
 
 void FileOutputWriter::WriteDOT(const string& dot) {
@@ -371,12 +371,12 @@ void FileOutputWriter::WriteDOT(const string& dot) {
 
 }  // namespace
 
-DOTOutputWriter* CreateFileOutputWriter(const string& file_name) {
-  return new FileOutputWriter(file_name);
+unique_ptr<DOTOutputWriter> CreateFileOutputWriter(const string& file_name) {
+  return make_unique<FileOutputWriter>(file_name);
 }
 
-DOTOutputWriter* CreateStringOutputWriter(string* dot_output) {
-  return new StringOutputWriter(dot_output);
+unique_ptr<DOTOutputWriter> CreateStringOutputWriter(string* dot_output) {
+  return make_unique<StringOutputWriter>(dot_output);
 }
 
 }  // namespace supersonic

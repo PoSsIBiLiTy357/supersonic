@@ -54,9 +54,9 @@ namespace {
 template<DataType from_type, DataType to_type>
 class BoundProjectingCastExpression : public BoundExpression {
  public:
-  explicit BoundProjectingCastExpression(BoundExpression* child_ptr)
-      : BoundExpression(CreateCastSchema(child_ptr)),
-        child_(child_ptr) {}
+  explicit BoundProjectingCastExpression(unique_ptr<BoundExpression> child_ptr)
+      : BoundExpression(CreateCastSchema(child_ptr.get())),
+        child_(std::move(child_ptr)) {}
 
   virtual ~BoundProjectingCastExpression() {}
 
@@ -95,43 +95,42 @@ class BoundProjectingCastExpression : public BoundExpression {
 
 // A creator for ProjectingCast expressions.
 template<DataType from_type, DataType to_type>
-FailureOrOwned<BoundExpression> BoundProjectingCast(BoundExpression* child) {
-  std::unique_ptr<BoundExpression> child_ptr(child);
+FailureOrOwned<BoundExpression> BoundProjectingCast(unique_ptr<BoundExpression> child) {
   FailureOrVoid check = CheckAttributeCount(string("Cast"),
-                                            child_ptr->result_schema(),
+                                            child->result_schema(),
                                             1);
   PROPAGATE_ON_FAILURE(check);
-  return Success(new BoundProjectingCastExpression<from_type, to_type>(
-      child_ptr.release()));
+  return Success(make_unique<BoundProjectingCastExpression<from_type, to_type>>(
+      std::move(child)));
 }
 
 // A standard cast expression that allocates memory for the results.
 template<DataType from_type, DataType to_type>
-FailureOrOwned<BoundExpression> BoundCast(BoundExpression* child,
+FailureOrOwned<BoundExpression> BoundCast(unique_ptr<BoundExpression> child,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count) {
   return AbstractBoundUnary<OPERATOR_CAST_QUIET, from_type, to_type>(
-      child, allocator, max_row_count);
+      std::move(child), allocator, max_row_count);
 }
 
 // A down-cast expression. At the moment implemented as a standard cast, in the
 // future to be equipped with range-checks.
 template<DataType from_type, DataType to_type>
-FailureOrOwned<BoundExpression> BoundDownCast(BoundExpression* child,
+FailureOrOwned<BoundExpression> BoundDownCast(unique_ptr<BoundExpression> child,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count) {
   // TODO(onufry): Add range-checks when downcasting.
   return AbstractBoundUnary<OPERATOR_CAST_QUIET, from_type, to_type>(
-      child, allocator, max_row_count);
+      std::move(child), allocator, max_row_count);
 }
 
 // A DateToDatetime cast, implemented as a separate operator. Multiplies the
 // date by the number of microseconds in a day.
-FailureOrOwned<BoundExpression> BoundDateToDatetime(BoundExpression* child,
+FailureOrOwned<BoundExpression> BoundDateToDatetime(unique_ptr<BoundExpression> child,
                                                     BufferAllocator* allocator,
                                                     rowcount_t max_row_count) {
   return AbstractBoundUnary<OPERATOR_DATE_TO_DATETIME, DATE, DATETIME>(
-      child, allocator, max_row_count);
+      std::move(child), allocator, max_row_count);
 }
 
 // ------------------------ Exception factories --------------------------------
@@ -318,15 +317,15 @@ template<>
 FailureOrOwned<BoundExpression> BoundCastCreator::operator()<INT32>() const {
   std::unique_ptr<BoundExpression> child_(child_ptr);
   switch (to_type_) {
-    case INT32: return Success(child_.release());
-    case UINT32: return BoundProjectingCast<INT32, UINT32>(child_.release());
-    case INT64: return BoundCast<INT32, INT64>(child_.release(), allocator_,
+    case INT32: return Success(std::move(child_));
+    case UINT32: return BoundProjectingCast<INT32, UINT32>(std::move(child_));
+    case INT64: return BoundCast<INT32, INT64>(std::move(child_), allocator_,
                                                row_capacity_);
-    case UINT64: return BoundCast<INT32, UINT64>(child_.release(), allocator_,
+    case UINT64: return BoundCast<INT32, UINT64>(std::move(child_), allocator_,
                                                  row_capacity_);
-    case FLOAT: return BoundCast<INT32, FLOAT>(child_.release(), allocator_,
+    case FLOAT: return BoundCast<INT32, FLOAT>(std::move(child_), allocator_,
                                                row_capacity_);
-    case DOUBLE: return BoundCast<INT32, DOUBLE>(child_.release(), allocator_,
+    case DOUBLE: return BoundCast<INT32, DOUBLE>(std::move(child_), allocator_,
                                                  row_capacity_);
     case STRING:
     case BINARY:
@@ -338,22 +337,22 @@ FailureOrOwned<BoundExpression> BoundCastCreator::operator()<INT32>() const {
         THROW(IllicitCastFromNumeric(INT32, to_type_, description_));
     // No default.
   }
-  return Success(child_.release());  // Will never be called.
+  return Success(std::move(child_));  // Will never be called.
 }
 
 template<>
 FailureOrOwned<BoundExpression> BoundCastCreator::operator()<UINT32>() const {
   std::unique_ptr<BoundExpression> child_(child_ptr);
   switch (to_type_) {
-    case INT32: return BoundProjectingCast<UINT32, INT32>(child_.release());
-    case UINT32: return Success(child_.release());
-    case INT64: return BoundCast<UINT32, INT64>(child_.release(), allocator_,
+    case INT32: return BoundProjectingCast<UINT32, INT32>(std::move(child_));
+    case UINT32: return Success(std::move(child_));
+    case INT64: return BoundCast<UINT32, INT64>(std::move(child_), allocator_,
                                                 row_capacity_);
-    case UINT64: return BoundCast<UINT32, UINT64>(child_.release(), allocator_,
+    case UINT64: return BoundCast<UINT32, UINT64>(std::move(child_), allocator_,
                                                   row_capacity_);
-    case FLOAT: return BoundCast<UINT32, FLOAT>(child_.release(), allocator_,
+    case FLOAT: return BoundCast<UINT32, FLOAT>(std::move(child_), allocator_,
                                                 row_capacity_);
-    case DOUBLE: return BoundCast<UINT32, DOUBLE>(child_.release(), allocator_,
+    case DOUBLE: return BoundCast<UINT32, DOUBLE>(std::move(child_), allocator_,
                                                   row_capacity_);
     case STRING:
     case BINARY:
@@ -365,52 +364,52 @@ FailureOrOwned<BoundExpression> BoundCastCreator::operator()<UINT32>() const {
         THROW(IllicitCastFromNumeric(UINT32, to_type_, description_));
     // No default.
   }
-  return Success(child_.release());  // Will never be called.
+  return Success(std::move(child_));  // Will never be called.
 }
 
 template<>
 FailureOrOwned<BoundExpression> BoundCastCreator::operator()<INT64>() const {
   std::unique_ptr<BoundExpression> child_(child_ptr);
-  if (to_type_ == INT64) return Success(child_.release());
+  if (to_type_ == INT64) return Success(std::move(child_));
   if (to_type_ == UINT64) return BoundProjectingCast<INT64, UINT64>(
-      child_.release());
+      std::move(child_));
   if (to_type_ == INT32 || to_type_ == UINT32 || to_type_ == FLOAT) {
     if (is_implicit_) THROW(IllicitDownCast(INT64, to_type_, description_));
     // Explicit downcast, allowed.
     if (to_type_ == INT32) return BoundDownCast<INT64, INT32>(
-        child_.release(), allocator_, row_capacity_);
+        std::move(child_), allocator_, row_capacity_);
     if (to_type_ == UINT32) return BoundDownCast<INT64, UINT32>(
-        child_.release(), allocator_, row_capacity_);
+        std::move(child_), allocator_, row_capacity_);
     // The remaining case is FLOAT.
-    return BoundDownCast<INT64, FLOAT>(child_.release(), allocator_,
+    return BoundDownCast<INT64, FLOAT>(std::move(child_), allocator_,
                                        row_capacity_);
   }
   if (to_type_ == DOUBLE) return BoundCast<INT64, DOUBLE>(
-      child_.release(), allocator_, row_capacity_);
+      std::move(child_), allocator_, row_capacity_);
   THROW(IllicitCastFromNumeric(INT64, to_type_, description_));
 }
 
 template<>
 FailureOrOwned<BoundExpression> BoundCastCreator::operator()<UINT64>() const {
   std::unique_ptr<BoundExpression> child_(child_ptr);
-  if (to_type_ == UINT64) return Success(child_.release());
+  if (to_type_ == UINT64) return Success(std::move(child_));
   if (to_type_ == INT64) return BoundProjectingCast<UINT64, INT64>(
-      child_.release());
+      std::move(child_));
   if (to_type_ == INT32 || to_type_ == UINT32 || to_type_ == FLOAT) {
     if (is_implicit_) THROW(IllicitDownCast(UINT64, to_type_, description_));
     // Explicit downcast, allowed.
     if (to_type_ == INT32) return BoundDownCast<UINT64, INT32>(
-        child_.release(), allocator_, row_capacity_);
+        std::move(child_), allocator_, row_capacity_);
     if (to_type_ == UINT32) return BoundDownCast<UINT64, UINT32>(
-        child_.release(), allocator_, row_capacity_);
+        std::move(child_), allocator_, row_capacity_);
     // The remaining case is FLOAT.
-    return BoundDownCast<UINT64, FLOAT>(child_.release(), allocator_,
+    return BoundDownCast<UINT64, FLOAT>(std::move(child_), allocator_,
                                         row_capacity_);
   }
   if (to_type_ == FLOAT) return BoundCast<UINT64, FLOAT>(
-      child_.release(), allocator_, row_capacity_);
+      std::move(child_), allocator_, row_capacity_);
   if (to_type_ == DOUBLE) return BoundCast<UINT64, DOUBLE>(
-      child_.release(), allocator_, row_capacity_);
+      std::move(child_), allocator_, row_capacity_);
   THROW(IllicitCastFromNumeric(UINT64, to_type_, description_));
 }
 
@@ -418,9 +417,9 @@ template<>
 FailureOrOwned<BoundExpression> BoundCastCreator::operator()<FLOAT>() const {
   std::unique_ptr<BoundExpression> child_(child_ptr);
   // Casts to floating point types.
-  if (to_type_ == FLOAT) return Success(child_.release());
+  if (to_type_ == FLOAT) return Success(std::move(child_));
   if (to_type_ == DOUBLE)
-    return BoundCast<FLOAT, DOUBLE>(child_.release(), allocator_,
+    return BoundCast<FLOAT, DOUBLE>(std::move(child_), allocator_,
                                     row_capacity_);
   // Casts to integral types (forbidden).
   if (GetTypeInfo(to_type_).is_numeric())
@@ -433,12 +432,12 @@ template<>
 FailureOrOwned<BoundExpression> BoundCastCreator::operator()<DOUBLE>() const {
   std::unique_ptr<BoundExpression> child_(child_ptr);
   // Casts to floating point types.
-  if (to_type_ == DOUBLE) return Success(child_.release());
+  if (to_type_ == DOUBLE) return Success(std::move(child_));
   if (to_type_ == FLOAT) {
     if (is_implicit_) {
       THROW(IllicitDownCast(DOUBLE, FLOAT, description_));
     } else {
-      return BoundDownCast<DOUBLE, FLOAT>(child_.release(), allocator_,
+      return BoundDownCast<DOUBLE, FLOAT>(std::move(child_), allocator_,
                                           row_capacity_);
     }
   }
@@ -452,41 +451,41 @@ FailureOrOwned<BoundExpression> BoundCastCreator::operator()<DOUBLE>() const {
 template<>
 FailureOrOwned<BoundExpression> BoundCastCreator::operator()<STRING>() const {
   std::unique_ptr<BoundExpression> child_(child_ptr);
-  if (to_type_ == STRING) return Success(child_.release());
+  if (to_type_ == STRING) return Success(std::move(child_));
   if (to_type_ == BINARY) return BoundProjectingCast<STRING, BINARY>(
-      child_.release());
+      std::move(child_));
   THROW(IllicitCastFromString(to_type_, description_));
 }
 
 template<>
 FailureOrOwned<BoundExpression> BoundCastCreator::operator()<BINARY>() const {
   std::unique_ptr<BoundExpression> child_(child_ptr);
-  if (to_type_ == BINARY) return Success(child_.release());
+  if (to_type_ == BINARY) return Success(std::move(child_));
   if (to_type_ == STRING) return BoundProjectingCast<BINARY, STRING>(
-      child_.release());
+      std::move(child_));
   THROW(IllicitCast(BINARY, to_type_, description_));
 }
 
 template<>
 FailureOrOwned<BoundExpression> BoundCastCreator::operator()<DATE>() const {
   std::unique_ptr<BoundExpression> child_(child_ptr);
-  if (to_type_ == DATE) return Success(child_.release());
+  if (to_type_ == DATE) return Success(std::move(child_));
   if (to_type_ == DATETIME) return BoundDateToDatetime(
-      child_.release(), allocator_, row_capacity_);
+      std::move(child_), allocator_, row_capacity_);
   THROW(IllicitCastFromDateType(DATE, to_type_, description_));
 }
 
 template<>
 FailureOrOwned<BoundExpression> BoundCastCreator::operator()<DATETIME>() const {
   std::unique_ptr<BoundExpression> child_(child_ptr);
-  if (to_type_ == DATETIME) return Success(child_.release());
+  if (to_type_ == DATETIME) return Success(std::move(child_));
   THROW(IllicitCastFromDateType(DATE, to_type_, description_));
 }
 
 template<>
 FailureOrOwned<BoundExpression> BoundCastCreator::operator()<BOOL>() const {
   std::unique_ptr<BoundExpression> child_(child_ptr);
-  if (to_type_ == BOOL) return Success(child_.release());
+  if (to_type_ == BOOL) return Success(std::move(child_));
   THROW(IllicitCastFromBool(to_type_, description_));
 }
 
@@ -500,7 +499,7 @@ template<>
 FailureOrOwned<BoundExpression>
     BoundCastCreator::operator()<DATA_TYPE>() const {
   std::unique_ptr<BoundExpression> child_(child_ptr);
-  if (to_type_ == DATA_TYPE) return Success(child_.release());
+  if (to_type_ == DATA_TYPE) return Success(std::move(child_));
   THROW(IllicitCast(DATA_TYPE, to_type_, description_));
 }
 
@@ -510,10 +509,9 @@ FailureOrOwned<BoundExpression>
 FailureOrOwned<BoundExpression> BoundInternalCast(
     BufferAllocator* const allocator,
     rowcount_t row_capacity,
-    BoundExpression* child_ptr,
+    unique_ptr<BoundExpression> child,
     DataType to_type,
     bool is_implicit) {
-  std::unique_ptr<BoundExpression> child(child_ptr);
   FailureOrVoid check = CheckAttributeCount(string("Cast"),
                                             child->result_schema(),
                                             1);

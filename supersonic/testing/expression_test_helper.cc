@@ -55,21 +55,19 @@ static const int kMaxNumberOfRowsInTest = 100;
 
 FailureOrOwned<BoundExpressionTree> StandardBind(const TupleSchema& schema,
                                                  rowcount_t max_row_count,
-                                                 const Expression* expression) {
-  std::unique_ptr<const Expression> deleter(expression);
+                                                 unique_ptr<const Expression> expression) {
   return expression->Bind(schema, HeapBufferAllocator::Get(), max_row_count);
 }
 
-BoundExpressionTree* DefaultBind(const TupleSchema& schema,
+unique_ptr<BoundExpressionTree> DefaultBind(const TupleSchema& schema,
                                  rowcount_t max_row_count,
-                                 const Expression* expression) {
-  return SucceedOrDie(StandardBind(schema, max_row_count, expression));
+                                 unique_ptr<const Expression> expression) {
+  return SucceedOrDie(StandardBind(schema, max_row_count, std::move(expression)));
 }
 
-BoundExpression* DefaultDoBind(const TupleSchema& schema,
+unique_ptr<BoundExpression> DefaultDoBind(const TupleSchema& schema,
                                rowcount_t max_row_count,
-                               const Expression* expression) {
-  std::unique_ptr<const Expression> deleter(expression);
+                               unique_ptr<const Expression> expression) {
   return SucceedOrDie(
       expression->DoBind(schema, HeapBufferAllocator::Get(), max_row_count));
 }
@@ -79,13 +77,15 @@ const View& DefaultEvaluate(BoundExpressionTree* expression,
   return SucceedOrDie(expression->Evaluate(input));
 }
 
-ExpressionList* MakeExpressionList(
-    const vector<const Expression*>& expressions) {
-  std::unique_ptr<ExpressionList> list(new ExpressionList());
+unique_ptr<ExpressionList> MakeExpressionList(
+    vector<unique_ptr<const Expression>> expressions)
+{
+  auto list = make_unique<ExpressionList>();
   for (int i = 0; i < expressions.size(); ++i) {
-    list->add(expressions[i]);
+    list->add(std::move(expressions[i]));
   }
-  return list.release();
+
+  return list;
 }
 
 void ExpectResultType(const TupleSchema& schema,
@@ -104,28 +104,28 @@ void ExpectResultType(const TupleSchema& schema,
 
 // ------------------------ Evaluation Tests ---------------------------
 
-const Expression* CreateTestedExpression(ConstExpressionCreator factory) {
+unique_ptr<const Expression> CreateTestedExpression(ConstExpressionCreator factory) {
   return (*factory)();
 }
-const Expression* CreateTestedExpression(UnaryExpressionCreator factory) {
+unique_ptr<const Expression> CreateTestedExpression(UnaryExpressionCreator factory) {
   return (*factory)(AttributeAt(0));
 }
-const Expression* CreateTestedExpression(BinaryExpressionCreator factory) {
+unique_ptr<const Expression> CreateTestedExpression(BinaryExpressionCreator factory) {
   return (*factory)(AttributeAt(0), AttributeAt(1));
 }
-const Expression* CreateTestedExpression(TernaryExpressionCreator factory) {
+unique_ptr<const Expression> CreateTestedExpression(TernaryExpressionCreator factory) {
   return (*factory)(AttributeAt(0), AttributeAt(1), AttributeAt(2));
 }
-const Expression* CreateTestedExpression(QuaternaryExpressionCreator factory) {
+unique_ptr<const Expression> CreateTestedExpression(QuaternaryExpressionCreator factory) {
   return (*factory)(AttributeAt(0), AttributeAt(1), AttributeAt(2),
                     AttributeAt(3));
 }
-const Expression* CreateTestedExpression(QuinaryExpressionCreator factory) {
+unique_ptr<const Expression> CreateTestedExpression(QuinaryExpressionCreator factory) {
   return (*factory)(AttributeAt(0), AttributeAt(1),
                     AttributeAt(2), AttributeAt(3),
                     AttributeAt(4));
 }
-const Expression* CreateTestedExpression(SenaryExpressionCreator factory) {
+unique_ptr<const Expression> CreateTestedExpression(SenaryExpressionCreator factory) {
   return (*factory)(AttributeAt(0), AttributeAt(1),
                     AttributeAt(2), AttributeAt(3),
                     AttributeAt(4), AttributeAt(5));
@@ -211,7 +211,7 @@ void TestEvaluationForAlignedResizedBlock(const Block& input_block,
 // grow.
 void TestEvaluationMemoryManagement(const Block& block,
                                     const Expression& expression) {
-  std::unique_ptr<MemoryLimit> memory_limit(new MemoryLimit(1000000));
+  auto memory_limit = make_unique<MemoryLimit>(1000000);
   const TupleSchema& schema = block.view().schema();
   FailureOrOwned<BoundExpressionTree> bound_expression =
       expression.Bind(schema, memory_limit.get(), block.row_capacity());
@@ -289,98 +289,97 @@ void TestEvaluationAcrossBlocks(
   }
 }
 
-void TestEvaluationCommon(const Block* block,
+void TestEvaluationCommon(const Block& block,
                           bool stateful_expression,
-                          const Expression* expr_ptr) {
-  std::unique_ptr<const Expression> expr(expr_ptr);
+                          unique_ptr<const Expression> expr) {
   // Test for the original size and content.
   ASSERT_NO_FATAL_FAILURE(
-      TestEvaluationForAlignedResizedBlock(*block, *expr,
-                                           block->row_capacity()));
+      TestEvaluationForAlignedResizedBlock(block, *expr,
+                                           block.row_capacity()));
   // Test the original block split into 1-row views.
-  ASSERT_NO_FATAL_FAILURE(TestEvaluationAcrossBlocks(*block, *expr));
+  ASSERT_NO_FATAL_FAILURE(TestEvaluationAcrossBlocks(block, *expr));
   if (!stateful_expression) {
     // Test whether any memory gets left behind the expression.
     ASSERT_NO_FATAL_FAILURE(
-        TestEvaluationMemoryManagement(*block, *expr));
+        TestEvaluationMemoryManagement(block, *expr));
     // To ensure that SIMD operations can be used at all and for all rows:
     // - use aligning BufferAllocator (TestEvaluationForAlignedResizedBlock),
     // - add 15 rows to fill the last relevant 16-byte memory block in each
     //   column (15 is chosen for BOOL, other types need less).
     ASSERT_NO_FATAL_FAILURE(
-        TestEvaluationForAlignedResizedBlock(*block, *expr,
-                                             block->row_capacity() + 15));
+        TestEvaluationForAlignedResizedBlock(block, *expr,
+                                             block.row_capacity() + 15));
     // Test even bigger block - may be needed to test SIMD execution of
     // operations on bit_ptrs.
     ASSERT_NO_FATAL_FAILURE(
-        TestEvaluationForAlignedResizedBlock(*block, *expr, 1024));
+        TestEvaluationForAlignedResizedBlock(block, *expr, 1024));
   }
 }
 
 template<typename ExpressionCreator>
-void TestEvaluationTemplated(const Block* block, ExpressionCreator factory,
+void TestEvaluationTemplated(const Block& block, ExpressionCreator factory,
                              bool stateful) {
-  std::unique_ptr<const Block> block_deleter(block);
   TestEvaluationCommon(
       block, stateful,
       CreateTestedExpression(factory));
   // Nullable expressions are expected to pass their nullability vector both
   // in the EvaluationResult, and via the mutable skip vector passed by the
   // parent. Invocation via the CompoundExpression tests the latter case.
-  TestEvaluationCommon(
-      block, stateful,
-      (new CompoundExpression())->Add(CreateTestedExpression(factory)));
+  auto expr = make_unique<CompoundExpression>();
+  expr->Add(CreateTestedExpression(factory));
+
+  TestEvaluationCommon(block, stateful, std::move(expr));
 }
 
-void TestEvaluation(const Block* block, ConstExpressionCreator factory) {
-  TestEvaluationTemplated(block, factory, false);
+void TestEvaluation(unique_ptr<const Block> block, ConstExpressionCreator factory) {
+  TestEvaluationTemplated(*block, factory, false);
 }
-void TestEvaluation(const Block* block, UnaryExpressionCreator factory) {
-  TestEvaluationTemplated(block, factory, false);
+void TestEvaluation(unique_ptr<const Block> block, UnaryExpressionCreator factory) {
+  TestEvaluationTemplated(*block, factory, false);
 }
-void TestEvaluation(const Block* block, BinaryExpressionCreator factory) {
-  TestEvaluationTemplated(block, factory, false);
+void TestEvaluation(unique_ptr<const Block> block, BinaryExpressionCreator factory) {
+  TestEvaluationTemplated(*block, factory, false);
 }
-void TestEvaluation(const Block* block, TernaryExpressionCreator factory) {
-  TestEvaluationTemplated(block, factory, false);
+void TestEvaluation(unique_ptr<const Block> block, TernaryExpressionCreator factory) {
+  TestEvaluationTemplated(*block, factory, false);
 }
-void TestEvaluation(const Block* block, QuaternaryExpressionCreator factory) {
-  TestEvaluationTemplated(block, factory, false);
+void TestEvaluation(unique_ptr<const Block> block, QuaternaryExpressionCreator factory) {
+  TestEvaluationTemplated(*block, factory, false);
 }
-void TestEvaluation(const Block* block, QuinaryExpressionCreator factory) {
-  TestEvaluationTemplated(block, factory, false);
+void TestEvaluation(unique_ptr<const Block> block, QuinaryExpressionCreator factory) {
+  TestEvaluationTemplated(*block, factory, false);
 }
-void TestEvaluation(const Block* block, SenaryExpressionCreator factory) {
-  TestEvaluationTemplated(block, factory, false);
+void TestEvaluation(unique_ptr<const Block> block, SenaryExpressionCreator factory) {
+  TestEvaluationTemplated(*block, factory, false);
 }
 
-void TestStatefulEvaluation(const Block* block,
+void TestStatefulEvaluation(unique_ptr<const Block> block,
                             ConstExpressionCreator factory) {
-  TestEvaluationTemplated(block, factory, true);
+  TestEvaluationTemplated(*block, factory, true);
 }
-void TestStatefulEvaluation(const Block* block,
+void TestStatefulEvaluation(unique_ptr<const Block> block,
                             UnaryExpressionCreator factory) {
-  TestEvaluationTemplated(block, factory, true);
+  TestEvaluationTemplated(*block, factory, true);
 }
-void TestStatefulEvaluation(const Block* block,
+void TestStatefulEvaluation(unique_ptr<const Block> block,
                             BinaryExpressionCreator factory) {
-  TestEvaluationTemplated(block, factory, true);
+  TestEvaluationTemplated(*block, factory, true);
 }
-void TestStatefulEvaluation(const Block* block,
+void TestStatefulEvaluation(unique_ptr<const Block> block,
                             TernaryExpressionCreator factory) {
-  TestEvaluationTemplated(block, factory, true);
+  TestEvaluationTemplated(*block, factory, true);
 }
-void TestStatefulEvaluation(const Block* block,
+void TestStatefulEvaluation(unique_ptr<const Block> block,
                             QuaternaryExpressionCreator factory) {
-  TestEvaluationTemplated(block, factory, true);
+  TestEvaluationTemplated(*block, factory, true);
 }
-void TestStatefulEvaluation(const Block* block,
+void TestStatefulEvaluation(unique_ptr<const Block> block,
                             QuinaryExpressionCreator factory) {
-  TestEvaluationTemplated(block, factory, true);
+  TestEvaluationTemplated(*block, factory, true);
 }
-void TestStatefulEvaluation(const Block* block,
+void TestStatefulEvaluation(unique_ptr<const Block> block,
                             SenaryExpressionCreator factory) {
-  TestEvaluationTemplated(block, factory, true);
+  TestEvaluationTemplated(*block, factory, true);
 }
 
 // -------------------------- Evaluation failure tests --------------------
@@ -397,39 +396,38 @@ void ExpectFailureLineByLine(const View& input,
 }
 
 // Evaluation failure test for unary expressions.
-void TestEvaluationFailureCommon(const Block* block_ptr,
-                                 const Expression* expr) {
-  std::unique_ptr<const Block> block(block_ptr);
-  std::unique_ptr<BoundExpressionTree> bound_expr(
-      DefaultBind(block->view().schema(), kMaxNumberOfRowsInTest, expr));
+void TestEvaluationFailureCommon(const Block* block,
+                                 unique_ptr<const Expression> expr) {
+  auto bound_expr = DefaultBind(block->view().schema(), kMaxNumberOfRowsInTest,
+                                std::move(expr));
   ExpectFailureLineByLine(block->view(), bound_expr.get());
 }
 
-void TestEvaluationFailure(const Block* block, ConstExpressionCreator factory) {
-  TestEvaluationFailureCommon(block, CreateTestedExpression(factory));
+void TestEvaluationFailure(unique_ptr<const Block> block, ConstExpressionCreator factory) {
+  TestEvaluationFailureCommon(block.get(), CreateTestedExpression(factory));
 }
-void TestEvaluationFailure(const Block* block, UnaryExpressionCreator factory) {
-  TestEvaluationFailureCommon(block, CreateTestedExpression(factory));
+void TestEvaluationFailure(unique_ptr<const Block> block, UnaryExpressionCreator factory) {
+  TestEvaluationFailureCommon(block.get(), CreateTestedExpression(factory));
 }
-void TestEvaluationFailure(const Block* block,
+void TestEvaluationFailure(unique_ptr<const Block> block,
                            BinaryExpressionCreator factory) {
-  TestEvaluationFailureCommon(block, CreateTestedExpression(factory));
+  TestEvaluationFailureCommon(block.get(), CreateTestedExpression(factory));
 }
-void TestEvaluationFailure(const Block* block,
+void TestEvaluationFailure(unique_ptr<const Block> block,
                            TernaryExpressionCreator factory) {
-  TestEvaluationFailureCommon(block, CreateTestedExpression(factory));
+  TestEvaluationFailureCommon(block.get(), CreateTestedExpression(factory));
 }
-void TestEvaluationFailure(const Block* block,
+void TestEvaluationFailure(unique_ptr<const Block> block,
                            QuaternaryExpressionCreator factory) {
-  TestEvaluationFailureCommon(block, CreateTestedExpression(factory));
+  TestEvaluationFailureCommon(block.get(), CreateTestedExpression(factory));
 }
-void TestEvaluationFailure(const Block* block,
+void TestEvaluationFailure(unique_ptr<const Block> block,
                            QuinaryExpressionCreator factory) {
-  TestEvaluationFailureCommon(block, CreateTestedExpression(factory));
+  TestEvaluationFailureCommon(block.get(), CreateTestedExpression(factory));
 }
-void TestEvaluationFailure(const Block* block,
+void TestEvaluationFailure(unique_ptr<const Block> block,
                            SenaryExpressionCreator factory) {
-  TestEvaluationFailureCommon(block, CreateTestedExpression(factory));
+  TestEvaluationFailureCommon(block.get(), CreateTestedExpression(factory));
 }
 
 // ------------------------ Schema tests -------------------------------
@@ -821,10 +819,10 @@ void TestTernaryBindingFailureWithNulls(TernaryExpressionCreator creator,
       const char* expected_name_template) {
   const SchemaHolder* schema_holder = SchemaHolder::get();
   string expected_name = strings::Substitute(expected_name_template, input);
-  std::unique_ptr<BoundExpression> bound_argument(
-      DefaultDoBind(*(schema_holder->schema()), 1, AttributeAt(input)));
+  auto bound_argument = DefaultDoBind(*(schema_holder->schema()), 1,
+                                      AttributeAt(input));
   FailureOrOwned<BoundExpression> result = (*factory)(
-      bound_argument.release(), HeapBufferAllocator::Get(), 1);
+      std::move(bound_argument), HeapBufferAllocator::Get(), 1);
   return GetAssertionResultForFactory(&result, expected_name.c_str());
 }
 
@@ -842,7 +840,7 @@ void TestTernaryBindingFailureWithNulls(TernaryExpressionCreator creator,
   std::unique_ptr<BoundExpression> bound_right_argument(
       DefaultDoBind(*(schema_holder->schema()), 1, AttributeAt(right)));
   FailureOrOwned<BoundExpression> result = (*factory)(
-      bound_left_argument.release(), bound_right_argument.release(),
+      std::move(bound_left_argument), std::move(bound_right_argument),
       HeapBufferAllocator::Get(), 1);
   return GetAssertionResultForFactory(&result, expected_name.c_str());
 }
@@ -890,7 +888,7 @@ void TestBoundFactoryFailure(BoundUnaryExpressionFactory factory,
   std::unique_ptr<BoundExpression> bound_argument(
       DefaultDoBind(*(schema_holder->schema()), 1, AttributeAt(arg_number)));
   FailureOrOwned<BoundExpression> result = (*factory)(
-      bound_argument.release(), HeapBufferAllocator::Get(), 1);
+      std::move(bound_argument), HeapBufferAllocator::Get(), 1);
   EXPECT_TRUE(result.is_failure()) << "Expected failure, but got: "
                                    << GetExpressionName(result.get());
 }
@@ -936,7 +934,7 @@ void TestBoundFactoryFailure(BoundBinaryExpressionFactory factory,
   std::unique_ptr<BoundExpression> bound_right_argument(
       DefaultDoBind(*(schema_holder->schema()), 1, AttributeAt(right_number)));
   FailureOrOwned<BoundExpression> result = (*factory)(
-      bound_left_argument.release(), bound_right_argument.release(),
+      std::move(bound_left_argument), std::move(bound_right_argument),
       HeapBufferAllocator::Get(), 1);
   EXPECT_TRUE(result.is_failure()) << "Expected failure, but got: "
                                    << GetExpressionName(result.get());
@@ -968,8 +966,8 @@ void TestBoundFactoryFailure(BoundBinaryExpressionFactory factory,
   std::unique_ptr<BoundExpression> bound_right_argument(
       DefaultDoBind(*(schema_holder->schema()), 1, AttributeAt(right_number)));
   FailureOrOwned<BoundExpression> result = (*factory)(
-      bound_left_argument.release(), bound_middle_argument.release(),
-      bound_right_argument.release(), HeapBufferAllocator::Get(), 1);
+      std::move(bound_left_argument), std::move(bound_middle_argument),
+      std::move(bound_right_argument), HeapBufferAllocator::Get(), 1);
   return GetAssertionResultForFactory(&result, expected_name.c_str());
 }
 
@@ -989,8 +987,8 @@ void TestBoundFactoryFailure(BoundTernaryExpressionFactory factory,
   std::unique_ptr<BoundExpression> bound_right_argument(
       DefaultDoBind(*(schema_holder->schema()), 1, AttributeAt(right_number)));
   FailureOrOwned<BoundExpression> result = (*factory)(
-      bound_left_argument.release(), bound_middle_argument.release(),
-      bound_right_argument.release(), HeapBufferAllocator::Get(), 1);
+      std::move(bound_left_argument), std::move(bound_middle_argument),
+      std::move(bound_right_argument), HeapBufferAllocator::Get(), 1);
   EXPECT_TRUE(result.is_failure()) << "Expected failure, but got: "
                                    << GetExpressionName(result.get());
 }
@@ -1019,9 +1017,9 @@ void TestBoundQuaternary(BoundQuaternaryExpressionFactory factory,
   std::unique_ptr<BoundExpression> bound_right_argument(
       DefaultDoBind(*(schema_holder->schema()), 1, AttributeAt(right_number)));
   FailureOrOwned<BoundExpression> result = (*factory)(
-      bound_left_argument.release(), bound_middle_left_argument.release(),
-      bound_middle_right_argument.release(),
-      bound_right_argument.release(), HeapBufferAllocator::Get(), 1);
+      std::move(bound_left_argument), std::move(bound_middle_left_argument),
+      std::move(bound_middle_right_argument),
+      std::move(bound_right_argument), HeapBufferAllocator::Get(), 1);
   ASSERT_TRUE(result.is_success()) << result.exception().PrintStackTrace();
   EXPECT_EQ(expected_name, GetExpressionName(result.get()));
 }
@@ -1030,8 +1028,7 @@ void TestBoundExpressionList(BoundExpressionListExpressionFactory factory,
                              vector<DataType> data_types,
                              const char* expected_name_template) {
   const SchemaHolder* schema_holder = SchemaHolder::get();
-  std::unique_ptr<BoundExpressionList> expression_list(
-      new BoundExpressionList());
+  auto expression_list = make_unique<BoundExpressionList>();
   string expected_name = expected_name_template;
   vector<int> column_numbers;
   for (int i = 0; i < data_types.size(); ++i) {
@@ -1046,7 +1043,7 @@ void TestBoundExpressionList(BoundExpressionListExpressionFactory factory,
                            SimpleItoa(column_numbers[i]), &expected_name);
   }
   FailureOrOwned<BoundExpression> result = (*factory)(
-      expression_list.release(), HeapBufferAllocator::Get(), 1);
+      std::move(expression_list), HeapBufferAllocator::Get(), 1);
   ASSERT_TRUE(result.is_success()) << result.exception().PrintStackTrace();
   EXPECT_EQ(expected_name, GetExpressionName(result.get()));
 }
@@ -1054,8 +1051,7 @@ void TestBoundExpressionList(BoundExpressionListExpressionFactory factory,
 void TestBoundFactoryFailure(BoundExpressionListExpressionFactory factory,
                              vector<DataType> data_types) {
   const SchemaHolder* schema_holder = SchemaHolder::get();
-  std::unique_ptr<BoundExpressionList> expression_list(
-      new BoundExpressionList());
+  auto expression_list = make_unique<BoundExpressionList>();
 
   for (vector<DataType>::const_iterator it = data_types.begin();
       it != data_types.end(); ++it) {
@@ -1064,7 +1060,7 @@ void TestBoundFactoryFailure(BoundExpressionListExpressionFactory factory,
         AttributeAt(column_number)));
   }
   FailureOrOwned<BoundExpression> result = (*factory)(
-      expression_list.release(), HeapBufferAllocator::Get(), 1);
+      std::move(expression_list), HeapBufferAllocator::Get(), 1);
   EXPECT_TRUE(result.is_failure()) << "Expected failure, but got: "
                                    << GetExpressionName(result.get());
 }

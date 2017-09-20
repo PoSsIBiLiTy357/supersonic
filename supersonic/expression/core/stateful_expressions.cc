@@ -21,32 +21,32 @@
 
 namespace supersonic {
 
-const Expression* Changed(const Expression* const argument) {
+unique_ptr<const Expression> Changed(unique_ptr<const Expression> argument) {
   return CreateExpressionForExistingBoundFactory(
-      argument, &BoundChanged, "CHANGED($0)");
+      std::move(argument), &BoundChanged, "CHANGED($0)");
 }
 
-const Expression* RunningSum(const Expression* const argument) {
+unique_ptr<const Expression> RunningSum(unique_ptr<const Expression> argument) {
   return CreateExpressionForExistingBoundFactory(
-      argument, &BoundRunningSum, "RUNNING_SUM($0)");
+      std::move(argument), &BoundRunningSum, "RUNNING_SUM($0)");
 }
 
-const Expression* Smudge(const Expression* const argument) {
+unique_ptr<const Expression> Smudge(unique_ptr<const Expression> argument) {
   return CreateExpressionForExistingBoundFactory(
-      argument, &BoundSmudge, "SMUDGE($0)");
+      std::move(argument), &BoundSmudge, "SMUDGE($0)");
 }
 
-const Expression* RunningMinWithFlush(const Expression* const flush,
-                                      const Expression* const input) {
+unique_ptr<const Expression> RunningMinWithFlush(
+    unique_ptr<const Expression> flush, unique_ptr<const Expression> input) {
   return CreateExpressionForExistingBoundFactory(
-      flush, input, &BoundRunningMinWithFlush,
+      std::move(flush), std::move(input), &BoundRunningMinWithFlush,
       "RUNNING_MIN_WITH_FLUSH($0, $1)");
 }
 
-const Expression* SmudgeIf(const Expression* const argument,
-                           const Expression* const condition) {
+unique_ptr<const Expression> SmudgeIf(unique_ptr<const Expression> argument,
+                                      unique_ptr<const Expression> condition) {
   return CreateExpressionForExistingBoundFactory(
-      argument, condition, &BoundSmudgeIf,
+      std::move(argument), std::move(condition), &BoundSmudgeIf,
       "SMUDGE_IF($0, $1)");
 }
 

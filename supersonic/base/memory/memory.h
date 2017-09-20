@@ -646,7 +646,7 @@ class MemoryStatisticsCollectingBufferAllocator : public BufferAllocator {
   virtual void FreeInternal(Buffer* buffer);
 
   BufferAllocator* delegate_;
-  std::unique_ptr<MemoryStatisticsCollectorInterface>
+  unique_ptr<MemoryStatisticsCollectorInterface>
       memory_stats_collector_;
 };
 
@@ -718,7 +718,7 @@ class OwningThreadSafeBufferAllocator
   virtual ~OwningThreadSafeBufferAllocator() {}
 
  private:
-  std::unique_ptr<DelegateAllocatorType> delegate_owned_;
+  unique_ptr<DelegateAllocatorType> delegate_owned_;
 };
 
 class ThreadSafeMemoryLimit

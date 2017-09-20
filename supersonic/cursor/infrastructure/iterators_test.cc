@@ -30,8 +30,8 @@ namespace supersonic {
 
 class DestructorCatcher : public BasicDecoratorCursor {
  public:
-  DestructorCatcher(Cursor* delegate, bool* destroyed)
-      : BasicDecoratorCursor(delegate),
+  DestructorCatcher(unique_ptr<Cursor> delegate, bool* destroyed)
+      : BasicDecoratorCursor(std::move(delegate)),
         destroyed_(destroyed) {
     CHECK(!*destroyed);
   }
@@ -53,14 +53,18 @@ class BaseIteratorTest : public testing::Test {
 
   TupleSchema schema() const { return schema_; }
   const View& view() const { return data_->view(); }
-  Cursor* CreatePlainCursor() {
-    return SucceedOrDie(data_->CreateCursor());
+
+  unique_ptr<Cursor> CreatePlainCursor() {
+    return unique_ptr<Cursor>(
+      SucceedOrDie(data_->CreateCursor()));
   }
-  Cursor* CreateFailingCursor() {
-    return SucceedOrDie(failing_->CreateCursor());
+  unique_ptr<Cursor> CreateFailingCursor() {
+    return unique_ptr<Cursor>(
+      SucceedOrDie(failing_->CreateCursor()));
   }
-  Cursor* CreateEmptyCursor() {
-    return SucceedOrDie(empty_->CreateCursor());
+  unique_ptr<Cursor> CreateEmptyCursor() {
+    return unique_ptr<Cursor>(
+      SucceedOrDie(empty_->CreateCursor()));
   }
 
  private:
@@ -290,8 +294,8 @@ TEST_F(CursorIteratorTest, TerminationInterrupts) {
 
 TEST_F(CursorIteratorTest, CursorIsDestroyedAtEos) {
   bool destroyed = false;
-  CursorIterator iterator(
-      new DestructorCatcher(CreatePlainCursor(), &destroyed));
+  CursorIterator iterator(make_unique<DestructorCatcher>(
+      CreatePlainCursor(), &destroyed));
   EXPECT_FALSE(destroyed);
   while (iterator.Next(Cursor::kDefaultRowCount, false)) {
     EXPECT_FALSE(destroyed);
@@ -301,8 +305,8 @@ TEST_F(CursorIteratorTest, CursorIsDestroyedAtEos) {
 
 TEST_F(CursorIteratorTest, CursorIsDestroyedAtFailure) {
   bool destroyed = false;
-  CursorIterator iterator(
-      new DestructorCatcher(CreateFailingCursor(), &destroyed));
+  CursorIterator iterator(make_unique<DestructorCatcher>(
+      CreateFailingCursor(), &destroyed));
   EXPECT_FALSE(destroyed);
   while (iterator.Next(Cursor::kDefaultRowCount, false)) {
     EXPECT_FALSE(destroyed);
@@ -360,7 +364,7 @@ TEST_F(CursorRowIteratorTest, TerminationInterrupts) {
 TEST_F(CursorRowIteratorTest, CursorIsDestroyedAtEos) {
   bool destroyed = false;
   CursorRowIterator iterator(
-      new DestructorCatcher(CreatePlainCursor(), &destroyed));
+      make_unique<DestructorCatcher>(CreatePlainCursor(), &destroyed));
   EXPECT_FALSE(destroyed);
   while (iterator.Next()) {
     EXPECT_FALSE(destroyed);
@@ -371,7 +375,7 @@ TEST_F(CursorRowIteratorTest, CursorIsDestroyedAtEos) {
 TEST_F(CursorRowIteratorTest, CursorIsDestroyedAtFailure) {
   bool destroyed = false;
   CursorRowIterator iterator(
-      new DestructorCatcher(CreateFailingCursor(), &destroyed));
+      make_unique<DestructorCatcher>(CreateFailingCursor(), &destroyed));
   EXPECT_FALSE(destroyed);
   while (iterator.Next()) {
     EXPECT_FALSE(destroyed);

@@ -5,6 +5,7 @@
 // A proto enum provides several convenient utility functions out of the box,
 // which is why it is used here instead of a plain C++ enum, even though
 // the proto is not intended for serialisation.
+syntax = "proto2";
 
 
 package supersonic;

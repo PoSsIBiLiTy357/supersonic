@@ -51,19 +51,18 @@ class AggregateClustersCursorTest : public testing::Test {
 FailureOrOwned<Cursor> CreateAggregateClusters(
     const SingleSourceProjector& group_by,
     const AggregationSpecification& aggregation,
-    Cursor* input) {
-  std::unique_ptr<Cursor> input_owner(input);
+    unique_ptr<Cursor> input) {
   FailureOrOwned<Aggregator> aggregator = Aggregator::Create(
-      aggregation, input_owner->schema(), HeapBufferAllocator::Get(), 1);
+      aggregation, input->schema(), HeapBufferAllocator::Get(), 1);
   PROPAGATE_ON_FAILURE(aggregator);
   FailureOrOwned<const BoundSingleSourceProjector> bound_group_by =
-      group_by.Bind(input_owner->schema());
+      group_by.Bind(input->schema());
   PROPAGATE_ON_FAILURE(bound_group_by);
   return BoundAggregateClusters(
-      bound_group_by.release(),
-      aggregator.release(),
+      bound_group_by.move(),
+      aggregator.move(),
       HeapBufferAllocator::Get(),
-      input_owner.release());
+      std::move(input));
 }
 
 // Input clustered into 3 clusters of rows with equal key.
@@ -72,33 +71,34 @@ TEST_F(AggregateClustersCursorTest, AggregateClusters) {
   OperationTest test;
   test.SetInput(sample_input_builder_.Build());
   test.SetExpectedResult(sample_output_builder_.Build());
+  auto agg = make_unique<AggregationSpecification>();
+  agg->AddAggregation(SUM, "col1", "sum");
   test.Execute(
       AggregateClustersWithSpecifiedOutputBlockSize(
           ProjectNamedAttribute("col0"),
-          (new AggregationSpecification)
-              ->AddAggregation(SUM, "col1", "sum"),
+          std::move(agg),
           2,
           test.input()));
 }
 
 TEST_F(AggregateClustersCursorTest, AggregateClustersWithSpyTransform) {
   CreateSampleData();
-  Cursor* input = sample_input_builder_.BuildCursor();
+  auto input = sample_input_builder_.BuildCursor();
   std::unique_ptr<const SingleSourceProjector> projector(
       ProjectNamedAttribute("col0"));
   AggregationSpecification aggregator;
   aggregator.AddAggregation(SUM, "col1", "sum");
 
   std::unique_ptr<Cursor> clusters(
-      SucceedOrDie(CreateAggregateClusters(*projector, aggregator, input)));
+      SucceedOrDie(CreateAggregateClusters(*projector, aggregator, std::move(input))));
 
   std::unique_ptr<CursorTransformerWithSimpleHistory> spy_transformer(
       PrintingSpyTransformer());
   clusters->ApplyToChildren(spy_transformer.get());
-  clusters.reset(spy_transformer->Transform(clusters.release()));
+  clusters = spy_transformer->Transform(std::move(clusters));
 
-  std::unique_ptr<Cursor> expected_result(sample_output_builder_.BuildCursor());
-  EXPECT_CURSORS_EQUAL(expected_result.release(), clusters.release());
+  auto expected_result = sample_output_builder_.BuildCursor();
+  EXPECT_CURSORS_EQUAL(std::move(expected_result), std::move(clusters));
 }
 
 // Special case. Input is not clustered by any column, but AggregateClusters
@@ -113,11 +113,12 @@ TEST_F(AggregateClustersCursorTest, AggregateClustersWithoutClusteredColumn) {
   test.SetExpectedResult(TestDataBuilder<INT32>()
                          .AddRow(23)
                          .Build());
+  auto agg = make_unique<AggregationSpecification>();
+  agg->AddAggregation(SUM, "col0", "sum");
   test.Execute(
       AggregateClustersWithSpecifiedOutputBlockSize(
-          new CompoundSingleSourceProjector(),
-          (new AggregationSpecification)
-              ->AddAggregation(SUM, "col0", "sum"),
+          make_unique<CompoundSingleSourceProjector>(),
+          std::move(agg),
           2,
           test.input()));
 }
@@ -126,11 +127,12 @@ TEST_F(AggregateClustersCursorTest, EmptyInputWithClusteredColumn) {
   OperationTest test;
   test.SetInput(TestDataBuilder<STRING, INT32>().Build());
   test.SetExpectedResult(TestDataBuilder<STRING, INT32>().Build());
+  auto agg = make_unique<AggregationSpecification>();
+  agg->AddAggregation(SUM, "col1", "sum");
   test.Execute(
       AggregateClustersWithSpecifiedOutputBlockSize(
           ProjectNamedAttribute("col0"),
-          (new AggregationSpecification)
-              ->AddAggregation(SUM, "col1", "sum"),
+          std::move(agg),
           2,
           test.input()));
 }
@@ -140,11 +142,12 @@ TEST_F(AggregateClustersCursorTest, EmptyInputWithoutClusteredColumn) {
   OperationTest test;
   test.SetInput(TestDataBuilder<STRING>().Build());
   test.SetExpectedResult(TestDataBuilder<STRING>().Build());
+  auto agg = make_unique<AggregationSpecification>();
+  agg->AddAggregation(MAX, "col0", "max");
   test.Execute(
       AggregateClustersWithSpecifiedOutputBlockSize(
-          new CompoundSingleSourceProjector(),
-          (new AggregationSpecification)
-              ->AddAggregation(MAX, "col0", "max"),
+          make_unique<CompoundSingleSourceProjector>(),
+          std::move(agg),
           2,
           test.input()));
 }
@@ -169,15 +172,17 @@ TEST_F(AggregateClustersCursorTest, MultiColumnAggregateClusters) {
                          .AddRow("a", 1, "b", 2, 7)
                          .AddRow("a", 1, "bbbbbbbb", 1, -3)
                          .Build());
+  auto proj = make_unique<CompoundSingleSourceProjector>();
+  proj->add(ProjectNamedAttributeAs("col0", "A"))
+      ->add(ProjectNamedAttributeAs("col1", "B"))
+      ->add(ProjectNamedAttributeAs("col2", "C"));
+  auto agg = make_unique<AggregationSpecification>();
+  agg->AddAggregation(SUM, "col1", "sum1")
+     ->AddAggregation(SUM, "col3", "sum3");
   test.Execute(
       AggregateClustersWithSpecifiedOutputBlockSize(
-          (new CompoundSingleSourceProjector())
-              ->add(ProjectNamedAttributeAs("col0", "A"))
-              ->add(ProjectNamedAttributeAs("col1", "B"))
-              ->add(ProjectNamedAttributeAs("col2", "C")),
-          (new AggregationSpecification)
-              ->AddAggregation(SUM, "col1", "sum1")
-              ->AddAggregation(SUM, "col3", "sum3"),
+          std::move(proj),
+          std::move(agg),
           2,
           test.input()));
 }
@@ -191,10 +196,12 @@ TEST_F(AggregateClustersCursorTest, BadGroupBy) {
                 .AddRow(7)
                 .Build());
   test.SetExpectedBindFailure(ERROR_ATTRIBUTE_MISSING);
+  auto agg = make_unique<AggregationSpecification>();
+  agg->AddAggregation(MIN, "col0", "min");
   test.Execute(
       AggregateClusters(
           ProjectNamedAttributeAs("col1", "B"),
-          (new AggregationSpecification)->AddAggregation(MIN, "col0", "min"),
+          std::move(agg),
           test.input()));
 }
 
@@ -210,12 +217,14 @@ TEST_F(AggregateClustersCursorTest,
   test.SetExpectedBindFailure(ERROR_MEMORY_EXCEEDED);
   MemoryLimit memory_limit(0);
   test.SetBufferAllocator(&memory_limit);
-  Operation* op = AggregateClustersWithSpecifiedOutputBlockSize(
-      new CompoundSingleSourceProjector(),
-      (new AggregationSpecification)->AddAggregation(SUM, "col0", "sum"),
+  auto agg = make_unique<AggregationSpecification>();
+  agg->AddAggregation(SUM, "col0", "sum");
+  auto op = AggregateClustersWithSpecifiedOutputBlockSize(
+      make_unique<CompoundSingleSourceProjector>(),
+      std::move(agg),
       2,
       test.input());
-  test.Execute(op);
+  test.Execute(std::move(op));
 }
 
 // Tries to make output with aggregation column having same name
@@ -224,10 +233,12 @@ TEST_F(AggregateClustersCursorTest, ResultingColumnsNamesConflict) {
   OperationTest test;
   test.SetInput(TestDataBuilder<INT32, INT32>().Build());
   test.SetExpectedBindFailure(ERROR_ATTRIBUTE_EXISTS);
+  auto agg = make_unique<AggregationSpecification>();
+  agg->AddAggregation(SUM, "col1", "A");
   test.Execute(
       AggregateClusters(
           ProjectNamedAttributeAs("col0", "A"),
-          (new AggregationSpecification)->AddAggregation(SUM, "col1", "A"),
+          std::move(agg),
           test.input()));
 }
 
@@ -239,10 +250,12 @@ TEST_F(AggregateClustersCursorTest, ExceptionFromInputPropagated) {
   test.SetExpectedResult(TestDataBuilder<INT32>()
                          .ReturnException(ERROR_GENERAL_IO_ERROR)
                          .Build());
+  auto agg = make_unique<AggregationSpecification>();
+  agg->AddAggregation(SUM, "col0", "sum");
   test.Execute(
       AggregateClusters(
-          new CompoundSingleSourceProjector(),
-          (new AggregationSpecification)->AddAggregation(SUM, "col0", "sum"),
+          make_unique<CompoundSingleSourceProjector>(),
+          std::move(agg),
           test.input()));
 }
 
@@ -260,29 +273,32 @@ TEST_F(AggregateClustersCursorTest, AggregateClustersWithDefaultCreate) {
                          .AddRow(0, 13)
                          .AddRow(2, -1)
                          .Build());
+  auto agg = make_unique<AggregationSpecification>();
+  agg->AddAggregation(SUM, "col1", "sum");
   test.Execute(
       AggregateClusters(
           ProjectNamedAttribute("col0"),
-          (new AggregationSpecification)->AddAggregation(SUM, "col1", "sum"),
+          std::move(agg),
           test.input()));
 }
 
 TEST_F(AggregateClustersCursorTest, TransformTest) {
   // Empty input cursor.
-  Cursor* input = sample_input_builder_.BuildCursor();
+  auto input = sample_input_builder_.BuildCursor();
+  auto saved = input.get();
   std::unique_ptr<const SingleSourceProjector> projector(
       ProjectNamedAttribute("col0"));
   AggregationSpecification aggregator;
 
   std::unique_ptr<Cursor> clusters(
-      SucceedOrDie(CreateAggregateClusters(*projector, aggregator, input)));
+      SucceedOrDie(CreateAggregateClusters(*projector, aggregator, std::move(input))));
 
   std::unique_ptr<CursorTransformerWithSimpleHistory> spy_transformer(
       PrintingSpyTransformer());
   clusters->ApplyToChildren(spy_transformer.get());
 
   ASSERT_EQ(1, spy_transformer->GetHistoryLength());
-  EXPECT_EQ(input, spy_transformer->GetEntryAt(0)->original());
+  EXPECT_EQ(saved, spy_transformer->GetEntryAt(0)->original());
 }
 
 }  // namespace supersonic

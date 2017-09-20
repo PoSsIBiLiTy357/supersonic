@@ -77,11 +77,11 @@ class Aggregator {
                      rowcount_t result_initial_row_capacity);
 
   TupleSchema schema_;
-  std::unique_ptr<Block> data_;
+  unique_ptr<Block> data_;
 
   // Pairs of input column position (can be -1 for COUNT) and aggregators that
   // should be used to compute aggregation on given inputs.
-  vector<pair<int, linked_ptr<aggregations::ColumnAggregator> > >
+  vector<pair<int, unique_ptr<aggregations::ColumnAggregator>>>
       column_aggregator_;
 
   DISALLOW_COPY_AND_ASSIGN(Aggregator);

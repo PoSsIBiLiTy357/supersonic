@@ -34,7 +34,7 @@ class BoundExpression;
 class BufferAllocator;
 
 template<OperatorId operation_type>
-FailureOrOwned<BoundExpression> BoundGeneralRegexp(BoundExpression* str,
+FailureOrOwned<BoundExpression> BoundGeneralRegexp(unique_ptr<BoundExpression> str,
                                                    const StringPiece& pattern,
                                                    BufferAllocator* allocator,
                                                    rowcount_t max_row_count);

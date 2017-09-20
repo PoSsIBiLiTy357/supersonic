@@ -16,16 +16,9 @@
 #ifndef SUPERSONIC_CURSOR_CORE_SPLITTER_H_
 #define SUPERSONIC_CURSOR_CORE_SPLITTER_H_
 
-#include <cstddef>
-
-#include <string>
-namespace supersonic {using std::string; }
-#include <vector>
-using std::vector;
-#include <list>
-#include "supersonic/utils/std_namespace.h"
 
 #include <glog/logging.h>
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/base/infrastructure/types.h"
@@ -35,7 +28,6 @@ using std::vector;
 #include "supersonic/cursor/infrastructure/iterators.h"
 #include "supersonic/cursor/infrastructure/row.h"
 #include "supersonic/utils/pointer_vector.h"
-#include <memory>
 
 namespace supersonic {
 
@@ -62,7 +54,7 @@ class SplitterInterface {
   // using others, as long as there is always at least one reader remaining.
   //
   // This should not be called after any of the readers calls Next().
-  virtual Cursor* AddReader() = 0;
+  virtual unique_ptr<Cursor> AddReader() = 0;
 
   // Returns the schema of the cursor behind this splitter.
   virtual const TupleSchema& schema() const = 0;
@@ -100,15 +92,16 @@ class BufferedSplitter : public SplitterInterface {
  public:
   // Creates a new splitter for the specified cursor. The new splitter has no
   // readers - you need to add them via AddReader.
-  explicit BufferedSplitter(Cursor* input,
+  explicit BufferedSplitter(unique_ptr<Cursor> input,
                             BufferAllocator* buffer_allocator,
                             rowcount_t max_row_count)
-      : input_(input),
-        copier(input->schema(), /* deep copy = */ true),
+      : input_(std::move(input)),
+        copier(input_.schema(), /* deep copy = */ true),
         rows_fetched_(0), has_next_called_(false),
         buffer_allocator_(buffer_allocator), max_row_count_(max_row_count) {}
+
   virtual ~BufferedSplitter() {}
-  virtual Cursor* AddReader();
+  virtual unique_ptr<Cursor> AddReader();
   virtual const TupleSchema& schema() const { return input_.schema(); }
   virtual void Interrupt() { input_.Interrupt(); }
 
@@ -231,11 +224,11 @@ class BarrierSplitter : public SplitterInterface {
  public:
   // Creates a new splitter for the specified cursor. The new splitter has no
   // readers - you need to add them via AddReader.
-  explicit BarrierSplitter(Cursor* input)
-      : input_(input), readers_(), barrier_(0) {}
+  explicit BarrierSplitter(unique_ptr<Cursor> input)
+      : input_(std::move(input)), readers_(), barrier_(0) {}
   virtual ~BarrierSplitter() {}
 
-  virtual Cursor* AddReader();
+  virtual unique_ptr<Cursor> AddReader();
 
   virtual const TupleSchema& schema() const { return input_.schema(); }
 

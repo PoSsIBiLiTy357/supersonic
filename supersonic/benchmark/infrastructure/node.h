@@ -63,7 +63,7 @@ class BenchmarkTreeNode {
   util::gtl::PointerVector<BenchmarkTreeNode> children_;
 
   // Statistics for the benchmarked cursor related to the current node.
-  std::unique_ptr<CursorStatistics> cursor_statistics_;
+  unique_ptr<CursorStatistics> cursor_statistics_;
 
   DISALLOW_COPY_AND_ASSIGN(BenchmarkTreeNode);
 };

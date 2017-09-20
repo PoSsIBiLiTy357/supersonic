@@ -190,7 +190,7 @@ class Arena::Component {
   void Reset() { offset_ = 0; }
 
  private:
-  std::unique_ptr<Buffer> buffer_;
+  unique_ptr<Buffer> buffer_;
   char* const data_;
   size_t offset_;
   const size_t size_;

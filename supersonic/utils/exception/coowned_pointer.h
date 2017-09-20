@@ -26,6 +26,7 @@
 #define DATAWAREHOUSE_COMMON_EXCEPTION_COOWNED_POINTER_H_
 
 #include <atomic>
+#include <memory>
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"  // for CHECK macros
@@ -43,6 +44,10 @@ class CoownedPointer {
   explicit CoownedPointer(T* value)
       : value_(value),
         control_(new Control(value)) { }
+
+  explicit CoownedPointer(std::unique_ptr<T> value)
+      : value_(value.release()),
+        control_(new Control(value_)) { }
 
   // Makes this a copy of the other.
   // If other.get() == NULL, creates a pointer to NULL. Otherwise, creates a

@@ -539,7 +539,7 @@ TEST_F(AggregatorsTest, UpdateStringAggregationReturnsErrorWhenOutOfMemory) {
   // Pass enough memory to allocate a block, but not enough to update
   // aggregation.
   MemoryLimit memory_limit(32);
-  std::unique_ptr<Block> result_block(new Block(schema, &memory_limit));
+  auto result_block = make_unique<Block>(schema, &memory_limit);
   CHECK(result_block->Reallocate(1));
 
   std::unique_ptr<ColumnAggregator> aggregator(

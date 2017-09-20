@@ -16,14 +16,7 @@
 
 #include "supersonic/expression/core/comparison_expressions.h"
 
-#include <memory>
-#include <string>
-#include <vector>
-namespace supersonic {using std::string; }
-using std::unique_ptr;
-using std::make_unique;
-using std::vector;
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/base/exception/exception.h"
@@ -49,10 +42,10 @@ namespace {
 // an arbitrary number of arguments.
 class InExpressionSetExpression : public Expression {
  public:
-  InExpressionSetExpression(const Expression* const needle_expression,
-                            const ExpressionList* const haystack_arguments)
-      : needle_expression_(needle_expression),
-        haystack_arguments_(haystack_arguments) {}
+  InExpressionSetExpression(unique_ptr<const Expression> needle_expression,
+                            unique_ptr<const ExpressionList> haystack_arguments)
+      : needle_expression_(std::move(needle_expression)),
+        haystack_arguments_(std::move(haystack_arguments)) {}
 
  private:
   virtual FailureOrOwned<BoundExpression> DoBind(
@@ -65,8 +58,8 @@ class InExpressionSetExpression : public Expression {
     FailureOrOwned<BoundExpressionList> bound_haystack =
         haystack_arguments_->DoBind(input_schema, allocator, max_row_count);
     PROPAGATE_ON_FAILURE(bound_haystack);
-    return BoundInSet(bound_needle.release(),
-                      bound_haystack.release(),
+    return BoundInSet(bound_needle.move(),
+                      bound_haystack.move(),
                       allocator,
                       max_row_count);
   }
@@ -83,54 +76,57 @@ class InExpressionSetExpression : public Expression {
 };
 }  // namespace
 
-const Expression* In(const Expression* const needle_expression,
-                     const ExpressionList* haystack_arguments) {
-  return new InExpressionSetExpression(needle_expression, haystack_arguments);
+unique_ptr<const Expression>
+In(unique_ptr<const Expression> needle_expression,
+   unique_ptr<const ExpressionList> haystack_arguments) {
+  return make_unique<InExpressionSetExpression>(std::move(needle_expression),
+                                                std::move(haystack_arguments));
 }
 
-const Expression* IsOdd(const Expression* const arg) {
-  return CreateExpressionForExistingBoundFactory(
-      arg, &BoundIsOdd, "IS_ODD($0)");
+unique_ptr<const Expression> IsOdd(unique_ptr<const Expression> arg) {
+  return CreateExpressionForExistingBoundFactory(std::move(arg), &BoundIsOdd,
+                                                 "IS_ODD($0)");
 }
 
-const Expression* IsEven(const Expression* const arg) {
-  return CreateExpressionForExistingBoundFactory(
-      arg, &BoundIsEven, "IS_EVEN($0)");
+unique_ptr<const Expression> IsEven(unique_ptr<const Expression> arg) {
+  return CreateExpressionForExistingBoundFactory(std::move(arg), &BoundIsEven,
+                                                 "IS_EVEN($0)");
 }
 
-const Expression* NotEqual(const Expression* const left,
-                           const Expression* const right) {
+unique_ptr<const Expression> NotEqual(unique_ptr<const Expression> left,
+                                      unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundNotEqual, "$0 <> $1");
+      std::move(left), std::move(right), &BoundNotEqual, "$0 <> $1");
 }
 
-const Expression* Equal(const Expression* const left,
-                        const Expression* const right) {
+unique_ptr<const Expression> Equal(unique_ptr<const Expression> left,
+                                   unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundEqual, "$0 == $1");
+      std::move(left), std::move(right), &BoundEqual, "$0 == $1");
 }
 
-const Expression* Greater(const Expression* const left,
-                          const Expression* const right) {
+unique_ptr<const Expression> Greater(unique_ptr<const Expression> left,
+                                     unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundGreater, "$0 > $1");
+      std::move(left), std::move(right), &BoundGreater, "$0 > $1");
 }
 
-const Expression* GreaterOrEqual(const Expression* const left,
-                                 const Expression* const right) {
+unique_ptr<const Expression>
+GreaterOrEqual(unique_ptr<const Expression> left,
+               unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundGreaterOrEqual, "$0 >= $1");
+      std::move(left), std::move(right), &BoundGreaterOrEqual, "$0 >= $1");
 }
 
-const Expression* Less(const Expression* const left,
-                       const Expression* const right) {
+unique_ptr<const Expression> Less(unique_ptr<const Expression> left,
+                                  unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundLess, "$0 < $1");
+      std::move(left), std::move(right), &BoundLess, "$0 < $1");
 }
 
-const Expression* LessOrEqual(const Expression* const left,
-                              const Expression* const right) {
+unique_ptr<const Expression> LessOrEqual(unique_ptr<const Expression> left,
+                                         unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundLessOrEqual, "$0 <= $1");
+      std::move(left), std::move(right), &BoundLessOrEqual, "$0 <= $1");
 }
-}  // namespace supersonic
+} // namespace supersonic

@@ -20,8 +20,7 @@
 #ifndef SUPERSONIC_BENCHMARK_INFRASTRUCTURE_TREE_BUILDER_H_
 #define SUPERSONIC_BENCHMARK_INFRASTRUCTURE_TREE_BUILDER_H_
 
-#include <memory>
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/benchmark/infrastructure/benchmark_transformer.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/pointer_vector.h"
@@ -37,11 +36,12 @@ class CursorStatistics;
 class BenchmarkResult {
  public:
   BenchmarkResult() {}
+  BenchmarkResult(const BenchmarkResult&) = delete;
 
   // Takes ownership of both the node and the cursor.
-  BenchmarkResult(BenchmarkTreeNode* node, Cursor* cursor)
-      : node_(node),
-        cursor_(cursor) {}
+  BenchmarkResult(unique_ptr<BenchmarkTreeNode> node, unique_ptr<Cursor> cursor)
+      : node_(std::move(node)),
+        cursor_(std::move(cursor)) {}
 
   // Simple field getters, ownership is not transferred.
   const BenchmarkTreeNode& node() { return *node_; }
@@ -49,14 +49,14 @@ class BenchmarkResult {
 
   // Field getters which transfer ownership of the retrieved object
   // to the caller.
-  BenchmarkTreeNode* release_node() { return node_.release(); }
-  Cursor* release_cursor() { return cursor_.release(); }
+  unique_ptr<BenchmarkTreeNode> move_node() { return std::move(node_); }
+  unique_ptr<Cursor> move_cursor() { return std::move(cursor_); }
+
+
 
  private:
-  std::unique_ptr<BenchmarkTreeNode> node_;
-  std::unique_ptr<Cursor> cursor_;
-
-  DISALLOW_COPY_AND_ASSIGN(BenchmarkResult);
+  unique_ptr<BenchmarkTreeNode> node_;
+  unique_ptr<Cursor> cursor_;
 };
 
 // The tree builder is a utility that can create a benchmarking tree from
@@ -85,7 +85,7 @@ class BenchmarkTreeBuilder {
   //
   // Ownership of the argument cursor will be taken by the created cursor
   // wrapper.
-  virtual BenchmarkResult* CreateTree(Cursor* cursor);
+  virtual unique_ptr<BenchmarkResult> CreateTree(unique_ptr<Cursor> cursor);
 
  private:
   // The method will create a tree node for a CursorWithBenchmarkListener object

@@ -31,11 +31,11 @@ namespace supersonic {
 // where X is the input variable.
 class Expression;
 
-const Expression* BasicInt32ToStringCase(const Expression* selector) {
-  return Case(MakeExpressionList(util::gtl::Container(
-      selector, ConstString("other"),
+unique_ptr<const Expression> BasicInt32ToStringCase(unique_ptr<const Expression> selector) {
+  return Case(make_unique<ExpressionList>(
+      std::move(selector), ConstString("other"),
       ConstInt32(1), ConstString("one"),
-      ConstInt32(2), ConstString("two"))));
+      ConstInt32(2), ConstString("two")));
 }
 
 TEST(CaseExpressionTest, BasicInt32ToString) {
@@ -51,12 +51,13 @@ TEST(CaseExpressionTest, BasicInt32ToString) {
 
 // This is SWITCH(X) { case "C" : 1; case "E" : NULL; default : Y }
 // where X and Y are the inputs.
-const Expression* StringToUInt32Case(const Expression* selector,
-                                     const Expression* otherwise) {
-  return Case(MakeExpressionList(util::gtl::Container(
-      selector, otherwise,
+unique_ptr<const Expression> StringToUInt32Case(
+    unique_ptr<const Expression> selector,
+    unique_ptr<const Expression> otherwise) {
+  return Case(make_unique<ExpressionList>(
+      std::move(selector), std::move(otherwise),
       ConstString("one"), ConstUint32(1),
-      ConstString("null"), Null(UINT32))));
+      ConstString("null"), Null(UINT32)));
 }
 
 TEST(CaseExpressionTest, StringToUInt32) {
@@ -72,15 +73,16 @@ TEST(CaseExpressionTest, StringToUInt32) {
 
 // This is SWITCH(X) { case 3 : 4; case 5.0 : 10.0; deafult: Y }
 // where X and Y are the inputs, checks whether the types get reconciled.
-const Expression* ForceCastCase(const Expression* selector,
-                                const Expression* otherwise) {
-  return Case(MakeExpressionList(util::gtl::Container(
+unique_ptr<const Expression> ForceCastCase(
+    unique_ptr<const Expression> selector,
+    unique_ptr<const Expression> otherwise) {
+  return Case(make_unique<ExpressionList>(
       // INT32, UINT32
-      selector, otherwise,
+      std::move(selector), std::move(otherwise),
       // INT64, UINT64
       ConstInt64(3), ConstUint64(4),
       // FLOAT, DOUBLE
-      ConstFloat(5.0), ConstDouble(10.0))));
+      ConstFloat(5.0), ConstDouble(10.0)));
 }
 
 TEST(CaseExpressionTest, ForceCast) {
@@ -97,11 +99,15 @@ TEST(CaseExpressionTest, ForceCast) {
 // This is the SWITCH(X) { case true: Y; default: Z }
 // It's equivalent to IF X THEN Y ELSE Z; and the latter should be preferred.
 
-const Expression* IfCase(const Expression* condition,
-                         const Expression* then,
-                         const Expression* otherwise) {
-  return Case(MakeExpressionList(util::gtl::Container(
-      condition, otherwise, ConstBool(true), then)));
+unique_ptr<const Expression> IfCase(
+    unique_ptr<const Expression> condition,
+    unique_ptr<const Expression> then,
+    unique_ptr<const Expression> otherwise) {
+  return Case(make_unique<ExpressionList>(
+      std::move(condition),
+      std::move(otherwise),
+      ConstBool(true),
+      std::move(then)));
 }
 
 TEST(CaseExpressionTest, BasicIfCase) {
@@ -196,22 +202,22 @@ TEST(CaseExpressionTest, IfCaseAllNullable) {
 // This is
 // A + SWITCH(B) { case (C) : D%0; default : E%0 }
 // where A, B, C, D, E are the inputs in the order given.
-const Expression* CaseShortCircuit(const Expression* top,
-                                   const Expression* selector,
-                                   const Expression* when,
-                                   const Expression* then,
-                                   const Expression* else_expr) {
-  return Plus(top,
-              Case(MakeExpressionList(
-                  util::gtl::Container(
-                      selector,
+unique_ptr<const Expression> CaseShortCircuit(
+    unique_ptr<const Expression> top,
+    unique_ptr<const Expression> selector,
+    unique_ptr<const Expression> when,
+    unique_ptr<const Expression> then,
+    unique_ptr<const Expression> else_expr) {
+  return Plus(std::move(top),
+              Case(make_unique<ExpressionList>(
+                      std::move(selector),
                       ModulusSignaling(
                           ConstInt32(0),
-                          else_expr),
-                      when,
+                          std::move(else_expr)),
+                      std::move(when),
                       ModulusSignaling(
                           ConstInt32(0),
-                          then)))));
+                          std::move(then)))));
 }
 
 // The idea here is to check whether the (failing) expressions D%0 and/or E%0

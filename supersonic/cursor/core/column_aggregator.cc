@@ -308,8 +308,9 @@ class DistinctAggregator : public ColumnAggregator {
  public:
   typedef typename TypeTraits<InputType>::cpp_type cpp_input_type;
 
-  DistinctAggregator(ColumnAggregatorInternal* aggregator, Block* result_block)
-      : aggregator_(aggregator) {}
+  DistinctAggregator(unique_ptr<ColumnAggregatorInternal> aggregator,
+                     Block* result_block)
+      : aggregator_(std::move(aggregator)) {}
 
   virtual ~DistinctAggregator() {}
 
@@ -398,16 +399,16 @@ class ColumnAggregatorFactoryImpl {
 
 
  private:
-  typedef ColumnAggregator* (*AggregatorCreatorFunction)(
+  typedef unique_ptr<ColumnAggregator> (*AggregatorCreatorFunction)(
       Block* result_block,
       int result_column_index);
 
-  typedef ColumnAggregator* (*CountAggregatorCreatorFunction)(
+  typedef unique_ptr<ColumnAggregator> (*CountAggregatorCreatorFunction)(
       Block* result_block,
       int result_column_index);
 
-  typedef ColumnAggregator* (*DistinctAggregatorCreatorFunction)(
-      ColumnAggregatorInternal* aggregator,
+  typedef unique_ptr<ColumnAggregator> (*DistinctAggregatorCreatorFunction)(
+      unique_ptr<ColumnAggregatorInternal> aggregator,
       Block* result_block);
 
   bool IsAggregationSupported(Aggregation aggregation_operator, DataType t1,
@@ -429,23 +430,23 @@ class ColumnAggregatorFactoryImpl {
 
 // Factory methods to create ColumnAggregators.
 template<Aggregation aggregation, DataType input_type, DataType output_type>
-ColumnAggregator* AggregatorCreator(Block* result_block,
-                                    int result_column_index) {
-  return new ColumnAggregatorImpl<aggregation, input_type, output_type>(
-      result_block, result_column_index);
+unique_ptr<ColumnAggregator> AggregatorCreator(Block* result_block,
+                                               int result_column_index) {
+  return make_unique<ColumnAggregatorImpl<aggregation, input_type, output_type>>
+      (result_block, result_column_index);
 }
 
 template<DataType output_type>
-ColumnAggregator* CountAggregatorCreator(Block* result_block,
-                                         int result_column_index) {
-  return new CountColumnAggregatorImpl<output_type>(
+unique_ptr<ColumnAggregator> CountAggregatorCreator(Block* result_block,
+                                                    int result_column_index) {
+  return make_unique<CountColumnAggregatorImpl<output_type>>(
       result_block, result_column_index);
 }
 
 template<DataType input_type>
-ColumnAggregator* DistinctAggregatorCreator(
-    ColumnAggregatorInternal* aggregator, Block* output_block) {
-  return new DistinctAggregator<input_type>(aggregator, output_block);
+unique_ptr<ColumnAggregator> DistinctAggregatorCreator(
+    unique_ptr<ColumnAggregatorInternal> aggregator, Block* output_block) {
+  return make_unique<DistinctAggregator<input_type>>(std::move(aggregator), output_block);
 }
 
 // Helper macros to create factory method for each supported aggregation
@@ -583,8 +584,7 @@ ColumnAggregatorFactoryImpl::CreateDistinctAggregator(
 
   return Success(
       distinct_aggregator_factory_[input_type](
-          down_cast<ColumnAggregatorInternal*>(aggregator.release()),
-          result_block));
+          down_cast<ColumnAggregatorInternal>(aggregator.move()), result_block));
 }
 
 FailureOrOwned<ColumnAggregator>
@@ -624,7 +624,7 @@ CreateDistinctCountAggregator(
 
   return Success(
       distinct_aggregator_factory_[input_type](
-          down_cast<ColumnAggregatorInternal*>(count_aggregator.release()),
+          down_cast<ColumnAggregatorInternal>(count_aggregator.move()),
           result_block));
 }
 

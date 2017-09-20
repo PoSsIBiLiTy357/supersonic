@@ -15,8 +15,7 @@
 
 #include "supersonic/cursor/core/compute.h"
 
-#include <memory>
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
@@ -36,12 +35,12 @@ namespace {
 
 class ComputeCursor : public BasicCursor {
  public:
-  ComputeCursor(BoundExpressionTree* computation,
+  ComputeCursor(unique_ptr<BoundExpressionTree> computation,
                 rowcount_t row_capacity,
-                Cursor* child)
-      : BasicCursor(computation->result_schema(), child),
+                unique_ptr<Cursor> child)
+      : BasicCursor(computation->result_schema(), std::move(child)),
         row_capacity_(row_capacity),
-        computation_(computation) {}
+        computation_(std::move(computation)) {}
 
   virtual ~ComputeCursor() {}
 
@@ -60,15 +59,15 @@ class ComputeCursor : public BasicCursor {
 
  private:
   const int row_capacity_;
-  std::unique_ptr<BoundExpressionTree> computation_;
+  unique_ptr<BoundExpressionTree> computation_;
   DISALLOW_COPY_AND_ASSIGN(ComputeCursor);
 };
 
 class ComputeOperation : public BasicOperation {
  public:
-  ComputeOperation(const Expression* computation, Operation* child)
-      : BasicOperation(child),
-        computation_(computation) {}
+  ComputeOperation(unique_ptr<const Expression> computation, unique_ptr<Operation> child)
+      : BasicOperation(std::move(child)),
+        computation_(std::move(computation)) {}
 
   virtual FailureOrOwned<Cursor> CreateCursor() const {
     FailureOrOwned<Cursor> bound_child(child()->CreateCursor());
@@ -78,8 +77,8 @@ class ComputeOperation : public BasicOperation {
                            buffer_allocator(),
                            default_row_count()));
     PROPAGATE_ON_FAILURE(bound_computation);
-    return BoundCompute(bound_computation.release(), buffer_allocator(),
-                        default_row_count(), bound_child.release());
+    return BoundCompute(bound_computation.move(), buffer_allocator(),
+                        default_row_count(), bound_child.move());
   }
 
  private:
@@ -88,15 +87,17 @@ class ComputeOperation : public BasicOperation {
 
 }  // namespace
 
-Operation* Compute(const Expression* computation, Operation* child) {
-  return new ComputeOperation(computation, child);
-
+unique_ptr<Operation> Compute(unique_ptr<const Expression> computation,
+                              unique_ptr<Operation> child) {
+  return make_unique<ComputeOperation>(std::move(computation), std::move(child));
 }
-FailureOrOwned<Cursor> BoundCompute(BoundExpressionTree* const computation,
+
+FailureOrOwned<Cursor> BoundCompute(unique_ptr<BoundExpressionTree> computation,
                                     BufferAllocator* const allocator,
                                     const rowcount_t max_row_count,
-                                    Cursor* const child) {
-  return Success(new ComputeCursor(computation, max_row_count, child));
+                                    unique_ptr<Cursor> child) {
+  return Success(make_unique<ComputeCursor>(std::move(computation), max_row_count,
+                                            std::move(child)));
 }
 
 }  // namespace supersonic

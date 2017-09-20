@@ -52,7 +52,7 @@ TEST(TableCursorTest, SimpleData) {
   EXPECT_TUPLE_SCHEMAS_EQUAL(
       expected_output->schema(),
       table_cursor->schema());
-  EXPECT_CURSORS_EQUAL(expected_output.release(), table_cursor.release());
+  EXPECT_CURSORS_EQUAL(std::move(expected_output), std::move(table_cursor));
 }
 
 TEST(TableCursorTest, Empty) {
@@ -66,7 +66,7 @@ TEST(TableCursorTest, Empty) {
   EXPECT_TUPLE_SCHEMAS_EQUAL(
       expected_output->schema(),
       table_cursor->schema());
-  EXPECT_CURSORS_EQUAL(expected_output.release(), table_cursor.release());
+  EXPECT_CURSORS_EQUAL(std::move(expected_output), std::move(table_cursor));
 }
 
 TEST(TableCursorTest, Large) {
@@ -84,7 +84,7 @@ TEST(TableCursorTest, Large) {
   EXPECT_TUPLE_SCHEMAS_EQUAL(
       expected_output->schema(),
       table_cursor->schema());
-  EXPECT_CURSORS_EQUAL(expected_output.release(), table_cursor.release());
+  EXPECT_CURSORS_EQUAL(std::move(expected_output), std::move(table_cursor));
 }
 
 TEST(TableCursorTest, LimitedMemory) {
@@ -100,9 +100,8 @@ TEST(TableTest, NewTableIsEmpty) {
   Table table(TupleSchema::Singleton("a", INT32, NULLABLE),
               HeapBufferAllocator::Get());
   EXPECT_EQ(0, table.view().row_count());
-  FailureOrOwned<Cursor> cursor_result(table.CreateCursor());
-  ASSERT_TRUE(cursor_result.is_success());
-  std::unique_ptr<Cursor> cursor(cursor_result.release());
+  FailureOrOwned<Cursor> cursor(table.CreateCursor());
+  ASSERT_TRUE(cursor.is_success());
   EXPECT_TRUE(cursor->Next(100).is_eos());
 }
 
@@ -131,8 +130,8 @@ TEST(TableTest, ClearedTableCanReuseCapacity) {
 TEST(TableTest, TableRespectsSoftQuota) {
   // This property is used by hybrid-sort, for example.
   StaticQuota<false> soft_quota(1, false);
-  std::unique_ptr<BufferAllocator> allocator_with_soft_quota(
-      new MediatingBufferAllocator(HeapBufferAllocator::Get(), &soft_quota));
+  auto allocator_with_soft_quota = make_unique<MediatingBufferAllocator>(
+      HeapBufferAllocator::Get(), &soft_quota);
   std::unique_ptr<Block> block(BlockBuilder<INT32>().AddRow(5).Build());
   Table table(block->schema(), allocator_with_soft_quota.get());
   // Table may allow some number of rows even when soft quota is 0, but it
@@ -172,15 +171,17 @@ TEST(TableTest, MaterializationMaterializes) {
       MaterializeTable(HeapBufferAllocator::Get(),
                        SucceedOrDie(table.CreateCursor()));
   EXPECT_TRUE(result.is_success());
-  EXPECT_CURSORS_EQUAL(SucceedOrDie(table.CreateCursor()),
-                       SucceedOrDie(result->CreateCursor()));
+  auto cursor1 = SucceedOrDie(table.CreateCursor());
+  auto cursor2 = SucceedOrDie(result->CreateCursor());
+
+  EXPECT_CURSORS_EQUAL(std::move(cursor1), std::move(cursor2));
 }
 
 TEST(TableTest, MaterializationOOMsWhenTight) {
   MemoryLimit limit(4);
   Table table(BlockBuilder<INT32>().AddRow(5).AddRow(6).Build());
   FailureOrOwned<Table> result =
-      MaterializeTable(&limit, SucceedOrDie(table.CreateCursor()));
+      MaterializeTable(&limit, unique_ptr<Cursor>(SucceedOrDie(table.CreateCursor())));
   ASSERT_TRUE(result.is_failure());
   EXPECT_EQ(ERROR_MEMORY_EXCEEDED, result.exception().return_code());
 }

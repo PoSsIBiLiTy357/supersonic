@@ -15,10 +15,8 @@
 
 #include "supersonic/cursor/core/splitter.h"
 
-#include <string>
-namespace supersonic {using std::string; }
-
 #include <glog/logging.h>
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/port.h"
 
@@ -52,15 +50,14 @@ void BarrierSplitReaderCursor::AppendDebugDescription(string* target) const {
   splitter_->AppendDebugDescription(target);
 }
 
-Cursor* BarrierSplitter::AddReader() {
+unique_ptr<Cursor> BarrierSplitter::AddReader() {
   // First reader takes ownership; subsequent readers share it.
   shared_ptr<BarrierSplitter> splitter = readers_.empty()
       ? shared_ptr<BarrierSplitter>(this)
       : readers_[0]->splitter();
-  BarrierSplitReaderCursor* reader = new BarrierSplitReaderCursor(
-      splitter, readers_.size());
+  auto reader = make_unique<BarrierSplitReaderCursor>(splitter, readers_.size());
   // The new reader is positioned at the barrier.
-  readers_.push_back(reader);
+  readers_.push_back(reader.get());
   return reader;
 }
 
@@ -71,15 +68,14 @@ void BarrierSplitter::AppendDebugDescription(string* target) const {
 
 // ================== Buffered Splitter implementations =======================
 
-Cursor* BufferedSplitter::AddReader() {
+unique_ptr<Cursor> BufferedSplitter::AddReader() {
   CHECK(!has_next_called_);
   // First reader takes ownership; subsequent readers share it.
   shared_ptr<BufferedSplitter> splitter = readers_.empty()
       ? shared_ptr<BufferedSplitter>(this)
       : readers_[0]->splitter();
-  BufferedSplitReaderCursor* reader = new BufferedSplitReaderCursor(
-      splitter, readers_.size());
-  readers_.push_back(reader);
+  auto reader = make_unique<BufferedSplitReaderCursor>(splitter, readers_.size());
+  readers_.push_back(reader.get());
   views_.emplace_back(new View(schema()));
   block_read_.push_back(storages_.end());
   next_row_position_.push_back(0);

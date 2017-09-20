@@ -40,11 +40,11 @@ namespace supersonic {
 class ScalarAggregateCursor : public BasicCursor {
  public:
   // Takes ownership of the aggregator and the child.
-  ScalarAggregateCursor(Aggregator* aggregator, Cursor* child)
+  ScalarAggregateCursor(unique_ptr<Aggregator> aggregator, unique_ptr<Cursor> child)
       : BasicCursor(aggregator->schema()),
-        child_(child),
+        child_(std::move(child)),
         eos_(false),
-        aggregator_(aggregator) {
+        aggregator_(std::move(aggregator)) {
     std::fill(&zeros_[0], &zeros_[arraysize(zeros_)], 0);
     my_view()->ResetFrom(aggregator_->data());
   }
@@ -95,10 +95,10 @@ class ScalarAggregateOperation : public BasicOperation {
  public:
   // Passes ownership of AggregationSpecification and child_operation to
   // the operation.
-  ScalarAggregateOperation(AggregationSpecification* aggregation_specification,
-                           Operation* child_operation)
-      : BasicOperation(child_operation),
-        aggregation_specification_(aggregation_specification) {}
+  ScalarAggregateOperation(unique_ptr<AggregationSpecification> aggregation_specification,
+                           unique_ptr<Operation> child_operation)
+      : BasicOperation(std::move(child_operation)),
+        aggregation_specification_(std::move(aggregation_specification)) {}
 
   virtual FailureOrOwned<Cursor> CreateCursor() const {
     FailureOrOwned<Cursor> child_cursor = child()->CreateCursor();
@@ -108,7 +108,7 @@ class ScalarAggregateOperation : public BasicOperation {
         buffer_allocator(), 1);
     PROPAGATE_ON_FAILURE(aggregator);
     return Success(
-        BoundScalarAggregate(aggregator.release(), child_cursor.release()));
+        BoundScalarAggregate(aggregator.move(), child_cursor.move()));
   }
 
  private:
@@ -116,13 +116,17 @@ class ScalarAggregateOperation : public BasicOperation {
   DISALLOW_COPY_AND_ASSIGN(ScalarAggregateOperation);
 };
 
-Operation* ScalarAggregate(AggregationSpecification* aggregation_specification,
-                           Operation* child) {
-  return new ScalarAggregateOperation(aggregation_specification, child);
+unique_ptr<Operation>
+ScalarAggregate(unique_ptr<AggregationSpecification> aggregation_specification,
+                unique_ptr<Operation> child) {
+  return make_unique<ScalarAggregateOperation>(
+      std::move(aggregation_specification), std::move(child));
 }
 
-Cursor* BoundScalarAggregate(Aggregator* aggregator, Cursor* child) {
-  return new ScalarAggregateCursor(aggregator, child);
+unique_ptr<Cursor> BoundScalarAggregate(unique_ptr<Aggregator> aggregator,
+                                        unique_ptr<Cursor> child) {
+  return make_unique<ScalarAggregateCursor>(
+      std::move(aggregator), std::move(child));
 }
 
 }  // namespace supersonic

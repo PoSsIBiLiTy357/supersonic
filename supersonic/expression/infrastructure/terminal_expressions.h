@@ -18,8 +18,8 @@
 #ifndef SUPERSONIC_EXPRESSION_INFRASTRUCTURE_TERMINAL_EXPRESSIONS_H_
 #define SUPERSONIC_EXPRESSION_INFRASTRUCTURE_TERMINAL_EXPRESSIONS_H_
 
-#include "supersonic/utils/integral_types.h"
 #include "supersonic/base/infrastructure/types.h"
+#include "supersonic/utils/integral_types.h"
 // Needed for the ConstExpression class. This in turn is needed here to
 // define the templated TypedConst.
 #include "supersonic/expression/infrastructure/elementary_const_expressions.h"
@@ -33,31 +33,32 @@ namespace supersonic {
 // A typed null.
 class Expression;
 
-const Expression* Null(DataType type);
+unique_ptr<const Expression> Null(DataType type);
 
 // Create typed constants.
-const Expression* ConstInt32(const int32& value);
-const Expression* ConstInt64(const int64& value);
-const Expression* ConstUint32(const uint32& value);
-const Expression* ConstUint64(const uint64& value);
-const Expression* ConstFloat(const float& value);
-const Expression* ConstDouble(const double& value);
-const Expression* ConstBool(const bool& value);
-const Expression* ConstDate(const int32& value);
-const Expression* ConstDateTime(const int64& value);
-const Expression* ConstString(const StringPiece& value);
-const Expression* ConstBinary(const StringPiece& value);
-const Expression* ConstDataType(const DataType& value);
+unique_ptr<const Expression> ConstInt32(const int32 &value);
+unique_ptr<const Expression> ConstInt64(const int64 &value);
+unique_ptr<const Expression> ConstUint32(const uint32 &value);
+unique_ptr<const Expression> ConstUint64(const uint64 &value);
+unique_ptr<const Expression> ConstFloat(const float &value);
+unique_ptr<const Expression> ConstDouble(const double &value);
+unique_ptr<const Expression> ConstBool(const bool &value);
+unique_ptr<const Expression> ConstDate(const int32 &value);
+unique_ptr<const Expression> ConstDateTime(const int64 &value);
+unique_ptr<const Expression> ConstString(const StringPiece &value);
+unique_ptr<const Expression> ConstBinary(const StringPiece &value);
+unique_ptr<const Expression> ConstDataType(const DataType &value);
 
 // A templated version of creating typed constants.
-template<DataType type>
-const Expression* TypedConst(const typename TypeTraits<type>::cpp_type& value) {
-  return new ConstExpression<type>(value);
+template <DataType type>
+unique_ptr<const Expression>
+TypedConst(const typename TypeTraits<type>::cpp_type &value) {
+  return make_unique<ConstExpression<type>>(value);
 }
 
 // Creates an expression of type INT64 that will produce the sequence of
 // consecutive integers when evaluated, starting at 0.
-const Expression* Sequence();
+unique_ptr<const Expression> Sequence();
 
 // Create an expression of type INT32 that will produce a sequence of
 // (pseudo-)random numbers produced by given random generator. Takes ownership
@@ -66,10 +67,10 @@ const Expression* Sequence();
 // will use the same starting state for the RNG (because of Clone()).
 // Example: RandInt32(new MTRandom(seed))
 // TODO(user): Generalize to other datatypes.
-const Expression* RandInt32(RandomBase* random_generator);
+unique_ptr<const Expression> RandInt32(unique_ptr<RandomBase> random_generator);
 // The default random number generator, using the MTRandom() generator.
-const Expression* RandInt32();
+unique_ptr<const Expression> RandInt32();
 
-}  // namespace supersonic
+} // namespace supersonic
 
-#endif  // SUPERSONIC_EXPRESSION_INFRASTRUCTURE_TERMINAL_EXPRESSIONS_H_
+#endif // SUPERSONIC_EXPRESSION_INFRASTRUCTURE_TERMINAL_EXPRESSIONS_H_

@@ -26,7 +26,7 @@ namespace supersonic {
 namespace {
 
 TEST(BenchmarkListenerTest, BenchmarkValueInitTest) {
-  std::unique_ptr<BenchmarkListener> listener(CreateBenchmarkListener());
+  unique_ptr<BenchmarkListener> listener(CreateBenchmarkListener());
   EXPECT_EQ(0, listener->TotalTimeUsec());
   EXPECT_EQ(0, listener->FirstNextTimeUsec());
   EXPECT_EQ(0, listener->NextCalls());

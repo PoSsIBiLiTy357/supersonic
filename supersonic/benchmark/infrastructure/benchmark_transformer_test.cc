@@ -91,7 +91,7 @@ class CursorTransformerWithHistoryTest : public testing::Test {
     return ExtractCursor<T>(entry);
   }
 
-  std::unique_ptr<CursorTransformerWithVectorHistory<T>> transformer_;
+  unique_ptr<CursorTransformerWithVectorHistory<T>> transformer_;
   TupleSchema schema_;
 };
 
@@ -101,10 +101,10 @@ EntryTypes;
 TYPED_TEST_CASE(CursorTransformerWithHistoryTest, EntryTypes);
 
 TYPED_TEST(CursorTransformerWithHistoryTest, CorrectHistory) {
-  std::unique_ptr<Cursor> cursor1(this->Init(new StrictMock<MockCursor>));
-  std::unique_ptr<Cursor> cursor2(this->Init(new StrictMock<MockCursor>));
-  std::unique_ptr<Cursor> cursor3(this->Init(new StrictMock<MockCursor>));
-  std::unique_ptr<Cursor> cursor4(this->Init(new StrictMock<MockCursor>));
+  unique_ptr<Cursor> cursor1(this->Init(new StrictMock<MockCursor>));
+  unique_ptr<Cursor> cursor2(this->Init(new StrictMock<MockCursor>));
+  unique_ptr<Cursor> cursor3(this->Init(new StrictMock<MockCursor>));
+  unique_ptr<Cursor> cursor4(this->Init(new StrictMock<MockCursor>));
 
   Cursor* cursor_p1 = cursor1.get();
   Cursor* cursor_p2 = cursor2.get();
@@ -140,9 +140,9 @@ TYPED_TEST(CursorTransformerWithHistoryTest, CorrectHistory) {
 }
 
 TYPED_TEST(CursorTransformerWithHistoryTest, ReleaseHistory) {
-  std::unique_ptr<Cursor> cursor1(this->Init(new StrictMock<MockCursor>));
-  std::unique_ptr<Cursor> cursor2(this->Init(new StrictMock<MockCursor>));
-  std::unique_ptr<Cursor> cursor3(this->Init(new StrictMock<MockCursor>));
+  unique_ptr<Cursor> cursor1(this->Init(new StrictMock<MockCursor>));
+  unique_ptr<Cursor> cursor2(this->Init(new StrictMock<MockCursor>));
+  unique_ptr<Cursor> cursor3(this->Init(new StrictMock<MockCursor>));
 
   Cursor* cursor_p1 = cursor1.get();
   Cursor* cursor_p2 = cursor2.get();
@@ -157,7 +157,7 @@ TYPED_TEST(CursorTransformerWithHistoryTest, ReleaseHistory) {
 
   ASSERT_EQ(3, transformer->GetHistoryLength());
 
-  std::unique_ptr<PointerVector<TypeParam>> history(
+  unique_ptr<PointerVector<TypeParam>> history(
       transformer->ReleaseHistory());
   ASSERT_EQ(cursor_p1, this->Extract((*history)[0].get()));
   ASSERT_EQ(cursor_p2, this->Extract((*history)[1].get()));

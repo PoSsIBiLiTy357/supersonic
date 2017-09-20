@@ -61,14 +61,13 @@ TEST_F(ScalarAggregateCursorTest, AggregateIntegers) {
   test.SetExpectedResult(TestDataBuilder<INT32, INT32, UINT64, UINT64, UINT64>()
                          .AddRow(13, 26, 5, 4, 3)
                          .Build());
-  std::unique_ptr<AggregationSpecification> aggregator(
-      new AggregationSpecification);
-  aggregator->AddAggregation(MAX, "col0", "max");
-  aggregator->AddAggregation(SUM, "col0", "sum");
-  aggregator->AddAggregation(COUNT, "", "count(*)");
-  aggregator->AddAggregation(COUNT, "col0", "count");
-  aggregator->AddDistinctAggregation(COUNT, "col0", "count distinct");
-  test.Execute(ScalarAggregate(aggregator.release(), test.input()));
+  auto agg = make_unique<AggregationSpecification>();
+  agg->AddAggregation(MAX, "col0", "max");
+  agg->AddAggregation(SUM, "col0", "sum");
+  agg->AddAggregation(COUNT, "", "count(*)");
+  agg->AddAggregation(COUNT, "col0", "count");
+  agg->AddDistinctAggregation(COUNT, "col0", "count distinct");
+  test.Execute(ScalarAggregate(std::move(agg), test.input()));
 }
 
 TEST_F(ScalarAggregateCursorTest, AggregateEmptyInput) {
@@ -77,14 +76,13 @@ TEST_F(ScalarAggregateCursorTest, AggregateEmptyInput) {
   test.SetExpectedResult(TestDataBuilder<INT32, INT32, UINT64, UINT64, UINT64>()
                          .AddRow(__, __, 0, 0, 0)
                          .Build());
-  std::unique_ptr<AggregationSpecification> aggregator(
-      new AggregationSpecification);
-  aggregator->AddAggregation(MAX, "col0", "max");
-  aggregator->AddAggregation(SUM, "col0", "sum");
-  aggregator->AddAggregation(COUNT, "", "count(*)");
-  aggregator->AddAggregation(COUNT, "col0", "count");
-  aggregator->AddDistinctAggregation(COUNT, "col0", "count distinct");
-  test.Execute(ScalarAggregate(aggregator.release(), test.input()));
+  auto agg = make_unique<AggregationSpecification>();
+  agg->AddAggregation(MAX, "col0", "max");
+  agg->AddAggregation(SUM, "col0", "sum");
+  agg->AddAggregation(COUNT, "", "count(*)");
+  agg->AddAggregation(COUNT, "col0", "count");
+  agg->AddDistinctAggregation(COUNT, "col0", "count distinct");
+  test.Execute(ScalarAggregate(std::move(agg), test.input()));
 }
 
 TEST_F(ScalarAggregateCursorTest, AggregateStrings) {
@@ -93,45 +91,43 @@ TEST_F(ScalarAggregateCursorTest, AggregateStrings) {
   test.SetInput(sample_input_builder_.Build());
   test.SetExpectedResult(sample_output_builder_.Build());
 
-  std::unique_ptr<AggregationSpecification> aggregator(
-      new AggregationSpecification);
-  aggregator->AddAggregation(MAX, "col0", "max");
-  aggregator->AddAggregation(COUNT, "", "count(*)");
-  aggregator->AddAggregation(COUNT, "col0", "count");
-  aggregator->AddDistinctAggregation(COUNT, "col0", "count distinct");
-  test.Execute(ScalarAggregate(aggregator.release(), test.input()));
+  auto agg = make_unique<AggregationSpecification>();
+  agg->AddAggregation(MAX, "col0", "max");
+  agg->AddAggregation(COUNT, "", "count(*)");
+  agg->AddAggregation(COUNT, "col0", "count");
+  agg->AddDistinctAggregation(COUNT, "col0", "count distinct");
+  test.Execute(ScalarAggregate(std::move(agg), test.input()));
 }
 
 TEST_F(ScalarAggregateCursorTest, AggregateStringsWithSpyTransform) {
   CreateSampleData();
-  Cursor* input = sample_input_builder_.BuildCursor();
+  auto input = sample_input_builder_.BuildCursor();
 
   std::unique_ptr<Cursor> expected_result(sample_output_builder_.BuildCursor());
 
-  std::unique_ptr<AggregationSpecification> aggregation(
-      new AggregationSpecification);
-  aggregation->AddAggregation(MAX, "col0", "max");
-  aggregation->AddAggregation(COUNT, "", "count(*)");
-  aggregation->AddAggregation(COUNT, "col0", "count");
-  aggregation->AddDistinctAggregation(COUNT, "col0", "count distinct");
+  AggregationSpecification agg;
+  agg.AddAggregation(MAX, "col0", "max");
+  agg.AddAggregation(COUNT, "", "count(*)");
+  agg.AddAggregation(COUNT, "col0", "count");
+  agg.AddDistinctAggregation(COUNT, "col0", "count distinct");
 
   FailureOrOwned<Aggregator> aggregator = Aggregator::Create(
-        *aggregation, input->schema(), HeapBufferAllocator::Get(), 1);
+        std::move(agg), input->schema(), HeapBufferAllocator::Get(), 1);
   ASSERT_TRUE(aggregator.is_success());
-  std::unique_ptr<Cursor> aggregate(
-      BoundScalarAggregate(aggregator.release(), input));
+  auto aggregate = BoundScalarAggregate(aggregator.move(), std::move(input));
 
   std::unique_ptr<CursorTransformerWithSimpleHistory> spy_transformer(
       PrintingSpyTransformer());
   aggregate->ApplyToChildren(spy_transformer.get());
-  aggregate.reset(spy_transformer->Transform(aggregate.release()));
+  aggregate = spy_transformer->Transform(std::move(aggregate));
 
-  EXPECT_CURSORS_EQUAL(expected_result.release(), aggregate.release());
+  EXPECT_CURSORS_EQUAL(std::move(expected_result), std::move(aggregate));
 }
 
 TEST_F(ScalarAggregateCursorTest, TransformTest) {
   // Empty input cursor.
-  Cursor* input = sample_input_builder_.BuildCursor();
+  auto input = sample_input_builder_.BuildCursor();
+  auto save = input.get();
 
   std::unique_ptr<AggregationSpecification> aggregation(
       new AggregationSpecification);
@@ -140,14 +136,14 @@ TEST_F(ScalarAggregateCursorTest, TransformTest) {
         *aggregation, input->schema(), HeapBufferAllocator::Get(), 1);
   ASSERT_TRUE(aggregator.is_success());
   std::unique_ptr<Cursor> aggregate(
-      BoundScalarAggregate(aggregator.release(), input));
+      BoundScalarAggregate(aggregator.move(), std::move(input)));
 
   std::unique_ptr<CursorTransformerWithSimpleHistory> spy_transformer(
       PrintingSpyTransformer());
   aggregate->ApplyToChildren(spy_transformer.get());
 
   ASSERT_EQ(1, spy_transformer->GetHistoryLength());
-  EXPECT_EQ(input, spy_transformer->GetEntryAt(0)->original());
+  EXPECT_EQ(save, spy_transformer->GetEntryAt(0)->original());
 }
 
 }  // namespace supersonic

@@ -55,9 +55,9 @@ class ViewCursorTest : public ::testing::Test {
 
   View input_view() { return block_->view(); }
 
-  Cursor* view_cursor() { return CreateCursorOverView(input_view()); }
+  unique_ptr<Cursor> view_cursor() { return CreateCursorOverView(input_view()); }
 
-  Cursor* selection_cursor(rowcount_t buffer_size) {
+  unique_ptr<Cursor> selection_cursor(rowcount_t buffer_size) {
     return SucceedOrDie(CreateCursorOverViewWithSelection(
         input_view(),
         4,
@@ -79,13 +79,13 @@ class ViewCursorTest : public ::testing::Test {
 };
 
 TEST_F(ViewCursorTest, ViewCursorHasCorrectSchema) {
-  std::unique_ptr<Cursor> cursor(view_cursor());
+  auto cursor = view_cursor();
   EXPECT_TUPLE_SCHEMAS_EQUAL(input_schema(), cursor->schema());
 }
 
 TEST_F(ViewCursorTest, ViewCursorDescription) {
   string name = "(prefix)";
-  std::unique_ptr<Cursor> cursor(view_cursor());
+  auto cursor = view_cursor();
   cursor->AppendDebugDescription(&name);
   EXPECT_EQ(name, string("(prefix)ViewCursor(col1: INT32 NOT NULL, "
                          "col2: INT64)"));
@@ -94,7 +94,7 @@ TEST_F(ViewCursorTest, ViewCursorDescription) {
 // Not using the testing fixture for Cursors, because the fixture uses tables
 // and CursorOverView.
 TEST_F(ViewCursorTest, ViewCursorNext) {
-  std::unique_ptr<Cursor> cursor(view_cursor());
+  auto cursor = view_cursor();
   ResultView view = cursor->Next(20);
   EXPECT_TRUE(view.has_data());
   EXPECT_TUPLE_SCHEMAS_EQUAL(input_schema(), view.view().schema());

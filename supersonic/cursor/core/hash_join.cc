@@ -97,7 +97,7 @@ class HashIndexOnMaterializedCursor : public LookupIndex {
   HashIndexOnMaterializedCursor(
       JoinType join_type,
       BufferAllocator* const allocator,
-      const BoundSingleSourceProjector* key_selector,
+      unique_ptr<const BoundSingleSourceProjector> key_selector,
       const TupleSchema& schema);
   FailureOrVoid Init();
 
@@ -153,15 +153,19 @@ class HashIndexOnMaterializedCursor : public LookupIndex {
 template <KeyUniqueness key_uniqueness>
 class HashIndexMaterializer : public LookupIndexBuilder {
  public:
-  static FailureOrOwned<LookupIndexBuilder> Create(
-      Cursor* input,
+
+  HashIndexMaterializer(
+      unique_ptr<Cursor> input,
       JoinType join_type,
       BufferAllocator* const allocator,
-      const BoundSingleSourceProjector* key_selector) {
-    std::unique_ptr<HashIndexMaterializer> materializer(
-        new HashIndexMaterializer(input, join_type, allocator, key_selector));
-    PROPAGATE_ON_FAILURE(materializer->Init());
-    return Success(materializer.release());
+      unique_ptr<const BoundSingleSourceProjector> key_selector)
+      : input_(std::move(input)),
+        index_(new HashIndexOnMaterializedCursor<key_uniqueness>(
+            join_type, allocator, std::move(key_selector), input_->schema())) {}
+
+  FailureOrVoid Init() {
+    PROPAGATE_ON_FAILURE(index_->Init());
+    return Success();
   }
 
   virtual const TupleSchema& schema() const { return index_->schema(); }
@@ -173,9 +177,9 @@ class HashIndexMaterializer : public LookupIndexBuilder {
     PROPAGATE_ON_FAILURE(materialized);
     if (materialized.get()) {
       input_.reset(NULL);  // Releases resources held by the input.
-      return Success(index_.release());
+      return Success(std::move(index_));
     } else {
-      return Success(static_cast<LookupIndex*>(NULL));
+      return Success(unique_ptr<LookupIndex>(nullptr));
     }
   }
 
@@ -184,24 +188,10 @@ class HashIndexMaterializer : public LookupIndexBuilder {
   }
 
   void ApplyToChildren(CursorTransformer* transformer) {
-    input_.reset(transformer->Transform(input_.release()));
+    input_ = transformer->Transform(std::move(input_));
   }
 
- private:
-  HashIndexMaterializer(
-      Cursor* input,
-      JoinType join_type,
-      BufferAllocator* const allocator,
-      const BoundSingleSourceProjector* key_selector)
-      : input_(input),
-        index_(new HashIndexOnMaterializedCursor<key_uniqueness>(
-            join_type, allocator, key_selector, input->schema())) {}
-
-  FailureOrVoid Init() {
-    PROPAGATE_ON_FAILURE(index_->Init());
-    return Success();
-  }
-
+private:
   std::unique_ptr<Cursor> input_;
   std::unique_ptr<HashIndexOnMaterializedCursor<key_uniqueness> > index_;
 };
@@ -213,10 +203,10 @@ class HashJoinCursor : public Cursor {
   HashJoinCursor(
       JoinType join_type,
       BufferAllocator* const allocator,
-      const BoundSingleSourceProjector* lhs_key_selector,
+      unique_ptr<const BoundSingleSourceProjector> lhs_key_selector,
       const BoundMultiSourceProjector& result_projector,
-      LookupIndexBuilder* rhs,
-      Cursor* lhs);
+      unique_ptr<LookupIndexBuilder> rhs,
+      unique_ptr<Cursor> lhs);
   virtual ~HashJoinCursor() { }
 
   // Allocates index' internal block and reads input into it.
@@ -241,7 +231,8 @@ class HashJoinCursor : public Cursor {
                  << "destroyed. Aborting transformation.";
       return;
     }
-    lhs_.reset(transformer->Transform(lhs_.release()));
+
+    lhs_ = transformer->Transform(std::move(lhs_));
     rhs_builder_->ApplyToChildren(transformer);
   }
 
@@ -256,10 +247,10 @@ class HashJoinCursor : public Cursor {
       const BoundMultiSourceProjector& result_projector);
 
   JoinType join_type_;
-  std::unique_ptr<Cursor> lhs_;
-  std::unique_ptr<LookupIndexBuilder> rhs_builder_;
-  std::unique_ptr<const LookupIndex> rhs_;
-  std::unique_ptr<const BoundSingleSourceProjector> lhs_key_selector_;
+  unique_ptr<Cursor> lhs_;
+  unique_ptr<LookupIndexBuilder> rhs_builder_;
+  unique_ptr<const LookupIndex> rhs_;
+  unique_ptr<const BoundSingleSourceProjector> lhs_key_selector_;
 
   // Projector from lhs_ to lhs_result_, see below.
   const BoundSingleSourceProjector lhs_result_projector_;
@@ -296,16 +287,16 @@ class HashJoinCursor : public Cursor {
 
 HashJoinOperation::HashJoinOperation(
     JoinType join_type,
-    const SingleSourceProjector* lhs_key_selector,
-    const SingleSourceProjector* rhs_key_selector,
-    const MultiSourceProjector* result_projector,
+    unique_ptr<const SingleSourceProjector> lhs_key_selector,
+    unique_ptr<const SingleSourceProjector> rhs_key_selector,
+    unique_ptr<const MultiSourceProjector> result_projector,
     KeyUniqueness rhs_key_uniqueness,
-    Operation* lhs_child, Operation* rhs_child)
-    : BasicOperation(lhs_child, rhs_child),
+    unique_ptr<Operation> lhs_child, unique_ptr<Operation> rhs_child)
+    : BasicOperation(std::move(lhs_child), std::move(rhs_child)),
       join_type_(join_type),
-      lhs_key_selector_(lhs_key_selector),
-      rhs_key_selector_(rhs_key_selector),
-      result_projector_(result_projector),
+      lhs_key_selector_(std::move(lhs_key_selector)),
+      rhs_key_selector_(std::move(rhs_key_selector)),
+      result_projector_(std::move(result_projector)),
       rhs_key_uniqueness_(rhs_key_uniqueness) {}
 
 FailureOrOwned<Cursor> HashJoinOperation::CreateCursor() const {
@@ -328,11 +319,11 @@ FailureOrOwned<Cursor> HashJoinOperation::CreateCursor() const {
   FailureOrOwned<LookupIndexBuilder> rhs_builder(
       (rhs_key_uniqueness_ == UNIQUE) ?
           CreateHashIndexMaterializer<UNIQUE>(
-              join_type_, bound_rhs_key_selector_result.release(),
-              provided_rhs_cursor.release()) :
+              join_type_, bound_rhs_key_selector_result.move(),
+              provided_rhs_cursor.move()) :
           CreateHashIndexMaterializer<NOT_UNIQUE>(
-              join_type_, bound_rhs_key_selector_result.release(),
-              provided_rhs_cursor.release()));
+              join_type_, bound_rhs_key_selector_result.move(),
+              provided_rhs_cursor.move()));
   PROPAGATE_ON_FAILURE(rhs_builder);
 
   FailureOrOwned<const BoundSingleSourceProjector> bound_lhs_key_selector =
@@ -344,12 +335,12 @@ FailureOrOwned<Cursor> HashJoinOperation::CreateCursor() const {
           &provided_lhs_cursor->schema(), &rhs_builder->schema()));
   PROPAGATE_ON_FAILURE(bound_result_projector);
 
-  std::unique_ptr<HashJoinCursor> cursor(new HashJoinCursor(
-      join_type_, buffer_allocator(), bound_lhs_key_selector.release(),
-      *bound_result_projector, rhs_builder.release(),
-      provided_lhs_cursor.release()));
+  auto cursor = make_unique<HashJoinCursor>(
+      join_type_, buffer_allocator(), bound_lhs_key_selector.move(),
+      *bound_result_projector, rhs_builder.move(),
+      provided_lhs_cursor.move());
   PROPAGATE_ON_FAILURE(cursor->Init());
-  return Success(cursor.release());
+  return Success(std::move(cursor));
 }
 
 // TODO(user): Only index columns that are needed in the final join result.
@@ -357,34 +348,39 @@ template <KeyUniqueness key_uniqueness>
 FailureOrOwned<LookupIndexBuilder>
 HashJoinOperation::CreateHashIndexMaterializer(
     JoinType join_type,
-    const BoundSingleSourceProjector* bound_rhs_key_selector,
-    Cursor* rhs_cursor) const {
-  return HashIndexMaterializer<key_uniqueness>::Create(
-      rhs_cursor, join_type, buffer_allocator(), bound_rhs_key_selector);
+    unique_ptr<const BoundSingleSourceProjector> bound_rhs_key_selector,
+    unique_ptr<Cursor> rhs_cursor) const {
+
+  auto materializer = make_unique<HashIndexMaterializer<key_uniqueness>>(
+      std::move(rhs_cursor), join_type, buffer_allocator(),
+      std::move(bound_rhs_key_selector));
+
+  PROPAGATE_ON_FAILURE(materializer->Init());
+  return Success(std::move(materializer));
 }
 
 HashJoinCursor::HashJoinCursor(
     JoinType join_type,
     BufferAllocator* const allocator,
-    const BoundSingleSourceProjector* lhs_key_selector,
+    unique_ptr<const BoundSingleSourceProjector> lhs_key_selector,
     const BoundMultiSourceProjector& result_projector,
-    LookupIndexBuilder* rhs,
-    Cursor* lhs)
+    unique_ptr<LookupIndexBuilder> rhs,
+    unique_ptr<Cursor> lhs)
     : join_type_(join_type),
-      lhs_(lhs),
-      rhs_builder_(rhs),
-      lhs_key_selector_(lhs_key_selector),
+      lhs_(std::move(lhs)),
+      rhs_builder_(std::move(rhs)),
+      lhs_key_selector_(std::move(lhs_key_selector)),
       lhs_result_projector_(result_projector.GetSingleSourceProjector(0)),
       lhs_result_(lhs_result_projector_.result_schema(), allocator),
       lhs_result_copier_(&lhs_result_projector_, false),
       result_view_(result_projector.result_schema()),
       lhs_view_(NULL),
       lookup_query_(lhs_key_selector_->result_schema()) {
-  DCHECK(lhs_key_selector_->source_schema().EqualByType(lhs->schema()));
+  DCHECK(lhs_key_selector_->source_schema().EqualByType(lhs_->schema()));
 
   DCHECK_EQ(2, result_projector.source_count());
-  DCHECK(result_projector.source_schema(0).EqualByType(lhs->schema()));
-  DCHECK(result_projector.source_schema(1).EqualByType(rhs->schema()));
+  DCHECK(result_projector.source_schema(0).EqualByType(lhs_->schema()));
+  DCHECK(result_projector.source_schema(1).EqualByType(rhs_->schema()));
 
   SetUpFinalResultProjector(join_type, result_projector);
 }
@@ -481,7 +477,7 @@ ResultView HashJoinCursor::Next(rowcount_t max_row_count) {
       // Right-hand side not yet materialized.
       FailureOrOwned<LookupIndex> result = rhs_builder_->Build();
       PROPAGATE_ON_FAILURE(result);
-      rhs_.reset(result.release());
+      rhs_ = result.move();
       if (rhs_.get() == NULL) {
         // Still not materialized.
         return ResultView::WaitingOnBarrier();
@@ -507,7 +503,7 @@ ResultView HashJoinCursor::Next(rowcount_t max_row_count) {
     FailureOrOwned<LookupIndexCursor> multi_lookup_result =
         rhs_->MultiLookup(&lookup_query_);
     PROPAGATE_ON_FAILURE(multi_lookup_result);
-    matches_.reset(multi_lookup_result.release());
+    matches_ = multi_lookup_result.move();
     if (matches_.get() == NULL) {
       // Right-hand-side encountered a barrier during materialization.
       return ResultView::WaitingOnBarrier();
@@ -576,14 +572,14 @@ template <KeyUniqueness key_uniqueness>
 HashIndexOnMaterializedCursor<key_uniqueness>::HashIndexOnMaterializedCursor(
     JoinType join_type,
     BufferAllocator* allocator,
-    const BoundSingleSourceProjector* key_selector,
+    unique_ptr<const BoundSingleSourceProjector> key_selector,
     const TupleSchema& schema)
     : join_type_(join_type),
       schema_(join_type == LEFT_OUTER
                 ? WithAllColumnsNullable(schema)
                 : schema),
-      key_selector_(key_selector),
-      index_(schema, allocator, key_selector),
+      key_selector_(key_selector.get()),
+      index_(schema, allocator, std::move(key_selector)),
       result_cursor_block_(schema_, allocator) {
   DCHECK(key_selector_->source_schema().EqualByType(schema_));
 }
@@ -712,11 +708,11 @@ FailureOrOwned<LookupIndexCursor> HashIndexOnMaterializedCursor<key_uniqueness>
   // Work is delegated to LookupIndexCursor.
   switch (join_type_) {
     case INNER:
-      return Success(new ResultCursor<INNER>(
+      return Success(make_unique<ResultCursor<INNER>>(
           index_, *query, &result_cursor_block_,
           result_cursor_query_ids_.get()));
     case LEFT_OUTER:
-      return Success(new ResultCursor<LEFT_OUTER>(
+      return Success(make_unique<ResultCursor<LEFT_OUTER>>(
           index_, *query, &result_cursor_block_,
           result_cursor_query_ids_.get()));
     default:

@@ -16,6 +16,7 @@
 #ifndef SUPERSONIC_CURSOR_CORE_COMPUTE_H_
 #define SUPERSONIC_CURSOR_CORE_COMPUTE_H_
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/types.h"
 
@@ -29,14 +30,16 @@ class Operation;
 
 // Creates a new compute operation with the given computation specification.
 // Takes ownership of the computation and the child.
-Operation* Compute(const Expression* computation, Operation* child);
+unique_ptr<Operation> Compute(
+    unique_ptr<const Expression> computation,
+    unique_ptr<Operation> child);
 
 // Creates a compute cursor directly. Takes ownership of the computation
 // and the child. Does not take ownership of the allocator.
-FailureOrOwned<Cursor> BoundCompute(BoundExpressionTree* computation,
+FailureOrOwned<Cursor> BoundCompute(unique_ptr<BoundExpressionTree> computation,
                                     BufferAllocator* allocator,
                                     rowcount_t max_row_count,
-                                    Cursor* child);
+                                    unique_ptr<Cursor> child);
 
 }  // namespace supersonic
 

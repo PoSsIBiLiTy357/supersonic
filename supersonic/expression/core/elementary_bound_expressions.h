@@ -32,110 +32,110 @@ class BoundExpressionList;
 class BufferAllocator;
 
 FailureOrOwned<BoundExpression> BoundCastTo(DataType to_type,
-                                            BoundExpression* source,
+                                            unique_ptr<BoundExpression> source,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundParseStringQuiet(
     DataType to_type,
-    BoundExpression* source,
+    unique_ptr<BoundExpression> source,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundParseStringNulling(
     DataType to_type,
-    BoundExpression* source,
+    unique_ptr<BoundExpression> source,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundIfNull(BoundExpression* e,
-                                            BoundExpression* substitute,
+FailureOrOwned<BoundExpression> BoundIfNull(unique_ptr<BoundExpression> e,
+                                            unique_ptr<BoundExpression> substitute,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundCase(BoundExpressionList* bound_arguments,
+FailureOrOwned<BoundExpression> BoundCase(unique_ptr<BoundExpressionList> bound_arguments,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count);
 
 // Returns "otherwise" if condition is NULL
-FailureOrOwned<BoundExpression> BoundIf(BoundExpression* condition,
-                                        BoundExpression* then,
-                                        BoundExpression* otherwise,
+FailureOrOwned<BoundExpression> BoundIf(unique_ptr<BoundExpression> condition,
+                                        unique_ptr<BoundExpression> then,
+                                        unique_ptr<BoundExpression> otherwise,
                                         BufferAllocator* allocator,
                                         rowcount_t max_row_count);
 
 // Returns NULL if condition is NULL.
-FailureOrOwned<BoundExpression> BoundIfNulling(BoundExpression* condition,
-                                               BoundExpression* if_true,
-                                               BoundExpression* if_false,
+FailureOrOwned<BoundExpression> BoundIfNulling(unique_ptr<BoundExpression> condition,
+                                               unique_ptr<BoundExpression> if_true,
+                                               unique_ptr<BoundExpression> if_false,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count);
 
 // --------------- Logic -------------------------------------------------------
 
-FailureOrOwned<BoundExpression> BoundNot(BoundExpression* source,
+FailureOrOwned<BoundExpression> BoundNot(unique_ptr<BoundExpression> source,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundOr(BoundExpression* left,
-                                        BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundOr(unique_ptr<BoundExpression> left,
+                                        unique_ptr<BoundExpression> right,
                                         BufferAllocator* allocator,
                                         rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundAnd(BoundExpression* left,
-                                         BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundAnd(unique_ptr<BoundExpression> left,
+                                         unique_ptr<BoundExpression> right,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundAndNot(BoundExpression* left,
-                                            BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundAndNot(unique_ptr<BoundExpression> left,
+                                            unique_ptr<BoundExpression> right,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundXor(BoundExpression* left,
-                                         BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundXor(unique_ptr<BoundExpression> left,
+                                         unique_ptr<BoundExpression> right,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count);
 
 // --------------- Unary comparisions and checks -------------------------------
 
-FailureOrOwned<BoundExpression> BoundIsNull(BoundExpression* source,
+FailureOrOwned<BoundExpression> BoundIsNull(unique_ptr<BoundExpression> source,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count);
 
 // --------------- Bitwise operators -------------------------------------------
 
-FailureOrOwned<BoundExpression> BoundBitwiseNot(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundBitwiseNot(unique_ptr<BoundExpression> argument,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundBitwiseAnd(BoundExpression* left,
-                                                BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundBitwiseAnd(unique_ptr<BoundExpression> left,
+                                                unique_ptr<BoundExpression> right,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundBitwiseAndNot(BoundExpression* left,
-                                                   BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundBitwiseAndNot(unique_ptr<BoundExpression> left,
+                                                   unique_ptr<BoundExpression> right,
                                                    BufferAllocator* allocator,
                                                    rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundBitwiseOr(BoundExpression* left,
-                                               BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundBitwiseOr(unique_ptr<BoundExpression> left,
+                                               unique_ptr<BoundExpression> right,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundBitwiseXor(BoundExpression* left,
-                                                BoundExpression* right,
+FailureOrOwned<BoundExpression> BoundBitwiseXor(unique_ptr<BoundExpression> left,
+                                                unique_ptr<BoundExpression> right,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundShiftLeft(BoundExpression* argument,
-                                               BoundExpression* shift,
+FailureOrOwned<BoundExpression> BoundShiftLeft(unique_ptr<BoundExpression> argument,
+                                               unique_ptr<BoundExpression> shift,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundShiftRight(BoundExpression* argument,
-                                                BoundExpression* shift,
+FailureOrOwned<BoundExpression> BoundShiftRight(unique_ptr<BoundExpression> argument,
+                                                unique_ptr<BoundExpression> shift,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count);
 

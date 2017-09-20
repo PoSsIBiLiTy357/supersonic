@@ -78,16 +78,16 @@ class StatsListener : public SpyListener {
   DISALLOW_COPY_AND_ASSIGN(StatsListener);
 };
 
-ComparableCursor::ComparableCursor(Cursor* cursor)
+ComparableCursor::ComparableCursor(unique_ptr<Cursor> cursor)
     : spy_(new StatsListener(true)),
-      iterator_(BoundSpy("", spy_.get(), cursor)),
+      iterator_(BoundSpy("", spy_.get(), std::move(cursor))),
       row_id_(0) {}
 
 
-ComparableCursor::ComparableCursor(Cursor* cursor,
+ComparableCursor::ComparableCursor(unique_ptr<Cursor> cursor,
                                    bool include_rows_in_representation)
     : spy_(new StatsListener(include_rows_in_representation)),
-      iterator_(BoundSpy("", spy_.get(), cursor)),
+      iterator_(BoundSpy("", spy_.get(), std::move(cursor))),
       row_id_(0) {}
 
 const ResultView ComparableCursor::NextRow() {
@@ -183,12 +183,12 @@ testing::AssertionResult CompareResultViews(
 
 testing::AssertionResult CursorsEqual(
     const char* a_str, const char* b_str,
-    Cursor* a, Cursor* b) {
+    unique_ptr<Cursor> a, unique_ptr<Cursor> b) {
   VLOG(2) << "CursorsEqual: Trying to check cursors:";
   VLOG(2) << a->schema().GetHumanReadableSpecification();
   VLOG(2) << b->schema().GetHumanReadableSpecification();
-  ComparableCursor a_comparable(a);
-  ComparableCursor b_comparable(b);
+  ComparableCursor a_comparable(std::move(a));
+  ComparableCursor b_comparable(std::move(b));
   testing::AssertionResult result = (a_comparable == b_comparable);
   if (!result) {
     result

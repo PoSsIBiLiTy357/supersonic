@@ -29,86 +29,91 @@ namespace supersonic {
 // Expressions instantiation:
 class Expression;
 
-const Expression* Plus(const Expression* const left,
-                       const Expression* const right) {
+unique_ptr<const Expression> Plus(unique_ptr<const Expression> left,
+                                  unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundPlus, "($0 + $1)");
+      std::move(left), std::move(right), &BoundPlus, "($0 + $1)");
 }
 
-const Expression* Minus(const Expression* const left,
-                        const Expression* const right) {
+unique_ptr<const Expression> Minus(unique_ptr<const Expression> left,
+                                   unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundMinus, "($0 - $1)");
+      std::move(left), std::move(right), &BoundMinus, "($0 - $1)");
 }
 
-const Expression* Multiply(const Expression* const left,
-                           const Expression* const right) {
+unique_ptr<const Expression> Multiply(unique_ptr<const Expression> left,
+                                      unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundMultiply, "($0 * $1)");
+      std::move(left), std::move(right), &BoundMultiply, "($0 * $1)");
 }
 
-const Expression* DivideSignaling(const Expression* const left,
-                                  const Expression* const right) {
+unique_ptr<const Expression>
+DivideSignaling(unique_ptr<const Expression> left,
+                unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundDivideSignaling, "($0 /. $1)");
+      std::move(left), std::move(right), &BoundDivideSignaling, "($0 /. $1)");
 }
 
-const Expression* DivideNulling(const Expression* const left,
-                                const Expression* const right) {
+unique_ptr<const Expression> DivideNulling(unique_ptr<const Expression> left,
+                                           unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundDivideNulling, "($0 /. $1)");
+      std::move(left), std::move(right), &BoundDivideNulling, "($0 /. $1)");
 }
 
-const Expression* DivideQuiet(const Expression* const left,
-                              const Expression* const right) {
+unique_ptr<const Expression> DivideQuiet(unique_ptr<const Expression> left,
+                                         unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundDivideQuiet, "($0 /. $1)");
+      std::move(left), std::move(right), &BoundDivideQuiet, "($0 /. $1)");
 }
 
-const Expression* CppDivideSignaling(const Expression* const left,
-                                     const Expression* const right) {
+unique_ptr<const Expression>
+CppDivideSignaling(unique_ptr<const Expression> left,
+                   unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundCppDivideSignaling, "($0 / $1)");
+      std::move(left), std::move(right), &BoundCppDivideSignaling, "($0 / $1)");
 }
 
-const Expression* CppDivideNulling(const Expression* const left,
-                                   const Expression* const right) {
+unique_ptr<const Expression>
+CppDivideNulling(unique_ptr<const Expression> left,
+                 unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundCppDivideNulling, "($0 / $1)");
+      std::move(left), std::move(right), &BoundCppDivideNulling, "($0 / $1)");
 }
 
-const Expression* Negate(const Expression* const child) {
-  return CreateExpressionForExistingBoundFactory(
-      child, &BoundNegate, "(-$0)");
+unique_ptr<const Expression> Negate(unique_ptr<const Expression> child) {
+  return CreateExpressionForExistingBoundFactory(std::move(child), &BoundNegate,
+                                                 "(-$0)");
 }
 
-const Expression* ModulusSignaling(const Expression* const left,
-                                   const Expression* const right) {
+unique_ptr<const Expression>
+ModulusSignaling(unique_ptr<const Expression> left,
+                 unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundModulusSignaling, "$0 % $1");
+      std::move(left), std::move(right), &BoundModulusSignaling, "$0 % $1");
 }
 
-const Expression* ModulusNulling(const Expression* const left,
-                                 const Expression* const right) {
+unique_ptr<const Expression>
+ModulusNulling(unique_ptr<const Expression> left,
+               unique_ptr<const Expression> right) {
   return CreateExpressionForExistingBoundFactory(
-      left, right, &BoundModulusNulling, "$0 % $1");
+      std::move(left), std::move(right), &BoundModulusNulling, "$0 % $1");
 }
 
 // TODO(onufry): Delete these, in favor of policy-specific functions, and
 // refactor our clients not to use them.
-const Expression* Modulus(const Expression* const left,
-                          const Expression* const right) {
-  return ModulusSignaling(left, right);
+unique_ptr<const Expression> Modulus(unique_ptr<const Expression> left,
+                                     unique_ptr<const Expression> right) {
+  return ModulusSignaling(std::move(left), std::move(right));
 }
 
-const Expression* Divide(const Expression* const left,
-                         const Expression* const right) {
-  return DivideSignaling(left, right);
+unique_ptr<const Expression> Divide(unique_ptr<const Expression> left,
+                                    unique_ptr<const Expression> right) {
+  return DivideSignaling(std::move(left), std::move(right));
 }
 
-const Expression* CppDivide(const Expression* const left,
-                            const Expression* const right) {
-  return CppDivideSignaling(left, right);
+unique_ptr<const Expression> CppDivide(unique_ptr<const Expression> left,
+                                       unique_ptr<const Expression> right) {
+  return CppDivideSignaling(std::move(left), std::move(right));
 }
 
 }  // namespace supersonic

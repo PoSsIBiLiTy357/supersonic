@@ -15,11 +15,7 @@
 
 #include "supersonic/testing/repeating_block.h"
 
-#include <algorithm>
 #include "supersonic/utils/std_namespace.h"
-#include <memory>
-#include <string>
-namespace supersonic {using std::string; }
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
@@ -35,9 +31,10 @@ namespace supersonic {using std::string; }
 
 namespace supersonic {
 
-Block* ReplicateBlock(const Block& source, rowcount_t requested_row_count,
-                      BufferAllocator* allocator) {
-  std::unique_ptr<Block> new_block(new Block(source.schema(), allocator));
+unique_ptr<Block> ReplicateBlock(
+    const Block& source, rowcount_t requested_row_count,
+    BufferAllocator* allocator) {
+  auto new_block = make_unique<Block>(source.schema(), allocator);
   if (!new_block->Reallocate(requested_row_count)) return NULL;
   ViewCopier copier(source.schema(), true);
   rowcount_t rows_copied = 0;
@@ -49,7 +46,7 @@ Block* ReplicateBlock(const Block& source, rowcount_t requested_row_count,
                          new_block.get()));
     rows_copied += rows_to_copy;
   }
-  return new_block.release();
+  return new_block;
 }
 
 namespace {
@@ -95,26 +92,25 @@ class RepeatingBlockCursor : public BasicCursor {
 
 }  // namespace
 
-RepeatingBlockOperation::RepeatingBlockOperation(Block* block,
+RepeatingBlockOperation::RepeatingBlockOperation(unique_ptr<Block> block,
                                                  rowcount_t total_num_rows)
     : BasicOperation(),
-      resized_block_(CreateResizedBlock(block, Cursor::kDefaultRowCount)),
+      resized_block_(CreateResizedBlock(std::move(block), Cursor::kDefaultRowCount)),
       total_num_rows_(total_num_rows) {
   CHECK_NOTNULL(resized_block_.get());
 }
 
 FailureOrOwned<Cursor> RepeatingBlockOperation::CreateCursor() const {
   CHECK_NOTNULL(resized_block_.get());
-  return Success(new RepeatingBlockCursor(*resized_block_, total_num_rows_));
+  return Success(make_unique<RepeatingBlockCursor>(*resized_block_, total_num_rows_));
 }
 
-Block* RepeatingBlockOperation::CreateResizedBlock(Block* source,
-                                                   rowcount_t min_num_rows) {
-  std::unique_ptr<Block> source_deleter(source);
+unique_ptr<Block> RepeatingBlockOperation::CreateResizedBlock(
+    unique_ptr<Block> source, rowcount_t min_num_rows) {
   size_t num_input_rows = source->row_capacity();
   if (num_input_rows >= min_num_rows) {
     // No need to create new block, this one has enough rows.
-    return source_deleter.release();
+    return source;
   } else {
     return ReplicateBlock(*source, min_num_rows, buffer_allocator());
   }

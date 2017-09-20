@@ -19,6 +19,7 @@
 #ifndef SUPERSONIC_CURSOR_CORE_SCAN_VIEW_H_
 #define SUPERSONIC_CURSOR_CORE_SCAN_VIEW_H_
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/exception/result.h"
 #include "supersonic/base/infrastructure/types.h"
 
@@ -32,7 +33,7 @@ class View;
 // Creates an operation that produces a cursor able to iterate over a specified
 // view. The view must outlive the operation and any cursors created from the
 // operation.
-Operation* ScanView(const View& view);
+unique_ptr<Operation> ScanView(const View& view);
 
 // Creates an operation that produces a cursor over the input view that iterates
 // over it using a selection vector. Does not take ownership of the selection
@@ -40,14 +41,15 @@ Operation* ScanView(const View& view);
 // Note: row_count specifies the size of the selection_vector table. Because
 // rows may be selected zero or multiple times, it might be different than
 // view.row_count().
-Operation* ScanViewWithSelection(const View& view,
-                                 const rowcount_t row_count,
-                                 const rowid_t* selection_vector,
-                                 rowcount_t buffer_row_capacity);
+unique_ptr<Operation> ScanViewWithSelection(
+    const View& view,
+    const rowcount_t row_count,
+    const rowid_t* selection_vector,
+    rowcount_t buffer_row_capacity);
 
 // Creates a cursor that iterates over a specified view. The view must outlive
 // the cursor.
-Cursor* BoundScanView(const View& view);
+unique_ptr<Cursor> BoundScanView(const View& view);
 
 // Creates a cursor that iterates over a specified view, using the supplied
 // selection vector for indirection. The view must outlive the cursor.

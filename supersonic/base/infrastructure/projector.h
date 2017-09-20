@@ -260,9 +260,8 @@ class BoundSingleSourceProjector {
 // of that 'canonical' projection, possibly with duplicates).
 //
 // The ownership of the new projectors is passed to the caller.
-pair<BoundMultiSourceProjector*, BoundSingleSourceProjector*> DecomposeNth(
-    int source_index,
-    const BoundMultiSourceProjector& projector);
+pair<unique_ptr<BoundMultiSourceProjector>, unique_ptr<BoundSingleSourceProjector>>
+DecomposeNth(int source_index, const BoundMultiSourceProjector& projector);
 
 // Abstract projector from a single source view. Source schema (and thus result
 // schema) is not resolved.
@@ -283,7 +282,7 @@ class SingleSourceProjector {
 
   // Clones the projector recursively all the way to the bottom. Useful when the
   // same projector needs to be given to many exclusive owners.
-  virtual SingleSourceProjector* Clone() const = 0;
+  virtual unique_ptr<SingleSourceProjector> Clone() const = 0;
 
   virtual string ToString(bool verbose) const = 0;
  protected:
@@ -302,19 +301,27 @@ class CompoundSingleSourceProjector : public SingleSourceProjector {
  public:
   CompoundSingleSourceProjector() {}
   virtual ~CompoundSingleSourceProjector() {}
+
   CompoundSingleSourceProjector* add(const SingleSourceProjector* projector) {
-    projectors_.push_back(make_linked_ptr(projector));
+    projectors_.emplace_back(projector);
     return this;
   }
+
+  CompoundSingleSourceProjector* add(unique_ptr<const SingleSourceProjector> projector) {
+    projectors_.emplace_back(std::move(projector));
+    return this;
+  }
+
   virtual FailureOrOwned<const BoundSingleSourceProjector> Bind(
       const TupleSchema& source_schema) const;
 
-  virtual CompoundSingleSourceProjector* Clone() const;
+  // TODO: Single Source Projector
+  virtual unique_ptr<SingleSourceProjector> Clone() const;
 
   virtual string ToString(bool verbose) const;
 
  private:
-  vector<linked_ptr<const SingleSourceProjector> > projectors_;
+  vector<unique_ptr<const SingleSourceProjector>> projectors_;
   DISALLOW_COPY_AND_ASSIGN(CompoundSingleSourceProjector);
 };
 
@@ -327,8 +334,9 @@ class NamedAttributeProjector : public SingleSourceProjector {
   virtual FailureOrOwned<const BoundSingleSourceProjector> Bind(
       const TupleSchema& source_schema) const;
 
-  virtual NamedAttributeProjector* Clone() const {
-    return new NamedAttributeProjector(name_);
+  // TODO: Single Source Projector
+  virtual unique_ptr<SingleSourceProjector> Clone() const {
+    return make_unique<NamedAttributeProjector>(name_);
   }
 
   virtual string ToString(bool verbose) const { return name_; }
@@ -344,28 +352,29 @@ class NamedAttributeProjector : public SingleSourceProjector {
 // binding, the count of attributes in the schema does not match the number of
 // aliases, an exception object is returned.
 // Ownership of the projector is transferred to the caller.
-const SingleSourceProjector* ProjectRename(const vector<string>& aliases,
-                                           const SingleSourceProjector* source);
+unique_ptr<const SingleSourceProjector> ProjectRename(
+    const vector<string>& aliases,
+    unique_ptr<const SingleSourceProjector> source);
 
 // Returns a new projector that decorates its source projector, assumes that
 // it produces a single-attribute result, and renames the resulting attribute
 // using the specified alias. If, later during binding, the count of attributes
 // is different than 1, an exception is returned.
 // Ownership of the projector is transferred to the caller.
-inline const SingleSourceProjector* ProjectRenameSingle(
+inline unique_ptr<const SingleSourceProjector> ProjectRenameSingle(
     const StringPiece& alias,
-    const SingleSourceProjector* source) {
-  return ProjectRename(vector<string>(1, alias.ToString()), source);
+    unique_ptr<const SingleSourceProjector> source) {
+  return ProjectRename({ alias.ToString() }, std::move(source));
 }
 
 // Returns a new projector that projects a single attribute with a given name.
 // Ownership of the projector is transferred to the caller.
-const SingleSourceProjector* ProjectNamedAttribute(const StringPiece& name);
+unique_ptr<const SingleSourceProjector> ProjectNamedAttribute(const StringPiece& name);
 
 // Returns a new projector that projects a single attribute with a given name,
 // and renames it to the specified alias.
 // Ownership of the projector is transferred to the caller.
-inline const SingleSourceProjector* ProjectNamedAttributeAs(
+inline unique_ptr<const SingleSourceProjector> ProjectNamedAttributeAs(
     const StringPiece& name,
     const StringPiece& alias) {
   return ProjectRenameSingle(alias, ProjectNamedAttribute(name));
@@ -373,12 +382,12 @@ inline const SingleSourceProjector* ProjectNamedAttributeAs(
 
 // Returns a new projector that projects a single attribute at a given position.
 // Ownership of the projector is transferred to the caller.
-const SingleSourceProjector* ProjectAttributeAt(int position);
+unique_ptr<const SingleSourceProjector> ProjectAttributeAt(int position);
 
 // Returns a new projector that projects a single attribute at a given position,
 // and renames it to the specified alias.
 // Ownership of the projector is transferred to the caller.
-inline const SingleSourceProjector* ProjectAttributeAtAs(
+inline unique_ptr<const SingleSourceProjector> ProjectAttributeAtAs(
     const int position,
     const StringPiece& alias) {
   return ProjectRenameSingle(alias, ProjectAttributeAt(position));
@@ -386,20 +395,20 @@ inline const SingleSourceProjector* ProjectAttributeAtAs(
 
 // A utility shortcut for building a compound projector for those columns, whose
 // positions are specified.
-const SingleSourceProjector* ProjectAttributesAt(const vector<int>& positions);
+unique_ptr<const SingleSourceProjector> ProjectAttributesAt(const vector<int>& positions);
 
 // A convenience shourtcut to build a compound projector for the list of
 // specific named attributes. Useful for specifying join keys, sort keys, etc.
 // Ownership of the projector is transferred to the caller.
-const SingleSourceProjector* ProjectNamedAttributes(
+unique_ptr<const SingleSourceProjector> ProjectNamedAttributes(
     const vector<string>& names);
 
 // Returns a new projector that projects all attributes from a given source.
-const SingleSourceProjector* ProjectAllAttributes();
+unique_ptr<const SingleSourceProjector> ProjectAllAttributes();
 
 // Returns a new projector that projects all attributes from a given source
 // and prepends the prefix to their original names.
-const SingleSourceProjector* ProjectAllAttributes(const StringPiece& prefix);
+unique_ptr<const SingleSourceProjector> ProjectAllAttributes(const StringPiece& prefix);
 
 // A mirror copy of SingleSourceProjector.
 class MultiSourceProjector {
@@ -425,9 +434,16 @@ class CompoundMultiSourceProjector : public MultiSourceProjector {
   virtual ~CompoundMultiSourceProjector() {}
   CompoundMultiSourceProjector* add(int source_index,
                                     const SingleSourceProjector* projector) {
-    projectors_.push_back(make_pair(source_index, make_linked_ptr(projector)));
+    projectors_.push_back({source_index, unique_ptr<const SingleSourceProjector>(projector)});
     return this;
   }
+
+  CompoundMultiSourceProjector* add(int source_index,
+                                    unique_ptr<const SingleSourceProjector> projector) {
+    projectors_.emplace_back(source_index, std::move(projector));
+    return this;
+  }
+
   virtual FailureOrOwned<const BoundMultiSourceProjector> Bind(
       const vector<const TupleSchema*>& source_schemas) const;
 
@@ -435,7 +451,7 @@ class CompoundMultiSourceProjector : public MultiSourceProjector {
 
  private:
   // Pair maps a number of input to the projector for this input.
-  vector<pair<int, linked_ptr<const SingleSourceProjector> > > projectors_;
+  vector<pair<int, unique_ptr<const SingleSourceProjector>>> projectors_;
 
   DISALLOW_COPY_AND_ASSIGN(CompoundMultiSourceProjector);
 };

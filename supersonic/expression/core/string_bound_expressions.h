@@ -29,69 +29,69 @@ class BoundExpression;
 class BoundExpressionList;
 class BufferAllocator;
 
-FailureOrOwned<BoundExpression> BoundConcat(BoundExpressionList* args,
+FailureOrOwned<BoundExpression> BoundConcat(unique_ptr<BoundExpressionList> args,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundLength(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundLength(unique_ptr<BoundExpression> arg,
                                             BufferAllocator* allocator,
                                             rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundLtrim(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundLtrim(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundRtrim(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundRtrim(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundContains(BoundExpression* haystack,
-                                              BoundExpression* needle,
+FailureOrOwned<BoundExpression> BoundContains(unique_ptr<BoundExpression> haystack,
+                                              unique_ptr<BoundExpression> needle,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundContainsCI(BoundExpression* haystack,
-                                                BoundExpression* needle,
+FailureOrOwned<BoundExpression> BoundContainsCI(unique_ptr<BoundExpression> haystack,
+                                                unique_ptr<BoundExpression> needle,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundStringOffset(BoundExpression* haystack,
-                                                  BoundExpression* needle,
+FailureOrOwned<BoundExpression> BoundStringOffset(unique_ptr<BoundExpression> haystack,
+                                                  unique_ptr<BoundExpression> needle,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundStringReplace(
-    BoundExpression* haystack,
-    BoundExpression* needle,
-    BoundExpression* substitute,
+    unique_ptr<BoundExpression> haystack,
+    unique_ptr<BoundExpression> needle,
+    unique_ptr<BoundExpression> substitute,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundSubstring(BoundExpression* str,
-                                               BoundExpression* pos,
-                                               BoundExpression* length,
+FailureOrOwned<BoundExpression> BoundSubstring(unique_ptr<BoundExpression> str,
+                                               unique_ptr<BoundExpression> pos,
+                                               unique_ptr<BoundExpression> length,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundToLower(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundToLower(unique_ptr<BoundExpression> arg,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundToString(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundToString(unique_ptr<BoundExpression> arg,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundToUpper(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundToUpper(unique_ptr<BoundExpression> arg,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundTrim(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundTrim(unique_ptr<BoundExpression> arg,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundTrailingSubstring(
-    BoundExpression* str,
-    BoundExpression* pos,
+    unique_ptr<BoundExpression> str,
+    unique_ptr<BoundExpression> pos,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 

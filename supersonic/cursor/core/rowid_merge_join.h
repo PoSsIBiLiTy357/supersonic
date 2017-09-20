@@ -16,6 +16,8 @@
 #ifndef SUPERSONIC_CURSOR_CORE_ROWID_MERGE_JOIN_H_
 #define SUPERSONIC_CURSOR_CORE_ROWID_MERGE_JOIN_H_
 
+#include "supersonic/utils/stl_util.h"
+
 namespace supersonic {
 
 class BoundMultiSourceProjector;
@@ -35,17 +37,18 @@ class Operation;
 // right). Takes ownership of all projectors.
 // Enforces referential integrity: if the left key refers to a non-existing
 // row ID in the right cursor, the cursor fails with an error.
-Operation* RowidMergeJoin(const SingleSourceProjector* left_key_selector,
-                          const MultiSourceProjector* result_projector,
-                          Operation* left,
-                          Operation* right);
+unique_ptr<Operation> RowidMergeJoin(
+    unique_ptr<const SingleSourceProjector> left_key_selector,
+    unique_ptr<const MultiSourceProjector> result_projector,
+    unique_ptr<Operation> left,
+    unique_ptr<Operation> right);
 
 // Bound version of the above.
-Cursor* BoundRowidMergeJoin(
-    const BoundSingleSourceProjector* left_key,
-    const BoundMultiSourceProjector* result_projector,
-    Cursor* left,
-    Cursor* right,
+unique_ptr<Cursor> BoundRowidMergeJoin(
+    unique_ptr<const BoundSingleSourceProjector> left_key_selector,
+    unique_ptr<const BoundMultiSourceProjector> result_projector,
+    unique_ptr<Cursor> left,
+    unique_ptr<Cursor> right,
     BufferAllocator* allocator);
 
 }  // namespace supersonic

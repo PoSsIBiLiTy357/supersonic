@@ -15,10 +15,7 @@
 
 #include "supersonic/cursor/infrastructure/ordering.h"
 
-#include <memory>
-#include <string>
-namespace supersonic {using std::string; }
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
@@ -29,8 +26,7 @@ namespace supersonic {
 
 FailureOrOwned<const BoundSortOrder> SortOrder::Bind(
     const TupleSchema& source_schema) const {
-  std::unique_ptr<BoundSingleSourceProjector> projector(
-      new BoundSingleSourceProjector(source_schema));
+  auto projector = make_unique<BoundSingleSourceProjector>(source_schema);
   vector<ColumnOrder> column_order;
   for (size_t i = 0; i < projectors_.size(); ++i) {
     FailureOrOwned<const BoundSingleSourceProjector> component =
@@ -52,7 +48,7 @@ FailureOrOwned<const BoundSortOrder> SortOrder::Bind(
       column_order.push_back(column_order_[i]);
     }
   }
-  return Success(new BoundSortOrder(projector.release(), column_order));
+  return Success(make_unique<BoundSortOrder>(std::move(projector), column_order));
 }
 
 }  // namespace supersonic

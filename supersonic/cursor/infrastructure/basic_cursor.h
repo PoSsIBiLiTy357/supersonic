@@ -17,17 +17,11 @@
 #ifndef SUPERSONIC_CURSOR_INFRASTRUCTURE_BASIC_CURSOR_H_
 #define SUPERSONIC_CURSOR_INFRASTRUCTURE_BASIC_CURSOR_H_
 
-#include <cstddef>
-
-#include <memory>
-#include <string>
-namespace supersonic {using std::string; }
-#include <vector>
-using std::vector;
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
+#include "supersonic/utils/std_namespace.h"
 #include <atomic>
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
@@ -66,8 +60,8 @@ class BasicCursor : public Cursor {
   // which do not pass the ownership of its children to the base class have
   // to override Transform() with their own case-specific logic.
   virtual void ApplyToChildren(CursorTransformer* transformer) {
-    for (int i = 0; i < children_.size(); ++i) {
-      children_[i].reset(transformer->Transform(children_[i].release()));
+    for (auto& child: children_) {
+      child = transformer->Transform(std::move(child));
     }
   }
 
@@ -79,21 +73,18 @@ class BasicCursor : public Cursor {
         interrupted_(false) {}
 
   // Base constructor for cursors with one child. Takes ownership of the child.
-  BasicCursor(const TupleSchema& schema, Cursor* child)
+  BasicCursor(const TupleSchema& schema, unique_ptr<Cursor> child)
       : schema_(schema),
         view_(schema),
         interrupted_(false) {
-    children_.push_back(make_linked_ptr(child));
+    children_.emplace_back(std::move(child));
   }
 
-  // Base constructor for cursors with two children. Takes ownership of the
-  // children.
-  BasicCursor(const TupleSchema& schema, Cursor* child1, Cursor* child2)
-      : schema_(schema),
-        view_(schema),
+  BasicCursor(unique_ptr<Cursor> child)
+      : schema_(child->schema()),
+        view_(child->schema()),
         interrupted_(false) {
-    children_.push_back(make_linked_ptr(child1));
-    children_.push_back(make_linked_ptr(child2));
+    children_.emplace_back(std::move(child));
   }
 
   // Base constructor for cursors with arbitrary number of children.
@@ -103,7 +94,7 @@ class BasicCursor : public Cursor {
         view_(schema),
         interrupted_(false) {
     for (int i = 0; i < children.size(); ++i) {
-      children_.push_back(make_linked_ptr(children[i]));
+      children_.push_back(unique_ptr<Cursor>(children[i]));
     }
   }
 
@@ -153,7 +144,7 @@ class BasicCursor : public Cursor {
 
   TupleSchema schema_;
   View view_;
-  vector<linked_ptr<Cursor> > children_;
+  vector<unique_ptr<Cursor>> children_;
   mutable string debug_description_;
 
   // Stores the interruption status for later use. Aimed at leaf cursors,
@@ -189,13 +180,14 @@ class BasicDecoratorCursor : public Cursor {
   }
 
  protected:
-  explicit BasicDecoratorCursor(Cursor* delegate) : delegate_(delegate) {}
+  explicit BasicDecoratorCursor(unique_ptr<Cursor> delegate)
+      : delegate_(std::move(delegate)) {}
 
   Cursor* delegate() { return delegate_.get(); }
   const Cursor* delegate() const { return delegate_.get(); }
 
  private:
-  std::unique_ptr<Cursor> delegate_;
+  unique_ptr<Cursor> delegate_;
   DISALLOW_COPY_AND_ASSIGN(BasicDecoratorCursor);
 };
 

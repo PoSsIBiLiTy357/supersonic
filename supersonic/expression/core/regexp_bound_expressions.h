@@ -30,27 +30,27 @@ class BoundExpression;
 class BufferAllocator;
 
 FailureOrOwned<BoundExpression> BoundRegexpPartialMatch(
-    BoundExpression* str,
+    unique_ptr<BoundExpression> str,
     const StringPiece& pattern,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundRegexpFullMatch(
-    BoundExpression* str,
+    unique_ptr<BoundExpression> str,
     const StringPiece& pattern,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundRegexpExtract(
-    BoundExpression* str,
+    unique_ptr<BoundExpression> str,
     const StringPiece& pattern,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundRegexpReplace(
-    BoundExpression* haystack,
+    unique_ptr<BoundExpression> haystack,
     const StringPiece& pattern,
-    BoundExpression* substitute,
+    unique_ptr<BoundExpression> substitute,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 

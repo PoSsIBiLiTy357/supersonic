@@ -32,135 +32,135 @@ namespace supersonic {
 class BoundExpression;
 class BufferAllocator;
 
-FailureOrOwned<BoundExpression> BoundExp(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundExp(unique_ptr<BoundExpression> arg,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundLnNulling(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundLnNulling(unique_ptr<BoundExpression> arg,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundLnQuiet(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundLnQuiet(unique_ptr<BoundExpression> arg,
                                              BufferAllocator* allocator,
                                              rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundLog10Nulling(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundLog10Nulling(unique_ptr<BoundExpression> arg,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundLog10Quiet(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundLog10Quiet(unique_ptr<BoundExpression> arg,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundLogNulling(BoundExpression* base,
-                                                BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundLogNulling(unique_ptr<BoundExpression> base,
+                                                unique_ptr<BoundExpression> argument,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundLogQuiet(BoundExpression* base,
-                                              BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundLogQuiet(unique_ptr<BoundExpression> base,
+                                              unique_ptr<BoundExpression> argument,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundLog2Nulling(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundLog2Nulling(unique_ptr<BoundExpression> arg,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundLog2Quiet(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundLog2Quiet(unique_ptr<BoundExpression> arg,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundPowerSignaling(BoundExpression* base,
-                                                    BoundExpression* exponent,
+FailureOrOwned<BoundExpression> BoundPowerSignaling(unique_ptr<BoundExpression> base,
+                                                    unique_ptr<BoundExpression> exponent,
                                                     BufferAllocator* allocator,
                                                     rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundPowerNulling(BoundExpression* base,
-                                                  BoundExpression* exponent,
+FailureOrOwned<BoundExpression> BoundPowerNulling(unique_ptr<BoundExpression> base,
+                                                  unique_ptr<BoundExpression> exponent,
                                                   BufferAllocator* allocator,
                                                   rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundPowerQuiet(BoundExpression* base,
-                                                BoundExpression* exponent,
+FailureOrOwned<BoundExpression> BoundPowerQuiet(unique_ptr<BoundExpression> base,
+                                                unique_ptr<BoundExpression> exponent,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundSqrtSignaling(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundSqrtSignaling(unique_ptr<BoundExpression> arg,
                                                    BufferAllocator* allocator,
                                                    rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundSqrtNulling(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundSqrtNulling(unique_ptr<BoundExpression> arg,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundSqrtQuiet(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundSqrtQuiet(unique_ptr<BoundExpression> arg,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count);
 
 // ----------------------------- Trigonometry ----------------------------------
 
-FailureOrOwned<BoundExpression> BoundSin(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundSin(unique_ptr<BoundExpression> arg,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundCos(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundCos(unique_ptr<BoundExpression> arg,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundTanQuiet(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundTanQuiet(unique_ptr<BoundExpression> arg,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundCot(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundCot(unique_ptr<BoundExpression> arg,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundAsin(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundAsin(unique_ptr<BoundExpression> arg,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundAcos(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundAcos(unique_ptr<BoundExpression> arg,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundAtan(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundAtan(unique_ptr<BoundExpression> arg,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundAtan2(BoundExpression* x,
-                                           BoundExpression* y,
+FailureOrOwned<BoundExpression> BoundAtan2(unique_ptr<BoundExpression> x,
+                                           unique_ptr<BoundExpression> y,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundSinh(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundSinh(unique_ptr<BoundExpression> arg,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundCosh(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundCosh(unique_ptr<BoundExpression> arg,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundTanh(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundTanh(unique_ptr<BoundExpression> arg,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundAsinh(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundAsinh(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundAcosh(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundAcosh(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundAtanh(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundAtanh(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundToDegrees(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundToDegrees(unique_ptr<BoundExpression> arg,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundToRadians(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundToRadians(unique_ptr<BoundExpression> arg,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count);
 
@@ -169,66 +169,66 @@ FailureOrOwned<BoundExpression> BoundPi(BufferAllocator* allocator,
 
 // ------------------------------------ Rounding -------------------------------
 
-FailureOrOwned<BoundExpression> BoundRound(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundRound(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundRoundToInt(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundRoundToInt(unique_ptr<BoundExpression> arg,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count);
 
 FailureOrOwned<BoundExpression> BoundRoundWithPrecision(
-    BoundExpression* argument,
-    BoundExpression* precision,
+    unique_ptr<BoundExpression> argument,
+    unique_ptr<BoundExpression> precision,
     BufferAllocator* allocator,
     rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundFloor(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundFloor(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundFloorToInt(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundFloorToInt(unique_ptr<BoundExpression> arg,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundCeil(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundCeil(unique_ptr<BoundExpression> arg,
                                           BufferAllocator* allocator,
                                           rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundCeilToInt(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundCeilToInt(unique_ptr<BoundExpression> arg,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundTrunc(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundTrunc(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
 // -------------------------------- IEEE 754 checks ----------------------------
 
-FailureOrOwned<BoundExpression> BoundIsFinite(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundIsFinite(unique_ptr<BoundExpression> arg,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundIsNormal(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundIsNormal(unique_ptr<BoundExpression> arg,
                                               BufferAllocator* allocator,
                                               rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundIsNaN(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundIsNaN(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundIsInf(BoundExpression* arg,
+FailureOrOwned<BoundExpression> BoundIsInf(unique_ptr<BoundExpression> arg,
                                            BufferAllocator* allocator,
                                            rowcount_t max_row_count);
 
 // ------------------------------------- Other ---------------------------------
 
-FailureOrOwned<BoundExpression> BoundAbs(BoundExpression* argument,
+FailureOrOwned<BoundExpression> BoundAbs(unique_ptr<BoundExpression> argument,
                                          BufferAllocator* allocator,
                                          rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundFormatSignaling(BoundExpression* number,
-                                                     BoundExpression* precision,
+FailureOrOwned<BoundExpression> BoundFormatSignaling(unique_ptr<BoundExpression> number,
+                                                     unique_ptr<BoundExpression> precision,
                                                      BufferAllocator* allocator,
                                                      rowcount_t max_row_count);
 

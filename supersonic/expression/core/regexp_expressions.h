@@ -19,11 +19,10 @@
 #define SUPERSONIC_EXPRESSION_CORE_REGEXP_EXPRESSIONS_H_
 
 #include "supersonic/utils/strings/stringpiece.h"
+#include "supersonic/utils/std_namespace.h"
+#include "supersonic/expression/base/expression.h"
 
 namespace supersonic {
-
-// Creates an expression that will convert any expression to VARCHAR.
-class Expression;
 
 // Performs partial regular expression matching, using RE2, on the specified
 // string argument. Returns true if matched, false if not matched, NULL if
@@ -31,8 +30,8 @@ class Expression;
 //
 // Note: the argument order contravenes the standard SuperSonic order of
 // "variable arguments at the end".
-const Expression* RegexpPartialMatch(const Expression* str,
-                                     const StringPiece& pattern);
+unique_ptr<const Expression> RegexpPartialMatch(unique_ptr<const Expression> str,
+                                                const StringPiece& pattern);
 
 // Performs full regular expression matching, using RE2, on the specified
 // string argument. Returns true if matched, false if not matched, NULL if
@@ -40,14 +39,14 @@ const Expression* RegexpPartialMatch(const Expression* str,
 //
 // Note: the argument order contravenes the standard SuperSonic order of
 // "variable arguments at the end".
-const Expression* RegexpFullMatch(const Expression* str,
-                                  const StringPiece& pattern);
+unique_ptr<const Expression> RegexpFullMatch(unique_ptr<const Expression> str,
+                                             const StringPiece& pattern);
 
 // Replace all occurences of "needle" in "haystack" with "substitute".
 // Needle can be a regular expression.
-const Expression* RegexpReplace(const Expression* haystack,
-                                const StringPiece& needle,
-                                const Expression* substitute);
+unique_ptr<const Expression> RegexpReplace(unique_ptr<const Expression> haystack,
+                                           const StringPiece& needle,
+                                           unique_ptr<const Expression> substitute);
 
 // Replace the first match of "pattern" in "str" with "rewrite". Within
 // "rewrite", backslash-escaped digits (\1 to \9) can be used to insert text
@@ -56,14 +55,14 @@ const Expression* RegexpReplace(const Expression* haystack,
 // If not matched, or if the argument is NULL, results in NULL.
 //
 // Currently not implemented.
-const Expression* RegexpRewrite(const Expression* str,
-                                const StringPiece& pattern,
-                                const StringPiece& rewrite);
+unique_ptr<const Expression> RegexpRewrite(unique_ptr<const Expression> str,
+                                           const StringPiece& pattern,
+                                           const StringPiece& rewrite);
 
 // Return the first substring of "str" matching "pattern". If "pattern" cannot
 // be matched into substring, returns NULL.
-const Expression* RegexpExtract(const Expression* str,
-                                const StringPiece& pattern);
+unique_ptr<const Expression> RegexpExtract(unique_ptr<const Expression> str,
+                                           const StringPiece& pattern);
 
 // Replace the first match of "pattern" in "str" with "rewrite". Within
 // "rewrite", backslash-escaped digits (\1 to \9) can be used to insert text
@@ -73,10 +72,11 @@ const Expression* RegexpExtract(const Expression* str,
 // the pattern did not match, returns the default value.
 //
 // Currently not implemented.
-const Expression* RegexpRewrite(const Expression* str,
-                                const Expression* default_value,
-                                const StringPiece& pattern,
-                                const StringPiece& rewrite);
+unique_ptr<const Expression> RegexpRewrite(
+    unique_ptr<const Expression> str,
+    unique_ptr<const Expression> default_value,
+    const StringPiece& pattern,
+    const StringPiece& rewrite);
 
 }  // namespace supersonic
 

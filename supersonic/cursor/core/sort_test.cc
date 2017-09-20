@@ -16,9 +16,9 @@
 #include "supersonic/cursor/core/sort.h"
 
 #include <limits>
-#include "supersonic/utils/std_namespace.h"
 #include <memory>
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/infrastructure/projector.h"
 #include "supersonic/cursor/base/cursor.h"
 #include "supersonic/cursor/base/cursor_transformer.h"
@@ -37,22 +37,22 @@ namespace supersonic {
 class Operation;
 
 class SortTest : public testing::TestWithParam<int> {
- public:
+public:
   SortTest() {}
-  Operation* CreateSortOperation(const SortOrder* sort_order,
-                                 const SingleSourceProjector* result_projector,
-                                 Operation* input) {
+
+  unique_ptr<Operation>
+  CreateSortOperation(unique_ptr<const SortOrder> sort_order,
+                      unique_ptr<const SingleSourceProjector> result_projector,
+                      unique_ptr<Operation> input) {
     const size_t soft_quota = GetParam();
-    return Sort(sort_order,
-                result_projector,
-                soft_quota,
-                input);
+    return Sort(std::move(sort_order), std::move(result_projector),
+                soft_quota, std::move(input));
   }
 
   FailureOrOwned<Cursor> CreateSortCursor(
       const SortOrder* sort_order,
       const SingleSourceProjector* result_projector,
-      Cursor* input) {
+      unique_ptr<Cursor> input) {
     FailureOrOwned<const BoundSortOrder> bound_sort_order(
         sort_order->Bind(input->schema()));
     PROPAGATE_ON_FAILURE(bound_sort_order);
@@ -63,12 +63,12 @@ class SortTest : public testing::TestWithParam<int> {
 
     const size_t soft_quota = GetParam();
 
-    return BoundSort(bound_sort_order.release(),
-                     bound_projector.release(),
+    return BoundSort(bound_sort_order.move(),
+                     bound_projector.move(),
                      soft_quota,
                      "",
                      HeapBufferAllocator::Get(),
-                     input);
+                     std::move(input));
   }
 
  protected:
@@ -96,15 +96,15 @@ class SortTest : public testing::TestWithParam<int> {
 class ExtendedSortTest : public testing::TestWithParam<int> {
  public:
   ExtendedSortTest() {}
-  Operation* CreateExtendedSortOperation(
+  unique_ptr<Operation> CreateExtendedSortOperation(
       const ExtendedSortSpecification* specification,
-      Operation* input) {
+      unique_ptr<Operation> input) {
     const size_t soft_quota = GetParam();
     return ExtendedSort(
         specification,
-        /* result projector = */ static_cast<SingleSourceProjector*>(NULL),
+        /* result projector = */ static_cast<SingleSourceProjector*>(nullptr),
         soft_quota,
-        input);
+        std::move(input));
   }
 };
 
@@ -138,8 +138,10 @@ TEST_P(SortTest, OneIntegerColumnNoDuplicatesNoNulls) {
                          .AddRow(6, "f")
                          .AddRow(7, "g")
                          .Build());
+  auto sort_order = make_unique<SortOrder>();
+  sort_order->add(ProjectNamedAttribute("col0"), ASCENDING);
   test.Execute(CreateSortOperation(
-      (new SortOrder())->add(ProjectNamedAttribute("col0"), ASCENDING),
+      std::move(sort_order),
       NULL,
       test.input()));
 }
@@ -149,40 +151,42 @@ TEST_P(SortTest, OneIntegerColumnNoDuplicatesWithNulls) {
   CreateSampleData();
   test.SetInput(sample_input_.Build());
   test.SetExpectedResult(sample_output_.Build());
+  auto sort_order = make_unique<SortOrder>();
+  sort_order->add(ProjectNamedAttribute("col0"), ASCENDING);
   test.Execute(CreateSortOperation(
-      (new SortOrder())->add(ProjectNamedAttribute("col0"), ASCENDING),
+      std::move(sort_order),
       NULL,
       test.input()));
 }
 
 TEST_P(SortTest, OneIntegerColumnNoDuplicatesWithNullsAndSpyTransform) {
   CreateSampleData();
-  Cursor* input = sample_input_.BuildCursor();
+  auto input = sample_input_.BuildCursor();
   std::unique_ptr<Cursor> expected_result(sample_output_.BuildCursor());
 
-  std::unique_ptr<SortOrder> order(new SortOrder);
-  order->add(ProjectNamedAttribute("col0"), ASCENDING);
+  auto sort_order = make_unique<SortOrder>();
+  sort_order->add(ProjectNamedAttribute("col0"), ASCENDING);
 
-  std::unique_ptr<const SingleSourceProjector> project_all(
-      ProjectAllAttributes());
+  auto project_all = ProjectAllAttributes();
 
-  std::unique_ptr<Cursor> sort(
-      SucceedOrDie(CreateSortCursor(order.get(), project_all.get(), input)));
+  auto sort = SucceedOrDie(CreateSortCursor(
+      sort_order.get(), project_all.get(), std::move(input)));
 
-  std::unique_ptr<CursorTransformerWithSimpleHistory> spy_transformer(
-      PrintingSpyTransformer());
+  auto spy_transformer = PrintingSpyTransformer();
   sort->ApplyToChildren(spy_transformer.get());
-  sort.reset(spy_transformer->Transform(sort.release()));
+  sort = spy_transformer->Transform(std::move(sort));
 
-  EXPECT_CURSORS_EQUAL(expected_result.release(), sort.release());
+  EXPECT_CURSORS_EQUAL(std::move(expected_result), std::move(sort));
 }
 
 TEST_P(SortTest, OneEmptyStringColumn) {
   OperationTest test;
   test.SetInput(TestDataBuilder<STRING>().Build());
   test.SetExpectedResult(TestDataBuilder<STRING>().Build());
+  auto sort_order = make_unique<SortOrder>();
+  sort_order->add(ProjectNamedAttribute("col0"), ASCENDING);
   test.Execute(CreateSortOperation(
-      (new SortOrder())->add(ProjectNamedAttribute("col0"), ASCENDING),
+      std::move(sort_order),
       NULL,
       test.input()));
 }
@@ -207,8 +211,10 @@ TEST_P(SortTest, OneStringColumnWithDuplicatesAndNulls) {
                          .AddRow("d")
                          .AddRow("e")
                          .Build());
+  auto sort_order = make_unique<SortOrder>();
+  sort_order->add(ProjectNamedAttribute("col0"), ASCENDING);
   test.Execute(CreateSortOperation(
-      (new SortOrder())->add(ProjectNamedAttribute("col0"), ASCENDING),
+      std::move(sort_order),
       NULL,
       test.input()));
 }
@@ -233,8 +239,10 @@ TEST_P(SortTest, OneIntegerColumnMostlyNullsDescending) {
                          .AddRow(__, "a")
                          .AddRow(__, "a")
                          .Build());
+  auto sort_order = make_unique<SortOrder>();
+  sort_order->add(ProjectNamedAttribute("col0"), DESCENDING);
   test.Execute(CreateSortOperation(
-      (new SortOrder())->add(ProjectNamedAttribute("col0"), DESCENDING),
+      std::move(sort_order),
       NULL,
       test.input()));
 }
@@ -259,13 +267,15 @@ TEST_P(SortTest, TwoColumnsFirstUnique) {
                          .AddRow(6, "x")
                          .AddRow(7, "x")
                          .Build());
+  auto sort_order = make_unique<SortOrder>();
+  sort_order
+      ->add(ProjectNamedAttribute("col0"), ASCENDING)
+      ->add(ProjectNamedAttribute("col1"), DESCENDING);
   test.Execute(
       CreateSortOperation(
-          (new SortOrder())
-              ->add(ProjectNamedAttribute("col0"), ASCENDING)
-              ->add(ProjectNamedAttribute("col1"), DESCENDING),
-           NULL,
-           test.input()));
+          std::move(sort_order),
+          NULL,
+          test.input()));
 }
 
 TEST_P(SortTest, TwoColumnsFirstConst) {
@@ -288,13 +298,15 @@ TEST_P(SortTest, TwoColumnsFirstConst) {
                          .AddRow(1, "y")
                          .AddRow(1, "z")
                          .Build());
+  auto sort_order = make_unique<SortOrder>();
+  sort_order
+      ->add(ProjectNamedAttribute("col0"), ASCENDING)
+      ->add(ProjectNamedAttribute("col1"), ASCENDING);
   test.Execute(
       CreateSortOperation(
-          (new SortOrder())
-              ->add(ProjectNamedAttribute("col0"), ASCENDING)
-              ->add(ProjectNamedAttribute("col1"), ASCENDING),
-           NULL,
-           test.input()));
+          std::move(sort_order),
+          NULL,
+          test.input()));
 }
 
 TEST_P(SortTest, TwoColumnsFirstMixed) {
@@ -319,13 +331,15 @@ TEST_P(SortTest, TwoColumnsFirstMixed) {
                          .AddRow(3,  "x")
                          .AddRow(3,  "z")
                          .Build());
+  auto sort_order = make_unique<SortOrder>();
+  sort_order
+      ->add(ProjectNamedAttribute("col0"), ASCENDING)
+      ->add(ProjectNamedAttribute("col1"), ASCENDING);
   test.Execute(
       CreateSortOperation(
-          (new SortOrder())
-              ->add(ProjectNamedAttribute("col0"), ASCENDING)
-              ->add(ProjectNamedAttribute("col1"), ASCENDING),
-           NULL,
-           test.input()));
+          std::move(sort_order),
+          NULL,
+          test.input()));
 }
 
 TEST_P(SortTest, TwoColumnsFirstMixedDescending) {
@@ -350,13 +364,15 @@ TEST_P(SortTest, TwoColumnsFirstMixedDescending) {
                          .AddRow(__, "w")
                          .AddRow(__, "v")
                          .Build());
+  auto sort_order = make_unique<SortOrder>();
+  sort_order
+      ->add(ProjectNamedAttribute("col0"), DESCENDING)
+      ->add(ProjectNamedAttribute("col1"), DESCENDING);
   test.Execute(
       CreateSortOperation(
-          (new SortOrder())
-              ->add(ProjectNamedAttribute("col0"), DESCENDING)
-              ->add(ProjectNamedAttribute("col1"), DESCENDING),
-           NULL,
-           test.input()));
+          std::move(sort_order),
+          NULL,
+          test.input()));
 }
 
 TEST_P(SortTest, Projections) {
@@ -373,9 +389,11 @@ TEST_P(SortTest, Projections) {
                          .AddRow(102)
                          .AddRow(111)
                          .Build());
+  auto sort_order = make_unique<SortOrder>();
+  sort_order->add(ProjectAttributeAt(2), DESCENDING);
   test.Execute(
       CreateSortOperation(
-          (new SortOrder())->add(ProjectAttributeAt(2), DESCENDING),
+          std::move(sort_order),
           ProjectAttributeAt(1),
           test.input()));
 }
@@ -651,22 +669,21 @@ TEST_P(ExtendedSortTest, MultitypeKeys) {
 
 TEST_P(SortTest, TransformTest) {
   // Empty input cursor.
-  Cursor* input = sample_input_.BuildCursor();
-  std::unique_ptr<SortOrder> order(new SortOrder);
+  auto input = sample_input_.BuildCursor();
+  auto saved = input.get();
+  auto order = make_unique<SortOrder>();
   order->add(ProjectNamedAttribute("col0"), ASCENDING);
 
-  std::unique_ptr<const SingleSourceProjector> project_all(
-      ProjectAllAttributes());
+  auto project_all = ProjectAllAttributes();
 
-  std::unique_ptr<Cursor> sort(
-      SucceedOrDie(CreateSortCursor(order.get(), project_all.get(), input)));
+  auto sort = SucceedOrDie(CreateSortCursor(
+      order.get(), project_all.get(), std::move(input)));
 
-  std::unique_ptr<CursorTransformerWithSimpleHistory> spy_transformer(
-      PrintingSpyTransformer());
+  auto spy_transformer = PrintingSpyTransformer();
   sort->ApplyToChildren(spy_transformer.get());
 
   ASSERT_EQ(1, spy_transformer->GetHistoryLength());
-  EXPECT_EQ(input, spy_transformer->GetEntryAt(0)->original());
+  EXPECT_EQ(saved, spy_transformer->GetEntryAt(0)->original());
 }
 
 }  // namespace supersonic

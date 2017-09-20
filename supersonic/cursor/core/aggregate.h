@@ -220,11 +220,11 @@ class GroupAggregateOptions {
 //
 // NOTE(user): if you want a total aggregation that always (even for empty
 // input) returns exactly 1 row, then use ScalarAggregation instead.
-Operation* GroupAggregate(
-    const SingleSourceProjector* group_by,
-    const AggregationSpecification* aggregation,
-    GroupAggregateOptions* options,
-    Operation* child);
+unique_ptr<Operation> GroupAggregate(
+    unique_ptr<const SingleSourceProjector> group_by,
+    unique_ptr<const AggregationSpecification> aggregation,
+    unique_ptr<GroupAggregateOptions> options,
+    unique_ptr<Operation> child);
 
 // Creates an operation to group and aggregate as many rows as possible within
 // the available memory. The cursor does not guarantee to produce fully
@@ -242,37 +242,37 @@ Operation* GroupAggregate(
 // The arguments are like in GroupAggregate(). The only difference is that
 // ERROR_MEMORY_EXCEEDED is not returned when the input is too large, because
 // this Cursor can process input of any size.
-Operation* BestEffortGroupAggregate(
-    const SingleSourceProjector* group_by,
-    const AggregationSpecification* aggregation,
-    GroupAggregateOptions* options,
-    Operation* child);
+unique_ptr<Operation> BestEffortGroupAggregate(
+    unique_ptr<const SingleSourceProjector> group_by,
+    unique_ptr<const AggregationSpecification> aggregation,
+    unique_ptr<GroupAggregateOptions> options,
+    unique_ptr<Operation> child);
 
 // Bound version of GroupAggregate*. <original_allocator> is for the original
 // allocator if it was wrapped in MemoryLimit or GuaranteeMemory in <allocator>.
 FailureOrOwned<Cursor>
 BoundGroupAggregate(
-    const BoundSingleSourceProjector* group_by,
-    Aggregator* aggregator,
-    BufferAllocator* allocator,             // Takes ownership.
-    BufferAllocator* original_allocator,  // Doesn't take ownership.
+    unique_ptr<const BoundSingleSourceProjector> group_by,
+    unique_ptr<Aggregator> aggregator,
+    unique_ptr<BufferAllocator> allocator,  // Takes ownership.
+    BufferAllocator* original_allocator,    // Doesn't take ownership.
                                             // Can be equal allocator or NULL.
     bool best_effort,
-    Cursor* child);
+    unique_ptr<Operation> child);
 
 // Limiting version of BoundGroupAggregate, which only aggregates first
 // max_unique_keys_in_result, unique key combinations separately and
 // aggregates rest of the rows in one single row of output view.
 FailureOrOwned<Cursor>
 BoundGroupAggregateWithLimit(
-    const BoundSingleSourceProjector* group_by,
-    Aggregator* aggregator,
-    BufferAllocator* allocator,             // Takes ownership.
-    BufferAllocator* original_allocator,  // Doesn't take ownership.
+    unique_ptr<const BoundSingleSourceProjector> group_by,
+    unique_ptr<Aggregator> aggregator,
+    unique_ptr<BufferAllocator> allocator,  // Takes ownership.
+    BufferAllocator* original_allocator,    // Doesn't take ownership.
                                             // Can be equal allocator or NULL.
     bool best_effort,
     const int64 max_unique_keys_in_result,
-    Cursor* child);
+    unique_ptr<Cursor> child);
 
 // Creates a cursor to aggregate input that is already clustered by
 // clustered_by_columns (i.e., rows with the same key must be consecutive).
@@ -281,17 +281,17 @@ BoundGroupAggregateWithLimit(
 // AggregateClusters is a streaming cursor; i.e. it does not need to
 // buffer the input before it can start producing the result. Hence,
 // memory requirements are small.
-Operation* AggregateClusters(
-    const SingleSourceProjector* clustered_by_columns,
-    const AggregationSpecification* aggregation,
-    Operation* child);
+unique_ptr<Operation> AggregateClusters(
+    unique_ptr<const SingleSourceProjector> clustered_by_columns,
+    unique_ptr<const AggregationSpecification> aggregation,
+    unique_ptr<Operation> child);
 
 // Bound version of AggregateClusters.
 FailureOrOwned<Cursor> BoundAggregateClusters(
-    const BoundSingleSourceProjector* group_by,
-    Aggregator* aggregator,
+    unique_ptr<const BoundSingleSourceProjector> group_by,
+    unique_ptr<Aggregator> aggregator,
     BufferAllocator* allocator,
-    Cursor* child);
+    unique_ptr<Cursor> child);
 
 // Normaly it doesn't make sense to change AggregateClusters' output block
 // capacity. But the default size of 2 * Cursor::kDefaultRowCount rows is too
@@ -299,11 +299,11 @@ FailureOrOwned<Cursor> BoundAggregateClusters(
 // output block.
 //
 // The smallest possible value for block_size is 2.
-Operation* AggregateClustersWithSpecifiedOutputBlockSize(
-    const SingleSourceProjector* clustered_by_columns,
-    const AggregationSpecification* aggregation,
+unique_ptr<Operation> AggregateClustersWithSpecifiedOutputBlockSize(
+    unique_ptr<const SingleSourceProjector> clustered_by_columns,
+    unique_ptr<const AggregationSpecification> aggregation,
     rowcount_t block_size,
-    Operation* child);
+    unique_ptr<Operation> child);
 
 // Creates an operation to group and aggregate rows with the same key. Uses disk
 // if there's not enough memory to aggregate input data.
@@ -316,32 +316,35 @@ Operation* AggregateClustersWithSpecifiedOutputBlockSize(
 //
 // This way transition to d-server or other storage would be easier. Even for
 // testing it might be helpful.
-Operation* HybridGroupAggregate(
-    const SingleSourceProjector* group_by_columns,
-    const AggregationSpecification* aggregation_specification,
+unique_ptr<Operation> HybridGroupAggregate(
+    unique_ptr<const SingleSourceProjector> group_by_columns,
+    unique_ptr<const AggregationSpecification> aggregation_specification,
     size_t memory_quota,
     StringPiece temporary_directory_prefix,
-    Operation* child);
+    unique_ptr<Operation> child);
 
 // Bound version of HybridGroupAggregate. Takes ownership of group_by_columns,
 // debug_options and child. For normal use debug_options should be NULL.
 FailureOrOwned<Cursor> BoundHybridGroupAggregate(
-    const SingleSourceProjector* group_by_columns,
+    unique_ptr<const SingleSourceProjector> group_by_columns,
     const AggregationSpecification& aggregation_specification,
     StringPiece temporary_directory_prefix,
     BufferAllocator* allocator,
     size_t memory_quota,
     const HybridGroupDebugOptions* debug_options,
-    Cursor* child);
+    unique_ptr<Cursor> child);
 
 // Aggregates the entire input. Result is always a single row (even if the
 // input is empty). Takes ownership of the aggregation_specification and
 // the child.
-Operation* ScalarAggregate(AggregationSpecification* aggregation_specification,
-                           Operation* child);
+unique_ptr<Operation> ScalarAggregate(
+    unique_ptr<AggregationSpecification> aggregation_specification,
+    unique_ptr<Operation> child);
 
 // Bound version of the above.
-Cursor* BoundScalarAggregate(Aggregator* aggregator, Cursor* child);
+unique_ptr<Cursor> BoundScalarAggregate(
+    unique_ptr<Aggregator> aggregator,
+    unique_ptr<Cursor> child);
 
 }  // namespace supersonic
 

@@ -19,13 +19,12 @@
 #ifndef SUPERSONIC_CURSOR_INFRASTRUCTURE_HISTORY_TRANSFORMER_H_
 #define SUPERSONIC_CURSOR_INFRASTRUCTURE_HISTORY_TRANSFORMER_H_
 
-#include <memory>
-
 #include "supersonic/cursor/base/cursor_transformer.h"
 #include "supersonic/cursor/infrastructure/ownership_revoker.h"
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/pointer_vector.h"
 
@@ -40,47 +39,44 @@ template<typename T>
 class CursorTransformerWithVectorHistory : public CursorTransformer {
  public:
   CursorTransformerWithVectorHistory()
-      : CursorTransformer(),
-        run_history_(new util::gtl::PointerVector<T>) {}
+      : CursorTransformer()
+  { }
 
   size_t GetHistoryLength() const {
-    return run_history_->size();
+    return run_history_.size();
   }
 
   // Ownership is not transferred.
   T* GetEntryAt(size_t position) const {
-    CHECK_LT(position, run_history_->size());
-    return (*run_history_)[position].get();
+    CHECK_LT(position, run_history_.size());
+    return run_history_[position].get();
   }
 
   // Ownership is not transferred.
   T* GetFirstEntry() const {
-    CHECK_GT(run_history_->size(), 0);
-    return run_history_->front().get();
+    CHECK_GT(run_history_.size(), 0);
+    return run_history_.front().get();
   }
 
   // Ownership is not transferred.
   T* GetLastEntry() const {
-    CHECK_GT(run_history_->size(), 0);
-    return run_history_->back().get();
+    CHECK_GT(run_history_.size(), 0);
+    return run_history_.back().get();
   }
 
   // Cleans the history and takes care of cleaning up the entries.
   void CleanHistory() {
-    run_history_->clear();
+    run_history_.clear();
   }
 
   // Returns the disembodied history vector and replaces it internally with
   // a new empty one.
-  util::gtl::PointerVector<T>* ReleaseHistory() {
-    using util::gtl::PointerVector;
-    std::unique_ptr<PointerVector<T> > internal(new PointerVector<T>);
-    internal.swap(run_history_);
-    return internal.release();
+  vector<unique_ptr<T>> ReleaseHistory() {
+    return std::move(run_history_);
   }
 
  protected:
-  std::unique_ptr<util::gtl::PointerVector<T> > run_history_;
+  vector<unique_ptr<T>> run_history_;
 };
 
 typedef OwnershipRevoker<Cursor> CursorOwnershipRevoker;

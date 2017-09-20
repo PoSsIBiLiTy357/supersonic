@@ -32,19 +32,19 @@ class SingleSourceProjector;
 // The projector specifies the attributes to keep after filtering (use
 // ProjectAllAttributes() if you don't want to change the schema).
 // Takes ownership of predicate, projector and child.
-Operation* Filter(const Expression* predicate,
-                  const SingleSourceProjector* projector,
-                  Operation* child);
+unique_ptr<Operation> Filter(unique_ptr<const Expression> predicate,
+                             unique_ptr<const SingleSourceProjector> projector,
+                             unique_ptr<Operation> child);
 
 // Creates new filter cursor.
 // The projector specifies the attributes to keep after filtering (use
 // ProjectAllAttributes() if you don't want to change the schema).
 // Takes ownership of predicate, projector and child, doesn't take
 // ownership of allocator.
-FailureOrOwned<Cursor> BoundFilter(BoundExpressionTree* predicate,
-                                   const BoundSingleSourceProjector* projector,
-                                   BufferAllocator* buffer_allocator,
-                                   Cursor* child_cursor);
+FailureOrOwned<Cursor> BoundFilter(unique_ptr<BoundExpressionTree> predicate,
+                                   unique_ptr<const BoundSingleSourceProjector> projector,
+                                   BufferAllocator *buffer_allocator,
+                                   unique_ptr<Cursor> child_cursor);
 
 }  // namespace supersonic
 

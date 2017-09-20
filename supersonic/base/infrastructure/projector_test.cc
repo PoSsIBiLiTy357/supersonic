@@ -13,12 +13,9 @@
 // limitations under the License.
 //
 
-#include <memory>
-using std::make_unique;
-using std::unique_ptr;
-
 #include "supersonic/base/infrastructure/projector.h"
 
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/proto/supersonic.pb.h"
@@ -83,8 +80,8 @@ TEST_F(ProjectorTest,
   schema_0_with_prefix.add_attribute(
       Attribute("prefix schema 0 attribute 1", STRING, NULLABLE));
 
-  all_attributes_projector.reset(ProjectAllAttributes("prefix "));
-  bssp.reset(SucceedOrDie(all_attributes_projector->Bind(schema_0_)));
+  all_attributes_projector = ProjectAllAttributes("prefix ");
+  bssp = SucceedOrDie(all_attributes_projector->Bind(schema_0_));
   EXPECT_TRUE(schema_0_with_prefix.EqualByType(bssp->result_schema()));
 }
 

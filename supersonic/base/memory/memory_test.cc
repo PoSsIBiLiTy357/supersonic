@@ -15,10 +15,7 @@
 
 #include "supersonic/base/memory/memory.h"
 
-#include <cstring>                      // for NULL, memset
-#include <memory>
-using std::unique_ptr;
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/memory/memory_mocks.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"  // for EXPECT_EQ, TEST, etc

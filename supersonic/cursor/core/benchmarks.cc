@@ -66,7 +66,7 @@ class BenchmarkedCursor : public Cursor {
     }
     time_measurer_.Pause();
     benchmark_listener_->OnCreateFinished(time_measurer_.GetSystemTime());
-    cursor_.reset(result.release());
+    cursor_ = result.move();
     return Success();
   }
 
@@ -129,10 +129,9 @@ class BenchmarkedCursor : public Cursor {
 };
 
 FailureOrOwned<Cursor> BenchmarkedOperation::CreateCursor() const {
-  std::unique_ptr<BenchmarkedCursor> benchmarked_cursor(
-      new BenchmarkedCursor(benchmark_listener_));
+  auto benchmarked_cursor = make_unique<BenchmarkedCursor>(benchmark_listener_);
   PROPAGATE_ON_FAILURE(benchmarked_cursor->Create(operation_.get()));
-  return Success(benchmarked_cursor.release());
+  return Success(std::move(benchmarked_cursor));
 }
 
 }  // namespace supersonic

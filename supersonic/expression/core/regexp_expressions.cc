@@ -16,11 +16,7 @@
 
 #include "supersonic/expression/core/regexp_expressions.h"
 
-#include <memory>
-#include <string>
-namespace supersonic {using std::string; }
-using std::unique_ptr;
-
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/stringprintf.h"
 #include "supersonic/base/exception/exception.h"
@@ -56,9 +52,9 @@ namespace {
 template<OperatorId operation_type>
 class RegexpExpression : public UnaryExpression {
  public:
-  RegexpExpression(const Expression* const arg,
+  RegexpExpression(unique_ptr<const Expression> arg,
                    const StringPiece& pattern)
-      : UnaryExpression(arg),
+      : UnaryExpression(std::move(arg)),
         pattern_(pattern.data(), pattern.length()) {}
 
   virtual string ToString(bool verbose) const {
@@ -71,9 +67,8 @@ class RegexpExpression : public UnaryExpression {
       const TupleSchema& schema,
       BufferAllocator* const allocator,
       rowcount_t row_capacity,
-      BoundExpression* child) const {
-    unique_ptr<BoundExpression> child_ptr(child);
-    DataType child_type = GetExpressionType(child);
+      unique_ptr<BoundExpression> child) const {
+    DataType child_type = GetExpressionType(child.get());
     if (child_type != STRING) {
       THROW(new Exception(ERROR_ATTRIBUTE_TYPE_MISMATCH,
           StringPrintf("Invalid argument type (%s) to %s, STRING expected",
@@ -81,7 +76,7 @@ class RegexpExpression : public UnaryExpression {
                        ToString(true).c_str())));
     }
     return BoundGeneralRegexp<operation_type>(
-        child_ptr.release(), pattern_, allocator, row_capacity);
+        std::move(child), pattern_, allocator, row_capacity);
   }
 
   string pattern_;
@@ -91,9 +86,9 @@ class RegexpExpression : public UnaryExpression {
 
 class RegexpExtractExpression : public UnaryExpression {
  public:
-  RegexpExtractExpression(const Expression* const arg,
+  RegexpExtractExpression(unique_ptr<const Expression> arg,
                           const StringPiece& pattern)
-      : UnaryExpression(arg),
+      : UnaryExpression(std::move(arg)),
         pattern_(pattern.data(), pattern.length()) {}
 
   virtual string ToString(bool verbose) const {
@@ -106,16 +101,15 @@ class RegexpExtractExpression : public UnaryExpression {
       const TupleSchema& schema,
       BufferAllocator* const allocator,
       rowcount_t row_capacity,
-      BoundExpression* child) const {
-    unique_ptr<BoundExpression> child_ptr(child);
-    DataType child_type = GetExpressionType(child);
+      unique_ptr<BoundExpression> child) const {
+    DataType child_type = GetExpressionType(child.get());
     if (child_type != STRING) {
       THROW(new Exception(ERROR_ATTRIBUTE_TYPE_MISMATCH,
           StringPrintf("Invalid argument type (%s) to %s, STRING expected",
                        GetTypeInfo(child_type).name().c_str(),
                        ToString(true).c_str())));
     }
-    return BoundRegexpExtract(child_ptr.release(), pattern_, allocator,
+    return BoundRegexpExtract(std::move(child), pattern_, allocator,
                               row_capacity);
   }
 
@@ -126,10 +120,10 @@ class RegexpExtractExpression : public UnaryExpression {
 
 class RegexpReplaceExpression : public BinaryExpression {
  public:
-  RegexpReplaceExpression(const Expression* const haystack,
+  RegexpReplaceExpression(unique_ptr<const Expression> haystack,
                           const StringPiece& needle,
-                          const Expression* const substitute)
-      : BinaryExpression(haystack, substitute),
+                          unique_ptr<const Expression> substitute)
+      : BinaryExpression(std::move(haystack), std::move(substitute)),
         pattern_(needle.data(), needle.length()) {}
 
   virtual string ToString(bool verbose) const {
@@ -142,11 +136,9 @@ class RegexpReplaceExpression : public BinaryExpression {
       const TupleSchema& schema,
       BufferAllocator* const allocator,
       rowcount_t row_capacity,
-      BoundExpression* left,
-      BoundExpression* right) const {
-    unique_ptr<BoundExpression> left_ptr(left);
-    unique_ptr<BoundExpression> right_ptr(right);
-    DataType left_type = GetExpressionType(left);
+      unique_ptr<BoundExpression> left,
+      unique_ptr<BoundExpression> right) const {
+    DataType left_type = GetExpressionType(left.get());
     if (left_type != STRING) {
       THROW(new Exception(ERROR_ATTRIBUTE_TYPE_MISMATCH,
           StringPrintf("Invalid argument type (%s) as first argument to %s, "
@@ -154,7 +146,7 @@ class RegexpReplaceExpression : public BinaryExpression {
                        GetTypeInfo(left_type).name().c_str(),
                        ToString(true).c_str())));
     }
-    DataType right_type = GetExpressionType(right);
+    DataType right_type = GetExpressionType(right.get());
     if (right_type != STRING) {
       THROW(new Exception(ERROR_ATTRIBUTE_TYPE_MISMATCH,
           StringPrintf("Invalid argument type (%s) as last argument to %s, "
@@ -162,7 +154,7 @@ class RegexpReplaceExpression : public BinaryExpression {
                        GetTypeInfo(right_type).name().c_str(),
                        ToString(true).c_str())));
     }
-    return BoundRegexpReplace(left_ptr.release(), pattern_, right_ptr.release(),
+    return BoundRegexpReplace(std::move(left), pattern_, std::move(right),
                               allocator, row_capacity);
   }
 
@@ -173,25 +165,26 @@ class RegexpReplaceExpression : public BinaryExpression {
 
 }  // namespace
 
-const Expression* RegexpPartialMatch(const Expression* const str,
+unique_ptr<const Expression> RegexpPartialMatch(unique_ptr<const Expression> str,
                                      const StringPiece& pattern) {
-  return new RegexpExpression<OPERATOR_REGEXP_PARTIAL>(str, pattern);
+  return make_unique<RegexpExpression<OPERATOR_REGEXP_PARTIAL>>(std::move(str), pattern);
 }
 
-const Expression* RegexpFullMatch(const Expression* const str,
+unique_ptr<const Expression> RegexpFullMatch(unique_ptr<const Expression> str,
                                   const StringPiece& pattern) {
-  return new RegexpExpression<OPERATOR_REGEXP_FULL>(str, pattern);
+  return make_unique<RegexpExpression<OPERATOR_REGEXP_FULL>>(std::move(str), pattern);
 }
 
-const Expression* RegexpExtract(const Expression* const str,
+unique_ptr<const Expression> RegexpExtract(unique_ptr<const Expression> str,
                                 const StringPiece& pattern) {
-  return new RegexpExtractExpression(str, pattern);
+  return make_unique<RegexpExtractExpression>(std::move(str), pattern);
 }
 
-const Expression* RegexpReplace(const Expression* const haystack,
+unique_ptr<const Expression> RegexpReplace(unique_ptr<const Expression> haystack,
                                 const StringPiece& needle,
-                                const Expression* const substitute) {
-  return new RegexpReplaceExpression(haystack, needle, substitute);
+                                unique_ptr<const Expression> substitute) {
+  return make_unique<RegexpReplaceExpression>(std::move(haystack), needle,
+                                              std::move(substitute));
 }
 
 }  // namespace supersonic

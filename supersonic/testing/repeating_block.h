@@ -16,9 +16,7 @@
 #ifndef SUPERSONIC_TESTING_REPEATING_BLOCK_H_
 #define SUPERSONIC_TESTING_REPEATING_BLOCK_H_
 
-#include <cstddef>
-
-#include <memory>
+#include "supersonic/utils/std_namespace.h"
 
 #include "supersonic/utils/macros.h"
 #include "supersonic/base/exception/result.h"
@@ -30,20 +28,20 @@ namespace supersonic {
 class Cursor;
 
 // Create a block of given size filled cyclically with rows from the source.
-Block* ReplicateBlock(const Block& source, rowcount_t row_count,
-                      BufferAllocator* allocator);
+unique_ptr<Block> ReplicateBlock(const Block& source, rowcount_t row_count,
+                                 BufferAllocator* allocator);
 
 // Takes ownership of the original block.
 class RepeatingBlockOperation : public BasicOperation {
  public:
-  RepeatingBlockOperation(Block* block, rowcount_t total_num_rows);
+  RepeatingBlockOperation(unique_ptr<Block> block, rowcount_t total_num_rows);
 
   FailureOrOwned<Cursor> CreateCursor() const;
 
  private:
   // Creates new block consisting of repeated rows from the original block.
   // Returns NULL if block can't be created.
-  Block* CreateResizedBlock(Block* original_block, rowcount_t min_num_rows);
+  unique_ptr<Block> CreateResizedBlock(unique_ptr<Block> original_block, rowcount_t min_num_rows);
 
   std::unique_ptr<Block> resized_block_;
   rowcount_t total_num_rows_;

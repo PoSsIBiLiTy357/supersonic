@@ -17,16 +17,11 @@
 #ifndef SUPERSONIC_CURSOR_INFRASTRUCTURE_BASIC_OPERATION_H_
 #define SUPERSONIC_CURSOR_INFRASTRUCTURE_BASIC_OPERATION_H_
 
-#include <cstddef>
-
-#include <string>
-namespace supersonic {using std::string; }
-#include <vector>
-using std::vector;
 
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/base/exception/exception.h"
 #include "supersonic/base/exception/exception_macros.h"
 #include "supersonic/base/exception/result.h"
@@ -93,32 +88,30 @@ class BasicOperation : public Operation {
 
   // Base constructor for operations with one child.
   // Takes ownership of the child.
-  explicit BasicOperation(Operation* child)
+  explicit BasicOperation(unique_ptr<Operation> child)
       : buffer_allocator_(NULL),
         default_row_count_(Cursor::kDefaultRowCount) {
-    children_.push_back(make_linked_ptr(child));
+    children_.emplace_back(std::move(child.release()));
   }
 
   // Base constructor for operations with rwo children.
   // Takes ownership of the children.
   // Buffer allocator's ownership stays with the caller.
-  BasicOperation(Operation* child1,
-                 Operation* child2)
-      : buffer_allocator_(NULL),
-        default_row_count_(Cursor::kDefaultRowCount) {
-    children_.push_back(make_linked_ptr(child1));
-    children_.push_back(make_linked_ptr(child2));
+  BasicOperation(unique_ptr<Operation> child1,
+                 unique_ptr<Operation> child2)
+        : buffer_allocator_(NULL),
+          default_row_count_(Cursor::kDefaultRowCount) {
+    children_.emplace_back(std::move(child1.release()));
+    children_.emplace_back(std::move(child2.release()));
   }
+
   // Base constructor for operations with arbitrary number of children.
   // Takes ownership of the children.
   // Buffer allocator's ownership stays with the caller.
-  explicit BasicOperation(const vector<Operation*>& children)
+  explicit BasicOperation(vector<unique_ptr<Operation>> children)
       : buffer_allocator_(NULL),
-        default_row_count_(Cursor::kDefaultRowCount) {
-    for (int i = 0; i < children.size(); ++i) {
-      children_.push_back(make_linked_ptr(children[i]));
-    }
-  }
+        default_row_count_(Cursor::kDefaultRowCount),
+        children_(std::move(children)) { }
 
   // Returns the n-th child. N must be smaller than children_count().
   Operation* child_at(const size_t position) const {
@@ -174,7 +167,7 @@ class BasicOperation : public Operation {
   BufferAllocator* buffer_allocator_;
   size_t default_row_count_;
 
-  vector<linked_ptr<Operation> > children_;
+  vector<unique_ptr<Operation>> children_;
   mutable string debug_description_;
 
   DISALLOW_COPY_AND_ASSIGN(BasicOperation);

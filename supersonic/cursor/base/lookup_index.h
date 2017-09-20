@@ -132,7 +132,7 @@ class ResultLookupIndexView {
 
   // Obtains and releases the exception. Can be called only if there was one.
   // Ownership is passed to the caller.
-  Exception* release_exception() { return result_.release_exception(); }
+  unique_ptr<Exception> move_exception() { return result_.move_exception(); }
 
  private:
   ResultLookupIndexView(const LookupIndexView* view, bool is_eos)

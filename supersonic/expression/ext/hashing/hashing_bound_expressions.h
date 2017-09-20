@@ -27,12 +27,12 @@ class BufferAllocator;
 
 // For the description of particular functions, refer to hashing_expressions.h.
 
-FailureOrOwned<BoundExpression> BoundFingerprint(BoundExpression* child,
+FailureOrOwned<BoundExpression> BoundFingerprint(unique_ptr<BoundExpression> child,
                                                  BufferAllocator* allocator,
                                                  rowcount_t row_capacity);
 
-FailureOrOwned<BoundExpression> BoundHash(BoundExpression* child,
-                                          BoundExpression* seed,
+FailureOrOwned<BoundExpression> BoundHash(unique_ptr<BoundExpression> child,
+                                          unique_ptr<BoundExpression> seed,
                                           BufferAllocator* allocator,
                                           rowcount_t row_capacity);
 

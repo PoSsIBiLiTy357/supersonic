@@ -58,16 +58,16 @@ class ForeignFilterCursor : public BasicCursor {
       const int input_foreign_key_column,
       const BoundSingleSourceProjector* nonkey_input_projector,
       const BoundMultiSourceProjector* result_projector,
-      Cursor* filter,
-      Cursor* input)
+      unique_ptr<Cursor> filter,
+      unique_ptr<Cursor> input)
       : BasicCursor(result_projector->result_schema()),
         filter_key_column_(filter_key_column),
         input_foreign_key_column_(input_foreign_key_column),
         nonkey_input_projector_(nonkey_input_projector),
         result_projector_(result_projector),
         input_copier_(nonkey_input_projector_.get(), false),
-        filter_(filter),
-        input_(input),
+        filter_(std::move(filter)),
+        input_(std::move(input)),
         input_indirector_(
             TupleSchema::Singleton("KeySelector", kRowidDatatype, NOT_NULLABLE),
             HeapBufferAllocator::Get()),
@@ -213,13 +213,13 @@ FailureOrVoid EnsureSingleColumnRowidTypeNotNull(const TupleSchema& schema) {
 
 class ForeignFilterOperation : public BasicOperation {
  public:
-  ForeignFilterOperation(const SingleSourceProjector* filter_key,
-                         const SingleSourceProjector* foreign_key,
-                         Operation* filter,
-                         Operation* input)
-      : BasicOperation(filter, input),
-        filter_key_(filter_key),
-        foreign_key_(foreign_key) {}
+  ForeignFilterOperation(unique_ptr<const SingleSourceProjector> filter_key,
+                         unique_ptr<const SingleSourceProjector> foreign_key,
+                         unique_ptr<Operation> filter,
+                         unique_ptr<Operation> input)
+      : BasicOperation(std::move(filter), std::move(input)),
+        filter_key_(std::move(filter_key)),
+        foreign_key_(std::move(foreign_key)) {}
 
   virtual FailureOrOwned<Cursor> CreateCursor() const {
     FailureOrOwned<Cursor> filter = child_at(0)->CreateCursor();
@@ -239,7 +239,7 @@ class ForeignFilterOperation : public BasicOperation {
     return Success(
         BoundForeignFilter(filter_key->source_attribute_position(0),
                            foreign_key->source_attribute_position(0),
-                           filter.release(), input.release()));
+                           filter.move(), input.move()));
   }
 
  private:
@@ -250,20 +250,21 @@ class ForeignFilterOperation : public BasicOperation {
 
 }  // namespace
 
-
-Operation* ForeignFilter(const SingleSourceProjector* filter_key,
-                         const SingleSourceProjector* foreign_key,
-                         Operation* filter,
-                         Operation* input) {
-  return new ForeignFilterOperation(filter_key, foreign_key, filter, input);
+unique_ptr<Operation> ForeignFilter(
+    unique_ptr<const SingleSourceProjector> filter_key,
+    unique_ptr<const SingleSourceProjector> foreign_key,
+    unique_ptr<Operation> filter,
+    unique_ptr<Operation> input) {
+  return make_unique<ForeignFilterOperation>(
+      std::move(filter_key), std::move(foreign_key), std::move(filter),
+      std::move(input));
 }
 
-Cursor* BoundForeignFilter(const int filter_key_column,
+unique_ptr<Cursor> BoundForeignFilter(const int filter_key_column,
                            const int input_foreign_key_column,
-                           Cursor* filter,
-                           Cursor* input) {
-  std::unique_ptr<BoundSingleSourceProjector> input_projector(
-      new BoundSingleSourceProjector(input->schema()));
+                           unique_ptr<Cursor> filter,
+                           unique_ptr<Cursor> input) {
+  auto input_projector = make_unique<BoundSingleSourceProjector>(input->schema());
   for (int i = 0; i < input->schema().attribute_count(); ++i) {
     if (i != input_foreign_key_column) input_projector->Add(i);
   }
@@ -273,8 +274,7 @@ Cursor* BoundForeignFilter(const int filter_key_column,
       TupleSchema::Singleton("$parentFK$", kRowidDatatype, NOT_NULLABLE));
   sources.push_back(&key_schema);
   sources.push_back(&input_projector->result_schema());
-  std::unique_ptr<BoundMultiSourceProjector> result_projector(
-      new BoundMultiSourceProjector(sources));
+  auto result_projector = make_unique<BoundMultiSourceProjector>(sources);
   int input_attribute_index = 0;
   for (int i = 0; i < input->schema().attribute_count(); ++i) {
     if (i == input_foreign_key_column) {
@@ -283,10 +283,9 @@ Cursor* BoundForeignFilter(const int filter_key_column,
       result_projector->Add(1, input_attribute_index++);
     }
   }
-  return new ForeignFilterCursor(filter_key_column, input_foreign_key_column,
-                                 input_projector.release(),
-                                 result_projector.release(),
-                                 filter, input);
+  return make_unique<ForeignFilterCursor>(
+    filter_key_column, input_foreign_key_column, input_projector.release(),
+    result_projector.release(), std::move(filter), std::move(input));
 }
 
 }  // namespace supersonic

@@ -54,10 +54,10 @@ class Expression;
 // This checks that the left input of the IfNull function is evaluated whenever
 // the incoming skip vector is not set, while the right input is evaluated if
 // the incoming skip vector is not set and the left side is NULL.
-void TestShortCircuitUnary(const Block* block, UnaryExpressionCreator factory);
-void TestShortCircuitBinary(const Block* block,
+void TestShortCircuitUnary(unique_ptr<const Block> block, UnaryExpressionCreator factory);
+void TestShortCircuitBinary(unique_ptr<const Block> block,
                             BinaryExpressionCreator factory);
-void TestShortCircuitTernary(const Block* block,
+void TestShortCircuitTernary(unique_ptr<const Block> block,
                              TernaryExpressionCreator factory);
 
 // Testing expression creators. Not to be used, exposed for testing only.

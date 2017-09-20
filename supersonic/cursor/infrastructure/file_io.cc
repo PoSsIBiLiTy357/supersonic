@@ -363,14 +363,14 @@ FailureOrOwned<Cursor> FileInput(const TupleSchema& schema,
                                  BufferAllocator* allocator) {
   CHECK_NOTNULL(input_file);
   CHECK_NOTNULL(allocator);
-  std::unique_ptr<Block> block(new Block(schema, allocator));
+  auto block = make_unique<Block>(schema, allocator);
   if (!block.get() || !block->Reallocate(kMaxChunkRowCount)) {
     input_file->Close();
     THROW(new Exception(ERROR_MEMORY_EXCEEDED,
                         "Block allocation for FileInputCursor failed."));
   }
-  return Success(
-      new FileInputCursor(block.release(), input_file, delete_when_done));
+  return Success(make_unique<FileInputCursor>(
+      block.release(), input_file, delete_when_done));
 }
 
 // Reads chunk of data from the input file. If chunk contains more rows then
