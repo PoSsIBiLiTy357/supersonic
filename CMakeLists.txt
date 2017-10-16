@@ -366,7 +366,6 @@ set(HEADERS_SUPERSONIC
 
 
 target_compile_options(supersonic PUBLIC -Wno-ignored-attributes)
-
 add_sanitizers(supersonic)
 
 target_link_libraries(supersonic
@@ -377,6 +376,9 @@ target_link_libraries(supersonic
     ${Boost_TIMER_LIBRARIES}
     Threads::Threads
 )
+
+
+
 
 INSTALL_HEADERS_WITH_DIRECTORY(HEADERS_SUPERSONIC)
 install(
@@ -434,7 +436,15 @@ install(
     DESTINATION "lib")
 
 
+# LTO
+IF(CMAKE_BUILD_TYPE MATCHES RELEASE)
+	set_property(TARGET supersonic PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+	set_property(TARGET supersonic_regexp PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+	set_property(TARGET supersonic_serialization PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+ENDIF(CMAKE_BUILD_TYPE MATCHES RELEASE)
 
+
+# Testing
 enable_testing()
 
 add_library(supersonic_testutils
