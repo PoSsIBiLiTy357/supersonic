@@ -4,6 +4,7 @@
 // Protocol buffer for describing measured benchmark values. They are created by
 // the CursorStatistics objects and dispatched to a drawing utility for
 // benchmark graph/tree creation.
+syntax = "proto2";
 
 
 package supersonic;

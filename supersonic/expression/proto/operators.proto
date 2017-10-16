@@ -1,6 +1,7 @@
 // Copyright 2010 Google Inc. All Rights Reserved.
 // Author: ptab@google.com (Piotr Tabor)
 // Enums for internal usage.
+syntax = "proto2";
 
 
 package supersonic;

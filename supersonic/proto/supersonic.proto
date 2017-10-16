@@ -2,6 +2,8 @@
 //
 // Core enums and serializations.
 
+syntax = "proto2";
+
 
 option java_package = "com.google.datawarehouse.supersonic.proto";
 option java_outer_classname = "CommonEnums";

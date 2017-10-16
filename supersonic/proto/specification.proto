@@ -1,6 +1,7 @@
 // Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Specifications for cursors.
+syntax = "proto2";
 
 
 package supersonic;

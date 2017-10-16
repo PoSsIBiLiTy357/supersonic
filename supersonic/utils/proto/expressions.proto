@@ -1,6 +1,7 @@
 // Copyright 2010 Google Inc. All Rights Reserved.
 //
 // Contains description of expresions.
+syntax = "proto2";
 
 option java_package = "com.google.datawarehouse.common.proto";
 option java_outer_classname = "ExpressionDescriptionProto";
