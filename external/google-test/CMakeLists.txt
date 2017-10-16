@@ -2,6 +2,11 @@ ExternalProject_Add(gtest
     GIT_REPOSITORY "https://github.com/google/googletest"
     GIT_TAG "master"
     INSTALL_COMMAND ""
+    BUILD_BYPRODUCTS
+    	<BINARY_DIR>/googlemock/gtest/libgtest.a
+    	<BINARY_DIR>/googlemock/gtest/libgtest_main.a
+    	<BINARY_DIR>/googlemock/libgmock.a
+    	<BINARY_DIR>/googlemock/libgmock_main.a
 )
 
 # Get GTest source and binary directories from CMake project
