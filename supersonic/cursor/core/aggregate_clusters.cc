@@ -13,15 +13,10 @@
 // limitations under the License.
 //
 
-#include <algorithm>
-#include <memory>
-#include <vector>
-#include "supersonic/utils/std_namespace.h"
-using std::make_unique;
-using std::vector;
 
 #include "supersonic/utils/integral_types.h"
 #include <glog/logging.h>
+#include "supersonic/utils/std_namespace.h"
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/port.h"
@@ -125,15 +120,15 @@ class ValueComparator : public ValueComparatorInterface {
 // Helper struct used by CreateValueComparator.
 struct ValueComparatorFactory {
   template <DataType type>
-  ValueComparatorInterface* operator()() const {
-    return new ValueComparator<type>();
+  unique_ptr<ValueComparatorInterface> operator()() const {
+    return make_unique<ValueComparator<type>>();
   }
 };
 
 // Instantiates a particular specialization of ValueComparator<type>.
-ValueComparatorInterface* CreateValueComparator(DataType type) {
-  return TypeSpecialization<ValueComparatorInterface*, ValueComparatorFactory>(
-      type);
+unique_ptr<ValueComparatorInterface> CreateValueComparator(DataType type) {
+  return TypeSpecialization<unique_ptr<ValueComparatorInterface>,
+                            ValueComparatorFactory>(type);
 }
 
 // Holds and updates a set of unique keys on which input is clustered.
@@ -185,7 +180,7 @@ class AggregateClustersKeySet {
     last_added_ = nullptr;
   }
 
-  ~AggregateClustersKeySet();
+  ~AggregateClustersKeySet() = default;
 
   AggregateClustersKeySet(unique_ptr<const BoundSingleSourceProjector> group_by,
                           BufferAllocator* allocator)
@@ -195,7 +190,7 @@ class AggregateClustersKeySet {
         indexed_block_row_count_(0),
         copier_(indexed_block_.schema(), true) {
     for (int i = 0; i < key_schema().attribute_count(); i++) {
-      comparators_.push_back(
+      comparators_.emplace_back(
           CreateValueComparator(key_schema().attribute(i).type()));
     }
   }
@@ -237,10 +232,10 @@ private:
   rowcount_t indexed_block_row_count_;
 
   // Pointer to last added row. Is NULL when indexed_block_ is empty.
-  std::unique_ptr<Row> last_added_;
+  unique_ptr<Row> last_added_;
 
   // comparator_[index] is used for index-th column comparison
-  vector<const ValueComparatorInterface*> comparators_;
+  vector<unique_ptr<const ValueComparatorInterface>> comparators_;
 
   RowCopier<DirectRowSourceReader<RowSourceAdapter>,
             DirectRowSourceWriter<RowSinkAdapter> > copier_;
@@ -311,11 +306,6 @@ const rowid_t* AggregateClustersKeySet::Insert(const View& view,
     return NULL;
   }
   return key_result_index_map_;
-}
-
-AggregateClustersKeySet::~AggregateClustersKeySet() {
-    for (auto& comparator: comparators_)
-      delete comparator;
 }
 
 // Processes input during iteration in small chunks, but because input is

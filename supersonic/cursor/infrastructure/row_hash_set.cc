@@ -118,27 +118,29 @@ class ValueComparator : public ValueComparatorInterface {
 // Helper struct used by CreateValueComparator.
 struct ValueComparatorFactory {
   template <DataType type>
-  ValueComparatorInterface* operator()() const {
-    return new ValueComparator<type>();
+  unique_ptr<ValueComparatorInterface> operator()() const {
+    return make_unique<ValueComparator<type>>();
   }
 };
 
 // Instantiates a particular specialization of ValueComparator<type>.
-ValueComparatorInterface* CreateValueComparator(DataType type) {
-  return TypeSpecialization<ValueComparatorInterface*, ValueComparatorFactory>(
-      type);
+unique_ptr<ValueComparatorInterface> CreateValueComparator(DataType type) {
+  return TypeSpecialization<unique_ptr<ValueComparatorInterface>,
+                            ValueComparatorFactory>(type);
 }
 
 // A compound row equality comparator, implemented with a vector of individual
 // value comparators. Views have to be set befor equal call.
 class RowComparator {
  public:
+  ~RowComparator() = default;
+
   explicit RowComparator(const TupleSchema& key_schema) :
     left_view_(NULL),
     right_view_(NULL),
     hash_comparison_only_(false) {
     for (int i = 0; i < key_schema.attribute_count(); i++) {
-      comparators_.push_back(
+      comparators_.emplace_back(
           CreateValueComparator(key_schema.attribute(i).type()));
     }
     one_column_with_non_colliding_hash_ =
@@ -146,14 +148,10 @@ class RowComparator {
          comparators_[0]->non_colliding_hash_type());
   }
 
-  ~RowComparator() {
-    for (auto& comparator: comparators_) delete comparator;
-  }
-
   // Function equal assumes that hashes of two rows are equal. It performs
   // comparison on every key-column of two given rows.
   bool Equal(int left_pos, int right_pos) const {
-    for (auto comparator: comparators_) {
+    for (const auto& comparator: comparators_) {
       if (!comparator->Equal(left_pos, right_pos))
         return false;
     }
@@ -186,7 +184,7 @@ class RowComparator {
   }
 
  private:
-  vector<ValueComparatorInterface*> comparators_;
+  vector<unique_ptr<ValueComparatorInterface>> comparators_;
   // Pointers to compared views. RowComparator doesn't take its ownership.
   const View* left_view_;
   const View* right_view_;
