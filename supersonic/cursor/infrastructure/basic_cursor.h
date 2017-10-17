@@ -89,14 +89,11 @@ class BasicCursor : public Cursor {
 
   // Base constructor for cursors with arbitrary number of children.
   // Takes ownership of the children.
-  BasicCursor(const TupleSchema& schema, const vector<Cursor*>& children)
+  BasicCursor(const TupleSchema& schema, vector<unique_ptr<Cursor>> children)
       : schema_(schema),
         view_(schema),
-        interrupted_(false) {
-    for (int i = 0; i < children.size(); ++i) {
-      children_.push_back(unique_ptr<Cursor>(children[i]));
-    }
-  }
+        interrupted_(false),
+        children_(std::move(children)) { }
 
   // Returns the n-th child. N must be smaller than children_count().
   Cursor* child_at(const size_t position) const {
