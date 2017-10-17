@@ -291,9 +291,8 @@ void DOTDrawer::DrawBenchmarkSubtree(
 
   const PointerVector<BenchmarkTreeNode>& children = node.GetChildren();
 
-  for (const_node_iterator child = children.begin();
-       child != children.end(); ++child) {
-    DrawBenchmarkSubtree(*(child->get()), draw_node ? node_name : parent_name);
+  for (const auto& child: children) {
+    DrawBenchmarkSubtree(*(child.get()), draw_node ? node_name : parent_name);
   }
 }
 

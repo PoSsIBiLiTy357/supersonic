@@ -50,8 +50,8 @@ class BasicCursor : public Cursor {
   // i.e. doesn't guarantee happens-before).
   virtual void Interrupt() {
     interrupted_.store(true, std::memory_order_relaxed);
-    for (int i = 0; i < children_.size(); ++i) {
-      children_[i]->Interrupt();
+    for (auto & i: children_) {
+      i->Interrupt();
     }
   }
 

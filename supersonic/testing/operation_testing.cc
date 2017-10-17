@@ -462,11 +462,11 @@ void OperationTest::Execute(unique_ptr<Operation> tested_operation) {
     return;
   }
 
-  for (size_t i = 0; i < input_view_sizes_.size(); ++i) {
-    for (size_t j = 0; j < result_view_sizes_.size(); ++j) {
+  for (auto input_view_size: input_view_sizes_) {
+    for (auto result_view_size: result_view_sizes_) {
       ExecuteOnce(tested_operation.get(),
-                  input_view_sizes_[i],
-                  result_view_sizes_[j],
+                  input_view_size,
+                  result_view_size,
                   0.0);
       // TODO(user): It would be useful to know if the test fails the same way
       // regardless of view sizes, or whether failure is dependent of view size.

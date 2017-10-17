@@ -81,8 +81,8 @@ unique_ptr<ExpressionList> MakeExpressionList(
     vector<unique_ptr<const Expression>> expressions)
 {
   auto list = make_unique<ExpressionList>();
-  for (int i = 0; i < expressions.size(); ++i) {
-    list->add(std::move(expressions[i]));
+  for (auto& expression: expressions) {
+    list->add(std::move(expression));
   }
 
   return list;
@@ -1031,8 +1031,8 @@ void TestBoundExpressionList(BoundExpressionListExpressionFactory factory,
   auto expression_list = make_unique<BoundExpressionList>();
   string expected_name = expected_name_template;
   vector<int> column_numbers;
-  for (int i = 0; i < data_types.size(); ++i) {
-    int column_number = schema_holder->ColumnNumber(data_types[i]);
+  for (auto& data_type: data_types) {
+    int column_number = schema_holder->ColumnNumber(data_type);
     expression_list->add(DefaultDoBind(*(schema_holder->schema()), 1,
         AttributeAt(column_number)));
     column_numbers.push_back(column_number);

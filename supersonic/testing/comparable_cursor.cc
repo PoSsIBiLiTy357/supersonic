@@ -65,8 +65,8 @@ class StatsListener : public SpyListener {
   }
 
   void AppendRowRepresentationsToStream(std::ostream *s) {
-    for (size_t i = 0; i < rows_representation_.size(); i++)
-      *s << rows_representation_[i];
+    for (const auto& i: rows_representation_)
+      *s << i;
   }
 
  private:

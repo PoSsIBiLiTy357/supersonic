@@ -242,9 +242,9 @@ FailureOrOwned<const BoundSingleSourceProjector>
 CompoundSingleSourceProjector::Bind(
     const TupleSchema& source_schema) const {
   auto projector = make_unique<BoundSingleSourceProjector>(source_schema);
-  for (int i = 0; i < projectors_.size(); ++i) {
+  for (const auto& i: projectors_) {
     FailureOrOwned<const BoundSingleSourceProjector> component =
-        projectors_[i]->Bind(source_schema);
+        i->Bind(source_schema);
     PROPAGATE_ON_FAILURE(component);
     for (int j = 0; j < component->result_schema().attribute_count();
          ++j) {
@@ -298,8 +298,8 @@ unique_ptr<const SingleSourceProjector> ProjectAttributeAt(const int position) {
 unique_ptr<const SingleSourceProjector> ProjectAttributesAt(const vector<int>& positions) {
   unique_ptr<CompoundSingleSourceProjector> projector(
       new CompoundSingleSourceProjector);
-  for (int i = 0; i < positions.size(); ++i) {
-    projector->add(ProjectAttributeAt(positions[i]));
+  for (int position : positions) {
+    projector->add(ProjectAttributeAt(position));
   }
   return projector;
 }
@@ -307,8 +307,8 @@ unique_ptr<const SingleSourceProjector> ProjectAttributesAt(const vector<int>& p
 unique_ptr<const SingleSourceProjector> ProjectNamedAttributes(
     const vector<string>& names) {
   auto projector = make_unique<CompoundSingleSourceProjector>();
-  for (int i = 0; i < names.size(); ++i) {
-    projector->add(ProjectNamedAttribute(names[i]));
+  for (const auto& name: names) {
+    projector->add(ProjectNamedAttribute(name));
   }
   return std::move(projector);
 }
@@ -326,15 +326,15 @@ FailureOrOwned<const BoundMultiSourceProjector>
 CompoundMultiSourceProjector::Bind(
     const vector<const TupleSchema*>& source_schemas) const {
   auto projector = make_unique<BoundMultiSourceProjector>(source_schemas);
-  for (int i = 0; i < projectors_.size(); ++i) {
+  for (const auto& i: projectors_) {
     FailureOrOwned<const BoundSingleSourceProjector> component =
-        projectors_[i].second->Bind(*source_schemas[projectors_[i].first]);
+        i.second->Bind(*source_schemas[i.first]);
     PROPAGATE_ON_FAILURE(component);
 
     for (int j = 0; j < component->result_schema().attribute_count();
          ++j) {
       if (!projector->AddAs(
-              projectors_[i].first,
+              i.first,
               component->source_attribute_position(j),
               component->result_schema().attribute(j).name())) {
         THROW(new Exception(

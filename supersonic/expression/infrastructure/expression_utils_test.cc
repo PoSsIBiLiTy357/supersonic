@@ -97,15 +97,15 @@ TEST_F(ExpressionUtilsTest, CheckAttributeCountFails) {
 }
 
 TEST_F(ExpressionUtilsTest, GetExpressionType) {
-  for (int i = 0; i < kNumberOfTypes; ++i) {
-    std::unique_ptr<BoundExpression> expr(GetNull(kTypes[i]));
-    EXPECT_EQ(kTypes[i], GetExpressionType(expr.get()));
+  for (auto kType: kTypes) {
+    std::unique_ptr<BoundExpression> expr(GetNull(kType));
+    EXPECT_EQ(kType, GetExpressionType(expr.get()));
   }
 }
 
 TEST_F(ExpressionUtilsTest, CheckExpressionType) {
   for (int i = 0; i < kNumberOfTypes; ++i) {
-    std::unique_ptr<const BoundExpression> expr(GetNull(kTypes[i]));
+    auto expr = GetNull(kTypes[i]);
     for (int j = 0; j < kNumberOfTypes; ++j) {
       EXPECT_EQ(i == j,
                 CheckExpressionType(kTypes[j], expr.get()).is_success());
@@ -117,8 +117,7 @@ TEST_F(ExpressionUtilsTest, CheckExpressionListMembersType) {
   int member_count[] = {0, 1, 5};
   for (int i = 0; i < kNumberOfTypes; ++i) {
     for (int j = 0; j < 3; ++j) {
-      std::unique_ptr<BoundExpressionList> expression_list(
-          new BoundExpressionList);
+      auto expression_list = make_unique<BoundExpressionList>();
       for (int k = 0; k < member_count[j]; ++k) {
         expression_list->add(GetNull(kTypes[i]));
       }

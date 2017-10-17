@@ -95,8 +95,8 @@ bool TempFile::TempFilename(const char *directory_prefix, string *filename) {
 
   // Try each directory, as they might be full, have inappropriate
   // permissions or have different problems at times.
-  for (int i = 0; i < dirs.size(); ++i) {
-    TempFilenameInDir(dirs[i].c_str(), filename);
+  for (auto& dir: dirs) {
+    TempFilenameInDir(dir.c_str(), filename);
     if (File::Exists(*filename)) {
       LOG(WARNING) << "unique tempfile already exists in " << *filename;
       filename->clear();

@@ -15,17 +15,7 @@
 
 #include "supersonic/cursor/infrastructure/row_hash_set.h"
 
-#include <cstring>
-#include <cstddef>
-
-#include <algorithm>
-#include <memory>
-#include <string>
-#include <vector>
 #include "supersonic/utils/std_namespace.h"
-namespace supersonic {using std::string; }
-using std::make_unique;
-using std::vector;
 
 #include "supersonic/utils/integral_types.h"
 #include <glog/logging.h>
@@ -157,14 +147,14 @@ class RowComparator {
   }
 
   ~RowComparator() {
-    for (int i = 0; i < comparators_.size(); i++) delete comparators_[i];
+    for (auto& comparator: comparators_) delete comparator;
   }
 
   // Function equal assumes that hashes of two rows are equal. It performs
   // comparison on every key-column of two given rows.
   bool Equal(int left_pos, int right_pos) const {
-    for (int i = 0; i < comparators_.size(); i++) {
-      if (!comparators_[i]->Equal(left_pos, right_pos))
+    for (auto comparator: comparators_) {
+      if (!comparator->Equal(left_pos, right_pos))
         return false;
     }
     return true;
@@ -396,8 +386,8 @@ bool RowHashSetImpl::ReserveRowCapacity(rowcount_t row_count) {
   // Rebuild the linked lists that depend on hash_index (which changed, as
   // it depends on hash_mask_, that changed).
   if (is_multiset_) {
-    for (rowid_t i = 0; i < equal_row_groups_.size(); ++i) {
-      rowid_t first = equal_row_groups_[i].first;
+    for (auto& equal_row_group: equal_row_groups_) {
+      rowid_t first = equal_row_group.first;
       int hash_index = (hash_mask_ & hash_[first]);
       prev_row_id_[first] = last_row_id_[hash_index];
       last_row_id_[hash_index] = first;

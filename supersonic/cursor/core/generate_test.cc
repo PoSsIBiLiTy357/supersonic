@@ -44,8 +44,8 @@ TEST_F(BoundGenerateCursorTest, Zero) {
 TEST_F(BoundGenerateCursorTest, Many) {
   static const int kRowCounts[] = { 1, 100, 1200, 65536 };
 
-  for (int i = 0; i < arraysize(kRowCounts); i++) {
-    FailureOrOwned<Cursor> cursor = BoundGenerate(kRowCounts[i]);
+  for (int kRowCount : kRowCounts) {
+    FailureOrOwned<Cursor> cursor = BoundGenerate(kRowCount);
     ASSERT_TRUE(cursor.is_success());
 
     int row_count = 0;
@@ -58,11 +58,11 @@ TEST_F(BoundGenerateCursorTest, Many) {
 
       const int result_row_count = result.view().row_count();
       EXPECT_LT(0, result_row_count);
-      EXPECT_GE(kRowCounts[i], result_row_count);
+      EXPECT_GE(kRowCount, result_row_count);
       row_count += result_row_count;
     }
 
-    EXPECT_EQ(kRowCounts[i], row_count);
+    EXPECT_EQ(kRowCount, row_count);
   }
 }
 

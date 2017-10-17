@@ -55,7 +55,7 @@ void EnumDefinition::Rep::CopyFrom(const EnumDefinition::Rep& other) {
   arena_.Reset();
   name_to_number_.clear();
   number_to_name_.clear();
-  for (auto i : other.number_to_name_) {
+  for (auto i: other.number_to_name_) {
     SucceedOrDie(Add(i.first, i.second));
   }
 }
@@ -84,7 +84,7 @@ FailureOrVoid EnumDefinition::Rep::VerifyEquals(const EnumDefinition::Rep& a,
                                                 const EnumDefinition::Rep& b) {
   // Verified by the EnumDefinition.
   CHECK_EQ(a.name_to_number_.size(), b.name_to_number_.size());
-  for (auto a_iterator : a.number_to_name_) {
+  for (auto a_iterator: a.number_to_name_) {
     auto b_iterator = b.number_to_name_.find(a_iterator.first);
     if (b_iterator == b.number_to_name_.end()) {
       THROW(new Exception(

@@ -207,9 +207,8 @@ BenchmarkTreeNode* BenchmarkTreeBuilder::CreateTreeNode(
 
   bool parallel_cursor =
       GetBenchmarkType(*current_output->cursor()) == PARALLEL;
-  for (entry_iterator entry = history.begin(); entry != history.end();
-       ++entry) {
-    node->AddChild(CreateTreeNode(*entry,
+  for (auto& entry: history) {
+    node->AddChild(CreateTreeNode(entry,
                                   transformer,
                                   /* is root? */ false,
                                   is_parallel_descendant || parallel_cursor));

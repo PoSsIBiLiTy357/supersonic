@@ -907,8 +907,8 @@ StringPiece FindEol(StringPiece s) {
 //  return true if string s contains only whitespace characters
 //------------------------------------------------------------------------
 bool OnlyWhitespace(StringPiece s) {
-  for ( int i = 0; i < s.size(); ++i ) {
-    if ( !ascii_isspace(s[i]) ) return false;
+  for (char i : s) {
+    if ( !ascii_isspace(i) ) return false;
   }
   return true;
 }

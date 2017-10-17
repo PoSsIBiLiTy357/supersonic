@@ -23,8 +23,8 @@ namespace supersonic {
 
 void BenchmarkTreeNode::GatherAllData() {
   cursor_statistics_->GatherData();
-  for (size_t i = 0; i < children_.size(); ++i) {
-    children_[i]->GatherAllData();
+  for (auto& i: children_) {
+    i->GatherAllData();
   }
 }
 

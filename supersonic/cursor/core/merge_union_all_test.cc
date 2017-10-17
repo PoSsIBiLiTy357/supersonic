@@ -338,8 +338,8 @@ TEST_F(MergeUnionAllTest, CheckDeterminism) {
       uptr_vector<Operation>(inputs[0]->Build(), inputs[1]->Build(),
                              inputs[2]->Build(), inputs[3]->Build())));
 
-  for (int i = 0; i < kNumInputs; ++i) {
-    test.AddInput(inputs[i]->Build());
+  for (auto& input: inputs) {
+    test.AddInput(input->Build());
   }
 
   // OperationTest::Execute repedeately executes the operation, each time:

@@ -82,8 +82,8 @@ void UpperString(char* s) {
 }
 
 void UpperString(string* s) {
-  for (string::iterator iter = s->begin(); iter != s->end(); ++iter) {
-    *iter = ascii_toupper(*iter);
+  for (char & iter : *s) {
+    iter = ascii_toupper(iter);
   }
 }
 
@@ -101,10 +101,10 @@ void UpperStringToBuf(const char* s, char* buf, int n) {
 
 void TitlecaseString(string *s, StringPiece delimiters) {
   bool upper = true;
-  for (string::iterator ss = s->begin(); ss != s->end(); ++ss) {
+  for (char & ss : *s) {
     if (upper) {
-      *ss = ascii_toupper(*ss);
+      ss = ascii_toupper(ss);
     }
-    upper = (delimiters.find(*ss) != StringPiece::npos);
+    upper = (delimiters.find(ss) != StringPiece::npos);
   }
 }

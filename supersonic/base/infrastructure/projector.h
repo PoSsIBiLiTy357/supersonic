@@ -77,8 +77,8 @@ class BoundMultiSourceProjector {
   // specified schemas.
   explicit BoundMultiSourceProjector(
       const vector<const TupleSchema*>& sources) {
-    for (int i = 0; i < sources.size(); ++i) {
-      source_schemas_.push_back(*sources[i]);
+    for (auto source: sources) {
+      source_schemas_.push_back(*source);
     }
   }
 

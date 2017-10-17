@@ -314,8 +314,8 @@ const rowid_t* AggregateClustersKeySet::Insert(const View& view,
 }
 
 AggregateClustersKeySet::~AggregateClustersKeySet() {
-    for (int i = 0; i < comparators_.size(); i++)
-      delete comparators_[i];
+    for (auto& comparator: comparators_)
+      delete comparator;
 }
 
 // Processes input during iteration in small chunks, but because input is

@@ -358,9 +358,9 @@ class BarrierSplitReaderCursor : public Cursor {
 bool BarrierSplitter::try_crossing_barrier() {
   DCHECK(all_at_barrier());
   if (input_.EagerNext()) {
-    for (int i = 0; i < readers_.size(); ++i) {
-      if (readers_[i] != NULL) {
-        readers_[i]->reset(input_.view());
+    for (auto & reader: readers_) {
+      if (reader != NULL) {
+        reader->reset(input_.view());
         ++barrier_;
       }
     }

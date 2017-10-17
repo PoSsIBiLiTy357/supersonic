@@ -234,9 +234,8 @@ void SortColumnResolved(
     vector<Range>* target,
     Permutation* permutation,
     bool is_last_column) {
-  for (vector<Range>::const_iterator i = source.begin();
-       i != source.end(); ++i) {
-    SortRange<type, descending, is_always_not_null>(data, is_null, *i,
+  for (auto i: source) {
+    SortRange<type, descending, is_always_not_null>(data, is_null, i,
                                                     target, permutation,
                                                     is_last_column);
   }

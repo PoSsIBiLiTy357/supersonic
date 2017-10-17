@@ -220,9 +220,8 @@ int64 ReverseOrderedStringToInt64(StringPiece key) {
 
 string DictionaryInt32Encode(const std::unordered_map<string, int32>* dictionary) {
   vector<string> entries;
-  for (std::unordered_map<string, int32>::const_iterator iter = dictionary->begin();
-       iter != dictionary->end(); ++iter) {
-    entries.push_back(StringPrintf("%s:%d", iter->first.c_str(), iter->second));
+  for (const auto & iter : *dictionary) {
+    entries.push_back(StringPrintf("%s:%d", iter.first.c_str(), iter.second));
   }
 
   string result;
@@ -232,10 +231,9 @@ string DictionaryInt32Encode(const std::unordered_map<string, int32>* dictionary
 
 string DictionaryInt64Encode(const std::unordered_map<string, int64>* dictionary) {
   vector<string> entries;
-  for (std::unordered_map<string, int64>::const_iterator iter = dictionary->begin();
-       iter != dictionary->end(); ++iter) {
+  for (const auto & iter : *dictionary) {
     entries.push_back(StringPrintf("%s:%" GG_LL_FORMAT "d",
-                                   iter->first.c_str(), iter->second));
+                                   iter.first.c_str(), iter.second));
   }
 
   string result;
@@ -245,9 +243,8 @@ string DictionaryInt64Encode(const std::unordered_map<string, int64>* dictionary
 
 string DictionaryDoubleEncode(const std::unordered_map<string, double>* dictionary) {
   vector<string> entries;
-  for (std::unordered_map<string, double>::const_iterator iter = dictionary->begin();
-       iter != dictionary->end(); ++iter) {
-    entries.push_back(StringPrintf("%s:%g", iter->first.c_str(), iter->second));
+  for (const auto & iter : *dictionary) {
+    entries.push_back(StringPrintf("%s:%g", iter.first.c_str(), iter.second));
   }
 
   string result;
@@ -259,8 +256,8 @@ bool DictionaryParse(const string& encoded_str,
                       vector<std::pair<string, string> >* items) {
   vector<string> entries;
   SplitStringUsing(encoded_str, ",", &entries);
-  for (int i = 0; i < entries.size(); ++i) {
-    vector<string> fields = strings::Split(entries[i], ":");
+  for (const auto & entrie : entries) {
+    vector<string> fields = strings::Split(entrie, ":");
     if (fields.size() != 2)  // parsing error
       return false;
     items->push_back(make_pair(fields[0], fields[1]));
@@ -275,14 +272,14 @@ bool DictionaryInt32Decode(std::unordered_map<string, int32>* dictionary,
     return false;
 
   dictionary->clear();
-  for (int i = 0; i < items.size(); ++i) {
+  for (auto& item: items) {
     char *error = NULL;
-    const int32 value = strto32(items[i].second.c_str(), &error, 0);
-    if (error == items[i].second.c_str() || *error != '\0') {
+    const int32 value = strto32(item.second.c_str(), &error, 0);
+    if (error == item.second.c_str() || *error != '\0') {
       // parsing error
       return false;
     }
-    (*dictionary)[items[i].first] = value;
+    (*dictionary)[item.first] = value;
   }
   return true;
 }
@@ -294,14 +291,14 @@ bool DictionaryInt64Decode(std::unordered_map<string, int64>* dictionary,
     return false;
 
   dictionary->clear();
-  for (int i = 0; i < items.size(); ++i) {
+  for (auto& item: items) {
     char *error = NULL;
-    const int64 value = strto64(items[i].second.c_str(), &error, 0);
-    if (error == items[i].second.c_str() || *error != '\0')  {
+    const int64 value = strto64(item.second.c_str(), &error, 0);
+    if (error == item.second.c_str() || *error != '\0')  {
       // parsing error
       return false;
     }
-    (*dictionary)[items[i].first] = value;
+    (*dictionary)[item.first] = value;
   }
   return true;
 }
@@ -314,14 +311,14 @@ bool DictionaryDoubleDecode(std::unordered_map<string, double>* dictionary,
     return false;
 
   dictionary->clear();
-  for (int i = 0; i < items.size(); ++i) {
+  for (auto& item: items) {
     char *error = NULL;
-    const double value = strtod(items[i].second.c_str(), &error);
-    if (error == items[i].second.c_str() || *error != '\0') {
+    const double value = strtod(item.second.c_str(), &error);
+    if (error == item.second.c_str() || *error != '\0') {
       // parsing error
       return false;
     }
-    (*dictionary)[items[i].first] = value;
+    (*dictionary)[item.first] = value;
   }
   return true;
 }

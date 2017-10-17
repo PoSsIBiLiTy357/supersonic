@@ -40,11 +40,11 @@ bool contains_limit[] = {false, true};
 TEST(SpecificationBuilderTest, ExtendedSortSpecificationTest) {
   MTRandom random_generator(290890);
   for (int i = 0; i < keys_count; ++i) {
-    for (int j = 0; j < 2; ++j) {
+    for (bool j : contains_limit) {
       int key = keys[i];
       ExtendedSortSpecificationBuilder builder;
       ExtendedSortSpecification expected;
-      if (contains_limit[j]) {
+      if (j) {
         int limit = abs(random_generator.Next());
         builder.SetLimit(limit);
         expected.set_limit(limit);

@@ -697,7 +697,7 @@ namespace gtl {
 // Note: If you pass a temporary container to deref_view, be careful that the
 // temporary container outlives the deref_view to avoid dangling references.
 // This is fine:  PublishAll(deref_view(Make());
-// This is not:   for (const auto& v : deref_view(Make())) { Publish(v); }
+// This is not:   for (const auto& v: deref_view(Make())) { Publish(v); }
 
 template<typename C>
 struct deref_view_type {
@@ -736,7 +736,7 @@ typename deref_view_type<const C>::type deref_view(const C& map) {
 // Note: If you pass a temporary container to reversed_view_type, be careful
 // that the temporary container outlives the reversed_view to avoid dangling
 // references. This is fine:  PublishAll(reversed_view(Make());
-// This is not:   for (const auto& v : reversed_view(Make())) { Publish(v); }
+// This is not:   for (const auto& v: reversed_view(Make())) { Publish(v); }
 
 template<typename C>
 struct reversed_view_type {

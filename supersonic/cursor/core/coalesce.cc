@@ -61,8 +61,8 @@ class CoalesceCursor: public BasicCursor {
   virtual bool IsWaitingOnBarrierSupported() const { return true; }
 
   virtual void ApplyToChildren(CursorTransformer* transformer) {
-    for (int i = 0; i < inputs_.size(); ++i) {
-      inputs_[i]->ApplyToCursor(transformer);
+    for (auto& input: inputs_) {
+      input->ApplyToCursor(transformer);
     }
   }
 

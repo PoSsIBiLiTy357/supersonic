@@ -283,16 +283,16 @@ ResultView MergeUnionAllCursor::Next(rowcount_t max_row_count) {
 }
 
 void MergeUnionAllCursor::Interrupt() {
-  for (size_t i = 0; i < inputs_.size(); i++) {
-    inputs_[i]->Interrupt();
+  for (auto& input: inputs_) {
+    input->Interrupt();
   }
 }
 
 void MergeUnionAllCursor::ApplyToChildren(CursorTransformer* callback) {
   // Using CursorRowIterator's Transform() method which will transform
   // its internal cursor.
-  for (size_t i = 0; i < inputs_.size(); i++) {
-    inputs_[i]->Transform(callback);
+  for (auto& input: inputs_) {
+    input->Transform(callback);
   }
 }
 

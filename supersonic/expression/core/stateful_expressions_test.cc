@@ -399,10 +399,10 @@ TEST(StatefulExpressionsTest, SmudgeIfVarietyArgumentDataTypeBinding) {
 bool first_row_condition_values[] = {true, false};
 
 TEST(StatefulExpressionsTest, SmudgeIfNotNullableEvaluation) {
-  for (int i = 0; i < 2; ++i) {
+  for (bool first_row_condition_value : first_row_condition_values) {
     // Test when  argument is not nullable.
     TestStatefulEvaluation(BlockBuilder<INT32, BOOL, INT32>()
-        .AddRow(1, first_row_condition_values[i], 1)
+        .AddRow(1, first_row_condition_value, 1)
         .AddRow(2, true, 1)
         .AddRow(3, true, 1)
         .AddRow(4, false, 4)
@@ -415,10 +415,10 @@ TEST(StatefulExpressionsTest, SmudgeIfNotNullableEvaluation) {
 }
 
 TEST(StatefulExpressionsTest, SmudgeIfNullableEvaluation) {
-  for (int i = 0; i < 2; ++i) {
+  for (bool first_row_condition_value : first_row_condition_values) {
     // Test when  argument is nullable and the first element is not NULL.
     TestStatefulEvaluation(BlockBuilder<INT32, BOOL, INT32>()
-        .AddRow(1, first_row_condition_values[i], 1)
+        .AddRow(1, first_row_condition_value, 1)
         .AddRow(__, true, 1)
         .AddRow(3, true, 1)
         .AddRow(__, false, __)
@@ -432,10 +432,10 @@ TEST(StatefulExpressionsTest, SmudgeIfNullableEvaluation) {
 }
 
 TEST(StatefulExpressionsTest, SmudgeIfNullableAndFirstElementNullEvaluation) {
-  for (int i = 0; i < 2; ++i) {
+  for (bool first_row_condition_value : first_row_condition_values) {
     // Test when  argument is nullable and the first element is NULL.
     TestStatefulEvaluation(BlockBuilder<INT32, BOOL, INT32>()
-          .AddRow(__, first_row_condition_values[i], __)
+          .AddRow(__, first_row_condition_value, __)
           .AddRow(1, true, __)
           .AddRow(3, true, __)
           .AddRow(2, false, 2)
@@ -449,10 +449,10 @@ TEST(StatefulExpressionsTest, SmudgeIfNullableAndFirstElementNullEvaluation) {
 }
 
 TEST(StatefulExpressionsTest, SmudgeIfStringEvaluation) {
-  for (int i = 0; i < 2; ++i) {
+  for (bool first_row_condition_value : first_row_condition_values) {
     // Test when the argument is a string.
     TestStatefulEvaluation(BlockBuilder<STRING, BOOL, STRING>()
-        .AddRow("i", first_row_condition_values[i], "i")
+        .AddRow("i", first_row_condition_value, "i")
         .AddRow("r", true, "i")
         .AddRow("v", true, "i")
         .AddRow("a", false, "a")
@@ -460,7 +460,7 @@ TEST(StatefulExpressionsTest, SmudgeIfStringEvaluation) {
         .Build(), &SmudgeIf);
 
     TestStatefulEvaluation(BlockBuilder<STRING, BOOL, STRING>()
-        .AddRow("irvan", first_row_condition_values[i], "irvan")
+        .AddRow("irvan", first_row_condition_value, "irvan")
         .AddRow("onufry", true, "irvan")
         .AddRow("", false, "")
         .AddRow("supersonic", true, "")

@@ -55,11 +55,11 @@ TEST_F(WriterTest, WriteAll) {
          .AddRow(7, "car")
          .AddRow(2, "cat");
   int block_sizes[] = { 1, 2, 4, 5, 10, 100 };
-  for (int i = 0; i < arraysize(block_sizes); ++i) {
+  for (int block_size : block_sizes) {
     auto input = builder.Build();
     auto cursor = input->CreateCursor();
 
-    Writer writer(CreateViewLimiter(block_sizes[i], SucceedOrDie(cursor)));
+    Writer writer(CreateViewLimiter(block_size, SucceedOrDie(cursor)));
     Table table(writer.schema(), HeapBufferAllocator::Get());
     TableSink sink(&table);
     FailureOr<rowcount_t> result = writer.WriteAll(&sink);

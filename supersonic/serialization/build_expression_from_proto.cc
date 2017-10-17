@@ -271,8 +271,8 @@ static ExpressionResult MakeNaryOperation(
   }
 
   auto list = make_unique<ExpressionList>();
-  for (int i = 0; i < args.size(); ++i) {
-    list->add(std::move(args[i]));
+  for (auto& arg: args) {
+    list->add(std::move(arg));
   }
   return Success(function(std::move(list)));
 }

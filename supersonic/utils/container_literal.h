@@ -138,7 +138,7 @@
 // source of a range-based for loop:
 //
 //     // BAD CODE: Do not do this.
-//     for (const auto& s : util::gtl::Container(string("a"), string("b"))) {
+//     for (const auto& s: util::gtl::Container(string("a"), string("b"))) {
 //       ...
 //     }
 //

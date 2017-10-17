@@ -15,21 +15,10 @@
 
 #include "supersonic/cursor/core/column_aggregator.h"
 
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
 
-#include <unordered_set>
-#include <map>
-using std::map;
-#include <memory>
-#include <string>
-namespace supersonic {using std::string; }
-#include <vector>
-using std::vector;
-
-#include "supersonic/utils/casts.h"
 #include <glog/logging.h>
+#include "supersonic/utils/std_namespace.h"
+#include "supersonic/utils/casts.h"
 #include "supersonic/utils/logging-inl.h"
 #include "supersonic/utils/macros.h"
 #include "supersonic/utils/stringprintf.h"
@@ -135,11 +124,10 @@ class ColumnAggregatorImpl : public ColumnAggregatorInternal {
       rowcount_t input_row_count,
       const rowid_t result_index_map[],
       const vector<rowid_t>& selected_inputs_indexes) {
-    for (vector<rowid_t>::const_iterator it = selected_inputs_indexes.begin();
-         it != selected_inputs_indexes.end(); ++it) {
+    for (auto selected_inputs_indexe: selected_inputs_indexes) {
       if (!UpdateAggregatedValue(
-              input->data().as<InputType>()[*it],
-              result_index_map[*it])) {
+              input->data().as<InputType>()[selected_inputs_indexe],
+              result_index_map[selected_inputs_indexe])) {
         THROW(new Exception(
             ERROR_MEMORY_EXCEEDED,
             "Aggregator memory exceeded. Not enough memory to aggregate "
@@ -241,9 +229,8 @@ class CountColumnAggregatorImpl : public ColumnAggregatorInternal {
       rowcount_t input_row_count,
       const rowid_t result_index_map[],
       const vector<rowid_t>& selected_inputs_indexes) {
-    for (vector<rowid_t>::const_iterator it = selected_inputs_indexes.begin();
-         it != selected_inputs_indexes.end(); ++it) {
-      size_t result_index = result_index_map[*it];
+    for (auto selected_inputs_indexe: selected_inputs_indexes) {
+      size_t result_index = result_index_map[selected_inputs_indexe];
       result_data_[result_index] += 1;
     }
     return Success();
