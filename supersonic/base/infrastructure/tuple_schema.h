@@ -171,6 +171,9 @@ class TupleSchema {
 
     string GetHumanReadableSpecification() const;
 
+    auto begin() const { return attributes_.begin(); }
+    auto end() const { return attributes_.end(); }
+
    private:
     vector<Attribute> attributes_;
     map<string, int> attribute_names_;
@@ -178,13 +181,23 @@ class TupleSchema {
 
  public:
   // Creates a new, empty schema (with no attributes).
-  TupleSchema() : rep_(new Rep()) {}
+  TupleSchema() : rep_(make_unique<Rep>()) {}
 
   // A copy constructor.
   TupleSchema(const TupleSchema& other) : rep_(other.rep_) {}
 
+  // Initialization list constructor
+  TupleSchema(std::initializer_list<Attribute> attrs) : rep_(make_unique<Rep>()) {
+    for (const auto& a: attrs) {
+      CHECK(add_attribute(a));
+    }
+  }
+
   // Returns the number of attributes.
   int attribute_count() const { return rep_->attribute_count(); }
+
+  auto begin() const { return rep_->begin(); }
+  auto end() const { return rep_->end(); }
 
   // Returns the attribute at the specified position.
   const Attribute& attribute(const int position) const {

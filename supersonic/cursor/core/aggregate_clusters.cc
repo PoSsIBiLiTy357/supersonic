@@ -189,9 +189,8 @@ class AggregateClustersKeySet {
         indexed_block_(key_projector_->result_schema(), allocator),
         indexed_block_row_count_(0),
         copier_(indexed_block_.schema(), true) {
-    for (int i = 0; i < key_schema().attribute_count(); i++) {
-      comparators_.emplace_back(
-          CreateValueComparator(key_schema().attribute(i).type()));
+    for (const Attribute& attribute: key_schema()) {
+      comparators_.emplace_back(CreateValueComparator(attribute.type()));
     }
   }
 
