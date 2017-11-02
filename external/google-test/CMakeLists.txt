@@ -1,6 +1,6 @@
 ExternalProject_Add(gtest
     GIT_REPOSITORY "https://github.com/google/googletest"
-    GIT_TAG "master"
+    GIT_TAG "release-1.8.0"
     INSTALL_COMMAND ""
     BUILD_BYPRODUCTS
     	<BINARY_DIR>/googlemock/gtest/libgtest.a
