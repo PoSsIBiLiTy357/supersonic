@@ -231,9 +231,7 @@ class RowidMergeJoinOperation : public BasicOperation {
     PROPAGATE_ON_FAILURE(
         EnsureSingleColumnRowidTypeNotNull(left_key->result_schema()));
 
-    vector<const TupleSchema*> schemas;
-    schemas.push_back(&left->schema());
-    schemas.push_back(&right->schema());
+    vector<TupleSchema> schemas{ left->schema(), right->schema() };
     FailureOrOwned<const BoundMultiSourceProjector> result =
         result_projector_->Bind(schemas);
     PROPAGATE_ON_FAILURE(result);
@@ -244,8 +242,8 @@ class RowidMergeJoinOperation : public BasicOperation {
   }
 
  private:
-  std::unique_ptr<const SingleSourceProjector> left_key_selector_;
-  std::unique_ptr<const MultiSourceProjector> result_projector_;
+  unique_ptr<const SingleSourceProjector> left_key_selector_;
+  unique_ptr<const MultiSourceProjector> result_projector_;
   DISALLOW_COPY_AND_ASSIGN(RowidMergeJoinOperation);
 };
 

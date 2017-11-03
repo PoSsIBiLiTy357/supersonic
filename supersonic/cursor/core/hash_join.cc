@@ -331,8 +331,8 @@ FailureOrOwned<Cursor> HashJoinOperation::CreateCursor() const {
   PROPAGATE_ON_FAILURE(bound_lhs_key_selector);
 
   FailureOrOwned<const BoundMultiSourceProjector> bound_result_projector =
-      result_projector_->Bind(util::gtl::Container(
-          &provided_lhs_cursor->schema(), &rhs_builder->schema()));
+      result_projector_->Bind({
+          provided_lhs_cursor->schema(), rhs_builder->schema()});
   PROPAGATE_ON_FAILURE(bound_result_projector);
 
   auto cursor = make_unique<HashJoinCursor>(
@@ -541,9 +541,13 @@ int ProjectedAttributePosition(
 void HashJoinCursor::SetUpFinalResultProjector(
     JoinType join_type,
     const BoundMultiSourceProjector& result_projector) {
+
+  vector<TupleSchema> project_schema{
+      lhs_result_.schema(),
+      rhs_builder_->schema() };
   final_result_projector_ = make_unique<BoundMultiSourceProjector>(
-      util::gtl::Container(&lhs_result_.schema(), &rhs_builder_->schema()).
-      As<vector<const TupleSchema*> >());
+      project_schema);
+
   const TupleSchema& result_schema = result_projector.result_schema();
   // Iterate over result schema attributes.
   for (int i = 0; i < result_schema.attribute_count(); i++) {

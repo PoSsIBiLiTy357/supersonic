@@ -176,13 +176,15 @@ class GroupAggregateCursor : public BasicCursor {
          std::move(group_by), allocator.get(), aggregator->capacity(),
          max_unique_keys_in_result);
     PROPAGATE_ON_FAILURE(key);
-    vector<const TupleSchema*> input_schemas(2);
-    input_schemas[0] = &key->key_schema();
-    input_schemas[1] = &aggregator->schema();
-    std::unique_ptr<MultiSourceProjector> result_projector(
-        (new CompoundMultiSourceProjector())
-            ->add(0, ProjectAllAttributes())
-            ->add(1, ProjectAllAttributes()));
+    vector<TupleSchema> input_schemas{
+        key->key_schema(),
+        aggregator->schema(),
+    };
+    auto result_projector = make_unique<CompoundMultiSourceProjector>();
+    result_projector
+        ->add(0, ProjectAllAttributes())
+        ->add(1, ProjectAllAttributes());
+
     FailureOrOwned<const BoundMultiSourceProjector> bound_result_projector(
         result_projector->Bind(input_schemas));
     PROPAGATE_ON_FAILURE(bound_result_projector);

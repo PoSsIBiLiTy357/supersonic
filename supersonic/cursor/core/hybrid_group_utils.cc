@@ -83,7 +83,7 @@ class HybridGroupTransformCursor : public BasicCursor {
   static FailureOrOwned<const BoundMultiSourceProjector> SelectColumnGroup(
       const SingleSourceProjector& group_by_columns,
       const PointerVector<const SingleSourceProjector>& column_group_projectors,
-      const vector<const TupleSchema*>& schemas,
+      const vector<TupleSchema>& schemas,
       int selected_group);
 
   // Ensures that nulls_block_ has at least row_count rows. If the block needs
@@ -128,18 +128,19 @@ FailureOrOwned<Cursor> HybridGroupTransformCursor::Create(
   // Prepare the schema for nulls_block. It is the same as input schema, but
   // with all columns NULLABLE (because we want to put NULLs in them).
   TupleSchema nulls_block_schema;
-  for (int i = 0; i < input->schema().attribute_count(); ++i) {
-    const Attribute& attribute(input->schema().attribute(i));
-    nulls_block_schema.add_attribute(
-        Attribute(attribute.name(),
-                  attribute.type(),
-                  NULLABLE));
+
+  for (const Attribute& attribute: input->schema()) {
+    nulls_block_schema.add_attribute({ attribute.name(), attribute.type(),
+                                       NULLABLE });
   }
+
   // We need a vector with both schemas - input schema and nulls_block_schema -
   // to create the BoundMultiSourceProjectors.
-  vector<const TupleSchema*> schemas(2);
-  schemas[0] = &input->schema();
-  schemas[1] = &nulls_block_schema;
+  vector<TupleSchema> schemas{
+      input->schema(),
+      nulls_block_schema,
+  };
+
   // Calculate transformed_schema by applying all the column_group_projectors
   // to nulls_block_schema (which is in schemas[1]).
   TupleSchema transformed_schema;
@@ -225,7 +226,7 @@ FailureOrOwned<const BoundMultiSourceProjector>
 HybridGroupTransformCursor::SelectColumnGroup(
     const SingleSourceProjector& group_by_columns,
     const PointerVector<const SingleSourceProjector>& column_group_projectors,
-    const vector<const TupleSchema*>& schemas,
+    const vector<TupleSchema>& schemas,
     int selected_group) {
   CHECK(selected_group >= -1 &&
         selected_group < static_cast<int>(column_group_projectors.size()));

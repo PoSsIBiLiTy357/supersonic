@@ -33,8 +33,8 @@ class ProjectorTest : public testing::Test {
 
     schema_1_.add_attribute(Attribute("schema 1 attribute 0", INT64, NULLABLE));
 
-    schema_pointers_.push_back(&schema_0_);
-    schema_pointers_.push_back(&schema_1_);
+    schema_pointers_.emplace_back(schema_0_);
+    schema_pointers_.emplace_back(schema_1_);
 
     bmsp_ = make_unique<BoundMultiSourceProjector>(schema_pointers_);
     // schema0 is mapped 1-1.
@@ -46,7 +46,7 @@ class ProjectorTest : public testing::Test {
   }
 
   TupleSchema schema_0_, schema_1_;
-  vector<const TupleSchema*> schema_pointers_;
+  vector<TupleSchema> schema_pointers_;
   unique_ptr<BoundMultiSourceProjector> bmsp_;
   pair<PositionIterator, PositionIterator> positions_;
 };

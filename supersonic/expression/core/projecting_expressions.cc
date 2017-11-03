@@ -60,9 +60,9 @@ FailureOrOwned<BoundExpression> CreateBoundProjection(
   FailureOrOwned<BoundExpressionList> bound_arguments(
       arguments->DoBind(input_schema, allocator, max_row_count));
   PROPAGATE_ON_FAILURE(bound_arguments);
-  vector<const TupleSchema*> schemata;
-  for (int i = 0; i < bound_arguments->size(); ++i) {
-    schemata.push_back(&(bound_arguments->get(i)->result_schema()));
+  vector<TupleSchema> schemata;
+  for (auto const& expr: *bound_arguments) {
+    schemata.emplace_back(expr->result_schema());
   }
   FailureOrOwned<const BoundMultiSourceProjector> bound_projector(
       projector->Bind(schemata));

@@ -68,11 +68,11 @@ TEST_F(RowCopierTest, RowCopierSimpleCopy) {
 }
 
 TEST_F(RowCopierTest, ViewCopierCopyAlongProjection) {
-  std::unique_ptr<Block> input(BlockBuilder<INT64, STRING, STRING>()
-                                   .AddRow(0, "a", "b")
-                                   .AddRow(1, "c", "d")
-                                   .AddRow(2, "e", "f")
-                                   .Build());
+  auto input = BlockBuilder<INT64, STRING, STRING>()
+      .AddRow(0, "a", "b")
+      .AddRow(1, "c", "d")
+      .AddRow(2, "e", "f")
+      .Build();
   BoundSingleSourceProjector projector(input->schema());
   projector.Add(0);
   projector.Add(2);
@@ -99,16 +99,14 @@ TEST_F(RowCopierTest, ViewCopierCopyAlongProjection) {
 }
 
 TEST_F(RowCopierTest, MultiViewCopierCopyAlongProjection) {
-  std::unique_ptr<Block> input(BlockBuilder<INT64, STRING, STRING>()
-                                   .AddRow(0, "a", "b")
-                                   .AddRow(1, "c", "d")
-                                   .AddRow(2, "e", "f")
-                                   .Build());
+  auto input = BlockBuilder<INT64, STRING, STRING>()
+      .AddRow(0, "a", "b")
+      .AddRow(1, "c", "d")
+      .AddRow(2, "e", "f")
+      .Build();
   // Use the same source twice, project it's 1rd and 3st column, taking one
   // from each 'copy' of the source.
-  BoundMultiSourceProjector projector(
-      util::gtl::Container(&input->schema(), &input->schema()).
-      As<vector<const TupleSchema*> >());
+  BoundMultiSourceProjector projector({input->schema(), input->schema()});
   projector.Add(0, 0);
   projector.Add(1, 2);
   Block output(projector.result_schema(), HeapBufferAllocator::Get());

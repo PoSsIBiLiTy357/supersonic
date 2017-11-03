@@ -121,16 +121,17 @@ TEST_F(ProjectingBoundExpressionsTest, BoundAlias) {
 
 TEST_F(ProjectingBoundExpressionsTest,
        ProjectionExpressionCollectReferredAttributeNames) {
-  vector<const TupleSchema*> schemas;
-  auto expression_list = make_unique<BoundExpressionList>();
-  expression_list->add(SucceedOrDie(BoundNamedAttribute(schema(), "col0")));
-  schemas.push_back(&expression_list->get(0)->result_schema());
-  expression_list->add(SucceedOrDie(BoundNamedAttribute(schema(), "col1")));
-  schemas.push_back(&expression_list->get(1)->result_schema());
-  expression_list->add(SucceedOrDie(BoundNamedAttribute(schema(), "col2")));
-  schemas.push_back(&expression_list->get(2)->result_schema());
-  expression_list->add(SucceedOrDie(BoundNamedAttribute(schema(), "col3")));
-  schemas.push_back(&expression_list->get(3)->result_schema());
+  auto expression_list = make_unique<BoundExpressionList>(
+      SucceedOrDie(BoundNamedAttribute(schema(), "col0")),
+      SucceedOrDie(BoundNamedAttribute(schema(), "col1")),
+      SucceedOrDie(BoundNamedAttribute(schema(), "col2")),
+      SucceedOrDie(BoundNamedAttribute(schema(), "col3"))
+  );
+
+  vector<TupleSchema> schemas;
+  for (auto const& expr: *expression_list) {
+    schemas.push_back(expr->result_schema());
+  }
 
   auto projector = make_unique<BoundMultiSourceProjector>(schemas);
   projector->Add(3, 0);
@@ -165,12 +166,15 @@ TEST_F(ProjectingBoundExpressionsTest,
   ASSERT_TRUE(source_2.is_success())
       << source_2.exception().PrintStackTrace();
 
-  auto expression_list = make_unique<BoundExpressionList>();
-  vector<const TupleSchema*> schemas;
-  schemas.push_back(&source_1->result_schema());
-  expression_list->add(source_1.move());
-  schemas.push_back(&source_2->result_schema());
-  expression_list->add(source_2.move());
+  vector<TupleSchema> schemas{
+      source_1->result_schema(),
+      source_2->result_schema(),
+  };
+
+  auto expression_list = make_unique<BoundExpressionList>(
+      source_1.move(),
+      source_2.move()
+  );
 
   auto projector = make_unique<BoundMultiSourceProjector>(schemas);
   projector->Add(0, 1);

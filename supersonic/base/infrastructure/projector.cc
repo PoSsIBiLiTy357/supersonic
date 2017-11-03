@@ -324,11 +324,12 @@ unique_ptr<const SingleSourceProjector> ProjectAllAttributes(
 
 FailureOrOwned<const BoundMultiSourceProjector>
 CompoundMultiSourceProjector::Bind(
-    const vector<const TupleSchema*>& source_schemas) const {
+    const vector<TupleSchema>& source_schemas) const {
+
   auto projector = make_unique<BoundMultiSourceProjector>(source_schemas);
   for (const auto& i: projectors_) {
     FailureOrOwned<const BoundSingleSourceProjector> component =
-        i.second->Bind(*source_schemas[i.first]);
+        i.second->Bind(source_schemas[i.first]);
     PROPAGATE_ON_FAILURE(component);
 
     for (int j = 0; j < component->result_schema().attribute_count();
@@ -365,9 +366,10 @@ DecomposeNth(
     int source_index,
     const BoundMultiSourceProjector& projector) {
   auto new_nth = make_unique<BoundSingleSourceProjector>(projector.source_schema(source_index));
-  vector<const TupleSchema*> schemas;
+
+  vector<TupleSchema> schemas;
   for (int i = 0; i < projector.source_count(); ++i) {
-    schemas.push_back(&projector.source_schema(i));
+    schemas.emplace_back(projector.source_schema(i));
   }
   auto new_projector = make_unique<BoundMultiSourceProjector>(schemas);
 

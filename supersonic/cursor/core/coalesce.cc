@@ -137,11 +137,11 @@ FailureOrOwned<Cursor> BoundCoalesce(vector<unique_ptr<Cursor>> children) {
   }
 
   CompoundMultiSourceProjector all_attributes_projector;
-  vector<const TupleSchema*> child_schemas;
+  vector<TupleSchema> child_schemas;
   for (int i = 0; i < children.size(); ++i) {
     Cursor* child = children[i].get();
     DCHECK(child != NULL);
-    child_schemas.push_back(&child->schema());
+    child_schemas.emplace_back(child->schema());
     all_attributes_projector.add(i, ProjectAllAttributes());
   }
   FailureOrOwned<const BoundMultiSourceProjector> bound_projector =

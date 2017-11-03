@@ -56,13 +56,10 @@ unique_ptr<Cursor> CreateRowidMergeJoin(
     const MultiSourceProjector& result_projector,
     unique_ptr<Cursor> left,
     unique_ptr<Cursor> right) {
-  FailureOrOwned<const BoundSingleSourceProjector> bound_left(
-      left_key.Bind(left->schema()));
+  auto bound_left = left_key.Bind(left->schema());
   CHECK(bound_left.is_success());
 
-  FailureOrOwned<const BoundMultiSourceProjector> bound_right(
-      result_projector.Bind(util::gtl::Container(&left->schema(),
-                                                 &right->schema())));
+  auto bound_right = result_projector.Bind({left->schema(), right->schema()});
   CHECK(bound_right.is_success());
 
   return BoundRowidMergeJoin(

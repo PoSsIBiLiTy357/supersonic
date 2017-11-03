@@ -306,15 +306,16 @@ FailureOrOwned<BoundExpression> BoundRenameCompoundExpression(
     const vector<string>& names,
     unique_ptr<BoundExpressionList> expressions) {
 
-  vector<const TupleSchema*> schemas;
+  vector<TupleSchema> schemas;
   for (int i = 0; i < expressions->size(); ++i) {
-    schemas.push_back(&expressions->get(i)->result_schema());
+    schemas.emplace_back(expressions->get(i)->result_schema());
   }
-  unique_ptr<BoundMultiSourceProjector> projector(
-      new BoundMultiSourceProjector(schemas));
+
+  auto projector = make_unique<BoundMultiSourceProjector>(schemas);
+
   int name_pos = 0;
   for (int i = 0; i < schemas.size(); ++i) {
-    for (int j = 0; j < schemas[i]->attribute_count(); j++) {
+    for (int j = 0; j < schemas[i].attribute_count(); j++) {
       projector->AddAs(i, j, names[name_pos++]);
     }
   }
@@ -324,14 +325,14 @@ FailureOrOwned<BoundExpression> BoundRenameCompoundExpression(
 FailureOrOwned<BoundExpression> BoundCompoundExpression(
     unique_ptr<BoundExpressionList> expressions) {
 
-  vector<const TupleSchema*> schemas;
+  vector<TupleSchema> schemas;
   for (int i = 0; i < expressions->size(); ++i) {
-    schemas.push_back(&expressions->get(i)->result_schema());
+    schemas.emplace_back(expressions->get(i)->result_schema());
   }
-  unique_ptr<BoundMultiSourceProjector> projector(
-      new BoundMultiSourceProjector(schemas));
+
+  auto projector = make_unique<BoundMultiSourceProjector>(schemas);
   for (int i = 0; i < schemas.size(); ++i) {
-    for (int j = 0; j < schemas[i]->attribute_count(); j++) {
+    for (int j = 0; j < schemas[i].attribute_count(); j++) {
       projector->Add(i, j);
     }
   }

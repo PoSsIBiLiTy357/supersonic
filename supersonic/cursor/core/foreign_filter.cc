@@ -269,11 +269,11 @@ unique_ptr<Cursor> BoundForeignFilter(const int filter_key_column,
     if (i != input_foreign_key_column) input_projector->Add(i);
   }
 
-  vector<const TupleSchema*> sources;
-  TupleSchema key_schema(
-      TupleSchema::Singleton("$parentFK$", kRowidDatatype, NOT_NULLABLE));
-  sources.push_back(&key_schema);
-  sources.push_back(&input_projector->result_schema());
+  vector<TupleSchema> sources{
+      TupleSchema::Singleton("$parentFK$", kRowidDatatype, NOT_NULLABLE),
+      input_projector->result_schema(),
+  };
+
   auto result_projector = make_unique<BoundMultiSourceProjector>(sources);
   int input_attribute_index = 0;
   for (int i = 0; i < input->schema().attribute_count(); ++i) {

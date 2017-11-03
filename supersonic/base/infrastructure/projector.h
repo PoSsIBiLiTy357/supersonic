@@ -75,10 +75,9 @@ class BoundMultiSourceProjector {
 
   // Creates an empty projector for a specific number of sources with
   // specified schemas.
-  explicit BoundMultiSourceProjector(
-      const vector<const TupleSchema*>& sources) {
+  explicit BoundMultiSourceProjector(const vector<TupleSchema>& sources) {
     for (auto source: sources) {
-      source_schemas_.push_back(*source);
+      source_schemas_.push_back(source);
     }
   }
 
@@ -188,7 +187,7 @@ class BoundMultiSourceProjector {
 class BoundSingleSourceProjector {
  public:
   explicit BoundSingleSourceProjector(const TupleSchema& source_schema)
-      : projector_(vector<const TupleSchema*>(1, &source_schema)) {}
+      : projector_({ source_schema }) {}
 
   bool Add(int source_attribute_position) {
     return projector_.Add(0, source_attribute_position);
@@ -418,7 +417,7 @@ class MultiSourceProjector {
   // projector to the specified source schemas, or an Exception if binding
   // fails.
   virtual FailureOrOwned<const BoundMultiSourceProjector> Bind(
-      const vector<const TupleSchema*>& source_schemas) const = 0;
+      const vector<TupleSchema>& source_schemas) const = 0;
 
   virtual string ToString(bool verbose) const = 0;
  protected:
@@ -445,7 +444,7 @@ class CompoundMultiSourceProjector : public MultiSourceProjector {
   }
 
   virtual FailureOrOwned<const BoundMultiSourceProjector> Bind(
-      const vector<const TupleSchema*>& source_schemas) const;
+      const vector<TupleSchema>& source_schemas) const;
 
   virtual string ToString(bool verbose) const;
 
