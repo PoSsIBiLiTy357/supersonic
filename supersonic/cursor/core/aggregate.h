@@ -258,7 +258,7 @@ BoundGroupAggregate(
     BufferAllocator* original_allocator,    // Doesn't take ownership.
                                             // Can be equal allocator or NULL.
     bool best_effort,
-    unique_ptr<Operation> child);
+    unique_ptr<Cursor> child);
 
 // Limiting version of BoundGroupAggregate, which only aggregates first
 // max_unique_keys_in_result, unique key combinations separately and
