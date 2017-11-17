@@ -436,10 +436,10 @@ class ViewRowIterator {
   // Returns the absolute index of the current row in the iterated view.
   // Right after reset, it is -1. After the cursor reaches EOS, it reflects the
   // total row count.
-  const int64 current_row_index() const { return row_index_; }
+  const int64_t current_row_index() const { return row_index_; }
 
   // Returns the total row count in the iterated view.
-  const int64 total_row_count() const { return view_.row_count(); }
+  const int64_t total_row_count() const { return view_.row_count(); }
 
   // Returns the type_info for the specified column.
   const TypeInfo& type_info(const int column_index) const {
@@ -490,7 +490,7 @@ class ViewRowIterator {
  private:
   TupleSchema schema_;
   View view_;
-  int64 row_index_;
+  int64_t row_index_;
   DISALLOW_COPY_AND_ASSIGN(ViewRowIterator);
 };
 

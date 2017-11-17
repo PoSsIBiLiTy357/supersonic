@@ -84,22 +84,22 @@ FailureOr<DataType> ResolveType(const common::DataType& type) {
 template<DataType type> struct ExtractConstant {};
 
 template<> struct ExtractConstant<INT32> {
-  static int32 Value(const Constant& c) { return c.int32_value(); }
+  static int32_t Value(const Constant& c) { return c.int32_value(); }
   static bool HasValue(const Constant& c) { return c.has_int32_value(); }
 };
 
 template<> struct ExtractConstant<INT64> {
-  static int64 Value(const Constant& c) { return c.int64_value(); }
+  static int64_t Value(const Constant& c) { return c.int64_value(); }
   static bool HasValue(const Constant& c) { return c.has_int64_value(); }
 };
 
 template<> struct ExtractConstant<UINT32> {
-  static uint32 Value(const Constant& c) { return c.uint32_value(); }
+  static uint32_t Value(const Constant& c) { return c.uint32_value(); }
   static bool HasValue(const Constant& c) { return c.has_uint32_value(); }
 };
 
 template<> struct ExtractConstant<UINT64> {
-  static uint64 Value(const Constant& c) { return c.uint64_value(); }
+  static uint64_t Value(const Constant& c) { return c.uint64_value(); }
   static bool HasValue(const Constant& c) { return c.has_uint64_value(); }
 };
 
@@ -114,12 +114,12 @@ template<> struct ExtractConstant<DOUBLE> {
 };
 
 template<> struct ExtractConstant<DATE> {
-  static int32 Value(const Constant& c) { return c.date_value(); }
+  static int32_t Value(const Constant& c) { return c.date_value(); }
   static bool HasValue(const Constant& c) { return c.has_date_value(); }
 };
 
 template<> struct ExtractConstant<DATETIME> {
-  static int64 Value(const Constant& c) { return c.datetime_value(); }
+  static int64_t Value(const Constant& c) { return c.datetime_value(); }
   static bool HasValue(const Constant& c) { return c.has_datetime_value(); }
 };
 

@@ -14,12 +14,12 @@
 
 #include "supersonic/utils/hash/hash.h"
 
-static const uint32 kPrimes32[16] = {
+static const uint32_t kPrimes32[16] = {
   65537, 65539, 65543, 65551, 65557, 65563, 65579, 65581,
   65587, 65599, 65609, 65617, 65629, 65633, 65647, 65651,
 };
 
-static const uint64 kPrimes64[] = {
+static const uint64_t kPrimes64[] = {
   GG_ULONGLONG(4294967311), GG_ULONGLONG(4294967357),
   GG_ULONGLONG(4294967371), GG_ULONGLONG(4294967377),
   GG_ULONGLONG(4294967387), GG_ULONGLONG(4294967389),
@@ -30,13 +30,13 @@ static const uint64 kPrimes64[] = {
   GG_ULONGLONG(4294967563), GG_ULONGLONG(4294967569)
 };
 
-uint32 Hash32StringWithSeedReferenceImplementation(const char *s, uint32 len,
-                                                   uint32 seed) {
-  uint32 n = seed;
+uint32_t Hash32StringWithSeedReferenceImplementation(const char *s, uint32_t len,
+                                                   uint32_t seed) {
+  uint32_t n = seed;
   size_t prime1 = 0, prime2 = 8;  // Indices into kPrimes32
   union {
-    uint16 n;
-    char bytes[sizeof(uint16)];  // NOLINT
+    uint16_t n;
+    char bytes[sizeof(uint16_t)];  // NOLINT
   } chunk;
   for (const char *i = s, *const end = s + len; i != end; ) {
     chunk.bytes[0] = *i++;
@@ -48,16 +48,16 @@ uint32 Hash32StringWithSeedReferenceImplementation(const char *s, uint32 len,
   return n;
 }
 
-uint32 Hash32StringWithSeed(const char *s, uint32 len, uint32 c) {
+uint32_t Hash32StringWithSeed(const char *s, uint32_t len, uint32_t c) {
   return Hash32StringWithSeedReferenceImplementation(s, len, c);
 }
 
-uint64 Hash64StringWithSeed(const char *s, uint32 len, uint64 seed) {
-  uint64 n = seed;
+uint64_t Hash64StringWithSeed(const char *s, uint32_t len, uint64_t seed) {
+  uint64_t n = seed;
   size_t prime1 = 0, prime2 = 8;  // Indices into kPrimes64
   union {
-    uint32 n;
-    char bytes[sizeof(uint32)];  // NOLINT
+    uint32_t n;
+    char bytes[sizeof(uint32_t)];  // NOLINT
   } chunk;
   for (const char *i = s, *const end = s + len; i != end; ) {
     chunk.bytes[0] = *i++;
@@ -71,10 +71,10 @@ uint64 Hash64StringWithSeed(const char *s, uint32 len, uint64 seed) {
   return n;
 }
 
-uint64 FingerprintReferenceImplementation(const char *s, uint32 len) {
+uint64_t FingerprintReferenceImplementation(const char *s, uint32_t len) {
   return Hash64StringWithSeed(s, len, 42);
 }
 
-uint64 Fingerprint(const char *s, uint32 len) {
+uint64_t Fingerprint(const char *s, uint32_t len) {
   return FingerprintReferenceImplementation(s, len);
 }

@@ -50,26 +50,26 @@ using std::vector;
 //   0 if no leading substring available
 // The effect on errno is unspecified.
 // Do not depend on testing errno.
-bool safe_strto32_base(StringPiece text, int32* value, int base);
-bool safe_strto64_base(StringPiece text, int64* value, int base);
-bool safe_strtou32_base(StringPiece text, uint32* value, int base);
-bool safe_strtou64_base(StringPiece text, uint64* value, int base);
+bool safe_strto32_base(StringPiece text, int32_t* value, int base);
+bool safe_strto64_base(StringPiece text, int64_t* value, int base);
+bool safe_strtou32_base(StringPiece text, uint32_t* value, int base);
+bool safe_strtou64_base(StringPiece text, uint64_t* value, int base);
 bool safe_strtosize_t_base(StringPiece text, size_t* value, int base);
 
 // Convenience functions with base == 10.
-inline bool safe_strto32(StringPiece text, int32* value) {
+inline bool safe_strto32(StringPiece text, int32_t* value) {
   return safe_strto32_base(text, value, 10);
 }
 
-inline bool safe_strto64(StringPiece text, int64* value) {
+inline bool safe_strto64(StringPiece text, int64_t* value) {
   return safe_strto64_base(text, value, 10);
 }
 
-inline bool safe_strtou32(StringPiece text, uint32* value) {
+inline bool safe_strtou32(StringPiece text, uint32_t* value) {
   return safe_strtou32_base(text, value, 10);
 }
 
-inline bool safe_strtou64(StringPiece text, uint64* value) {
+inline bool safe_strtou64(StringPiece text, uint64_t* value) {
   return safe_strtou64_base(text, value, 10);
 }
 
@@ -89,41 +89,41 @@ inline bool safe_strtosize_t(StringPiece text, size_t* value) {
 
 // ---
 
-inline bool safe_strto32(const char* str, int32* value) {
+inline bool safe_strto32(const char* str, int32_t* value) {
   return safe_strto32(StringPiece(str), value);
 }
 
-inline bool safe_strto32(const string& str, int32* value) {
+inline bool safe_strto32(const string& str, int32_t* value) {
   return safe_strto32(StringPiece(str), value);
 }
 
 // ---
 
-inline bool safe_strto64(const char* str, int64* value) {
+inline bool safe_strto64(const char* str, int64_t* value) {
   return safe_strto64(StringPiece(str), value);
 }
 
-inline bool safe_strto64(const string& str, int64* value) {
+inline bool safe_strto64(const string& str, int64_t* value) {
   return safe_strto64(StringPiece(str), value);
 }
 
 // ---
 
-inline bool safe_strtou32(const char* str, uint32* value) {
+inline bool safe_strtou32(const char* str, uint32_t* value) {
   return safe_strtou32(StringPiece(str), value);
 }
 
-inline bool safe_strtou32(const string& str, uint32* value) {
+inline bool safe_strtou32(const string& str, uint32_t* value) {
   return safe_strtou32(StringPiece(str), value);
 }
 
 // ---
 
-inline bool safe_strtou64(const char* str, uint64* value) {
+inline bool safe_strtou64(const char* str, uint64_t* value) {
   return safe_strtou64(StringPiece(str), value);
 }
 
-inline bool safe_strtou64(const string& str, uint64* value) {
+inline bool safe_strtou64(const string& str, uint64_t* value) {
   return safe_strtou64(StringPiece(str), value);
 }
 
@@ -158,11 +158,11 @@ bool safe_strtob(StringPiece str, bool* value);
 //    terminating NUL.
 //    Returns number of bytes written, not including terminating NUL.
 //    Return value 0 indicates error.
-size_t u64tostr_base36(uint64 number, size_t buf_size, char* buffer);
+size_t u64tostr_base36(uint64_t number, size_t buf_size, char* buffer);
 
 // Similar to atoi(s), except s could be like "16k", "32M", "2G", "4t".
-uint64 atoi_kmgt(const char* s);
-inline uint64 atoi_kmgt(const string& s) { return atoi_kmgt(s.c_str()); }
+uint64_t atoi_kmgt(const char* s);
+inline uint64_t atoi_kmgt(const string& s) { return atoi_kmgt(s.c_str()); }
 
 // ----------------------------------------------------------------------
 // FastIntToBuffer()
@@ -202,12 +202,12 @@ inline uint64 atoi_kmgt(const string& s) { return atoi_kmgt(s.c_str()); }
 // Use kFastToBufferSize rather than hardcoding constants.
 static const int kFastToBufferSize = 32;
 
-char* FastUInt32ToBuffer(uint32 i, char* buffer);
-char* FastUInt64ToBuffer(uint64 i, char* buffer);
+char* FastUInt32ToBuffer(uint32_t i, char* buffer);
+char* FastUInt64ToBuffer(uint64_t i, char* buffer);
 char* FastHexToBuffer(int i, char* buffer) MUST_USE_RESULT;
 char* FastTimeToBuffer(time_t t, char* buffer);
-char* FastHex64ToBuffer(uint64 i, char* buffer);
-char* FastHex32ToBuffer(uint32 i, char* buffer);
+char* FastHex64ToBuffer(uint64_t i, char* buffer);
+char* FastHex32ToBuffer(uint32_t i, char* buffer);
 
 // ----------------------------------------------------------------------
 // FastInt32ToBufferLeft()
@@ -225,26 +225,26 @@ char* FastHex32ToBuffer(uint32 i, char* buffer);
 // terminating the string).
 // ----------------------------------------------------------------------
 
-char* FastInt32ToBufferLeft(int32 i, char* buffer);    // at least 12 bytes
-char* FastUInt32ToBufferLeft(uint32 i, char* buffer);    // at least 12 bytes
-char* FastInt64ToBufferLeft(int64 i, char* buffer);    // at least 22 bytes
-char* FastUInt64ToBufferLeft(uint64 i, char* buffer);    // at least 22 bytes
+char* FastInt32ToBufferLeft(int32_t i, char* buffer);    // at least 12 bytes
+char* FastUInt32ToBufferLeft(uint32_t i, char* buffer);    // at least 12 bytes
+char* FastInt64ToBufferLeft(int64_t i, char* buffer);    // at least 22 bytes
+char* FastUInt64ToBufferLeft(uint64_t i, char* buffer);    // at least 22 bytes
 
 // Just define these in terms of the above.
 
-inline char* FastInt32ToBuffer(int32 i, char* buffer) {
+inline char* FastInt32ToBuffer(int32_t i, char* buffer) {
   FastInt32ToBufferLeft(i, buffer);
   return buffer;
 }
-inline char* FastUInt32ToBuffer(uint32 i, char* buffer) {
+inline char* FastUInt32ToBuffer(uint32_t i, char* buffer) {
   FastUInt32ToBufferLeft(i, buffer);
   return buffer;
 }
-inline char* FastInt64ToBuffer(int64 i, char* buffer) {
+inline char* FastInt64ToBuffer(int64_t i, char* buffer) {
   FastInt64ToBufferLeft(i, buffer);
   return buffer;
 }
-inline char* FastUInt64ToBuffer(uint64 i, char* buffer) {
+inline char* FastUInt64ToBuffer(uint64_t i, char* buffer) {
   FastUInt64ToBufferLeft(i, buffer);
   return buffer;
 }
@@ -279,20 +279,20 @@ void ConsumeStrayLeadingZeroes(string* str);
 //    This cannot handle decimal numbers with leading 0s, since they will be
 //    treated as octal.  If you know it's decimal, use ParseLeadingDec32Value.
 // --------------------------------------------------------------------
-int32 ParseLeadingInt32Value(const char* str, int32 deflt);
-inline int32 ParseLeadingInt32Value(const string& str, int32 deflt) {
+int32_t ParseLeadingInt32Value(const char* str, int32_t deflt);
+inline int32_t ParseLeadingInt32Value(const string& str, int32_t deflt) {
   return ParseLeadingInt32Value(str.c_str(), deflt);
 }
 
 // ParseLeadingUInt32Value
-//    A simple parser for uint32 values. Returns the parsed value
+//    A simple parser for uint32_t values. Returns the parsed value
 //    if a valid integer is found; else returns deflt. It does not
 //    check if str is entirely consumed.
 //    This cannot handle decimal numbers with leading 0s, since they will be
 //    treated as octal.  If you know it's decimal, use ParseLeadingUDec32Value.
 // --------------------------------------------------------------------
-uint32 ParseLeadingUInt32Value(const char* str, uint32 deflt);
-inline uint32 ParseLeadingUInt32Value(const string& str, uint32 deflt) {
+uint32_t ParseLeadingUInt32Value(const char* str, uint32_t deflt);
+inline uint32_t ParseLeadingUInt32Value(const string& str, uint32_t deflt) {
   return ParseLeadingUInt32Value(str.c_str(), deflt);
 }
 
@@ -305,21 +305,21 @@ inline uint32 ParseLeadingUInt32Value(const string& str, uint32 deflt) {
 //    This can handle strings with leading 0s.
 //    See also: ParseLeadingDec64Value
 // --------------------------------------------------------------------
-int32 ParseLeadingDec32Value(const char* str, int32 deflt);
-inline int32 ParseLeadingDec32Value(const string& str, int32 deflt) {
+int32_t ParseLeadingDec32Value(const char* str, int32_t deflt);
+inline int32_t ParseLeadingDec32Value(const string& str, int32_t deflt) {
   return ParseLeadingDec32Value(str.c_str(), deflt);
 }
 
 // ParseLeadingUDec32Value
-//    A simple parser for decimal uint32 values. Returns the parsed value
+//    A simple parser for decimal uint32_t values. Returns the parsed value
 //    if a valid integer is found; else returns deflt. It does not
 //    check if str is entirely consumed.
 //    The string passed in is treated as *10 based*.
 //    This can handle strings with leading 0s.
 //    See also: ParseLeadingUDec64Value
 // --------------------------------------------------------------------
-uint32 ParseLeadingUDec32Value(const char* str, uint32 deflt);
-inline uint32 ParseLeadingUDec32Value(const string& str, uint32 deflt) {
+uint32_t ParseLeadingUDec32Value(const char* str, uint32_t deflt);
+inline uint32_t ParseLeadingUDec32Value(const string& str, uint32_t deflt) {
   return ParseLeadingUDec32Value(str.c_str(), deflt);
 }
 
@@ -333,24 +333,24 @@ inline uint32 ParseLeadingUDec32Value(const string& str, uint32 deflt) {
 //    Returns the parsed value if a
 //    valid integer is found; else returns deflt
 // --------------------------------------------------------------------
-uint64 ParseLeadingUInt64Value(const char* str, uint64 deflt);
-inline uint64 ParseLeadingUInt64Value(const string& str, uint64 deflt) {
+uint64_t ParseLeadingUInt64Value(const char* str, uint64_t deflt);
+inline uint64_t ParseLeadingUInt64Value(const string& str, uint64_t deflt) {
   return ParseLeadingUInt64Value(str.c_str(), deflt);
 }
-int64 ParseLeadingInt64Value(const char* str, int64 deflt);
-inline int64 ParseLeadingInt64Value(const string& str, int64 deflt) {
+int64_t ParseLeadingInt64Value(const char* str, int64_t deflt);
+inline int64_t ParseLeadingInt64Value(const string& str, int64_t deflt) {
   return ParseLeadingInt64Value(str.c_str(), deflt);
 }
-uint64 ParseLeadingHex64Value(const char* str, uint64 deflt);
-inline uint64 ParseLeadingHex64Value(const string& str, uint64 deflt) {
+uint64_t ParseLeadingHex64Value(const char* str, uint64_t deflt);
+inline uint64_t ParseLeadingHex64Value(const string& str, uint64_t deflt) {
   return ParseLeadingHex64Value(str.c_str(), deflt);
 }
-int64 ParseLeadingDec64Value(const char* str, int64 deflt);
-inline int64 ParseLeadingDec64Value(const string& str, int64 deflt) {
+int64_t ParseLeadingDec64Value(const char* str, int64_t deflt);
+inline int64_t ParseLeadingDec64Value(const string& str, int64_t deflt) {
   return ParseLeadingDec64Value(str.c_str(), deflt);
 }
-uint64 ParseLeadingUDec64Value(const char* str, uint64 deflt);
-inline uint64 ParseLeadingUDec64Value(const string& str, uint64 deflt) {
+uint64_t ParseLeadingUDec64Value(const char* str, uint64_t deflt);
+inline uint64_t ParseLeadingUDec64Value(const string& str, uint64_t deflt) {
   return ParseLeadingUDec64Value(str.c_str(), deflt);
 }
 
@@ -445,42 +445,26 @@ struct strict_autodigit_greater
 //
 //    Return value: string
 // ----------------------------------------------------------------------
-inline string SimpleItoa(int32 i) {
+inline string SimpleItoa(int32_t i) {
   char buf[16];  // Longest is -2147483648
   return string(buf, FastInt32ToBufferLeft(i, buf));
 }
 
 // We need this overload because otherwise SimpleItoa(5U) wouldn't compile.
-inline string SimpleItoa(uint32 i) {
+inline string SimpleItoa(uint32_t i) {
   char buf[16];  // Longest is 4294967295
   return string(buf, FastUInt32ToBufferLeft(i, buf));
 }
 
-inline string SimpleItoa(int64 i) {
+inline string SimpleItoa(int64_t i) {
   char buf[32];  // Longest is -9223372036854775808
   return string(buf, FastInt64ToBufferLeft(i, buf));
 }
 
 // We need this overload because otherwise SimpleItoa(5ULL) wouldn't compile.
-inline string SimpleItoa(uint64 i) {
+inline string SimpleItoa(uint64_t i) {
   char buf[32];  // Longest is 18446744073709551615
   return string(buf, FastUInt64ToBufferLeft(i, buf));
-}
-
-inline string SimpleItoa(long i) {  // NOLINT long is OK here
-  if (sizeof(i) == 64 / 8) {
-    return SimpleItoa(static_cast<int64>(i));
-  } else if (sizeof(i) == 32 / 8) {
-    return SimpleItoa(static_cast<int32>(i));
-  }
-}
-
-inline string SimpleItoa(unsigned long i) {  // NOLINT long is OK here
-  if (sizeof(i) == 64 / 8) {
-    return SimpleItoa(static_cast<uint64>(i));
-  } else if (sizeof(i) == 32 / 8) {
-    return SimpleItoa(static_cast<uint32>(i));
-  }
 }
 
 // SimpleAtoi converts a string to an integer.
@@ -497,15 +481,15 @@ bool MUST_USE_RESULT SimpleAtoi(const char* s, int_type* out) {
                  SimpleAtoiWorksWith32Or64BitInts);
   if (std::numeric_limits<int_type>::is_signed) {  // Signed
     if (sizeof(*out) == 64 / 8) {  // 64-bit
-      return safe_strto64(s, reinterpret_cast<int64*>(out));
+      return safe_strto64(s, reinterpret_cast<int64_t*>(out));
     } else {  // 32-bit
-      return safe_strto32(s, reinterpret_cast<int32*>(out));
+      return safe_strto32(s, reinterpret_cast<int32_t*>(out));
     }
   } else {  // Unsigned
     if (sizeof(*out) == 64 / 8) {  // 64-bit
-      return safe_strtou64(s, reinterpret_cast<uint64*>(out));
+      return safe_strtou64(s, reinterpret_cast<uint64_t*>(out));
     } else {  // 32-bit
-      return safe_strtou32(s, reinterpret_cast<uint32*>(out));
+      return safe_strtou32(s, reinterpret_cast<uint32_t*>(out));
     }
   }
 }
@@ -586,7 +570,7 @@ string SimpleBtoa(bool value);
 //
 //    Return value: string
 // ----------------------------------------------------------------------
-string ItoaKMGT(int64 i);
+string ItoaKMGT(int64_t i);
 
 // ----------------------------------------------------------------------
 // ParseDoubleRange()
@@ -627,7 +611,7 @@ struct DoubleRangeOptions {
   const char* acceptable_terminators;
   bool null_terminator_ok;
   bool allow_unbounded_markers;
-  uint32 num_required_bounds;
+  uint32_t num_required_bounds;
   bool dont_modify_unbounded;
   bool allow_currency;
   bool allow_comparators;

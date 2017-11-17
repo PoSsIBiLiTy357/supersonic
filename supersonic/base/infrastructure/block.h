@@ -78,7 +78,7 @@ class Column {
   // offset. The complier changes the multiplication into a combination of
   // add&shift (avoiding slow imul). Therefore, this method should be favored
   // over data_plus_offset if the offset is known at compile time.
-  template<int64 offset>
+  template<int64_t offset>
   VariantConstPointer data_plus_static_offset() const {
     return data().static_offset<offset>(type_info());
   }

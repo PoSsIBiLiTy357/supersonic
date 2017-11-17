@@ -190,7 +190,7 @@ void FillFrom(bit_ptr dest, bit_const_ptr source, size_t bit_count) {
   // supersonic), in which case we get - on average - 32 operations of copying
   // a 4-byte-block and 32 "unaligned" bits.
   while ((source.shift() != 0
-          || (reinterpret_cast<int64>(source.data()) & 3) != 0)
+          || (reinterpret_cast<int64_t>(source.data()) & 3) != 0)
          && bit_count != 0) {
     *dest = *source;
     ++dest;
@@ -199,13 +199,13 @@ void FillFrom(bit_ptr dest, bit_const_ptr source, size_t bit_count) {
   }
   if (bit_count == 0) return;
   // This cast is guaranteed to be exact.
-  const uint32* source_ptr = source.data();
+  const uint32_t* source_ptr = source.data();
   // The pointers are guaranteed not to be aligned, so dest is in the previous
   // 4-byte block.
-  uint32* dest_ptr = dest.data();
+  uint32_t* dest_ptr = dest.data();
   const int shift = dest.shift();
   // Has ones on the part of the 8-byte block in front of dest.
-  const uint32 mask = (~0U) << shift;
+  const uint32_t mask = (~0U) << shift;
   int steps = bit_count / 32;
   // We move forward in 4-byte increments.
   while (steps--) {
@@ -251,23 +251,23 @@ void FillFrom(bit_ptr dest, const bool* source, size_t bit_count) {
   source += source_position;
   source_position = 0;
   // Now deal with the bulk of the bits in loops-of-32.
-  uint32* dest_data = dest.data();
+  uint32_t* dest_data = dest.data();
   for (int i = 0; i < bit_count / 32; ++i) {
     *dest_data = 0;
     for (int m = 0; m < 32; ++m) {
       *dest_data |=
-          (static_cast<uint32>(normalize(source[source_position++])) << m);
+          (static_cast<uint32_t>(normalize(source[source_position++])) << m);
     }
     ++dest_data;
   }
   // Copy the remainder.
   // See comment in FillWithTrue.
   if ((bit_count & 31) != 0) {
-    uint32 &final_data = dest.data()[bit_count / 32];
+    uint32_t &final_data = dest.data()[bit_count / 32];
     final_data &= ~((1 << (bit_count & 31)) - 1);
     for (; source_position < bit_count; source_position++) {
       bool inserted_value = normalize(source[source_position]);
-      final_data |= (static_cast<uint32>(inserted_value)
+      final_data |= (static_cast<uint32_t>(inserted_value)
                      << (source_position & 31));
     }
   }
@@ -286,7 +286,7 @@ void FillFrom(bool* dest, bit_const_ptr source, size_t bit_count) {
     ++source;
     --bit_count;
   }
-  const uint32* source_data = source.data();
+  const uint32_t* source_data = source.data();
   for (int i = 0; i < bit_count / 32; ++i) {
     for (int m = 0; m < 32; ++m) {
       *dest++ = (((*source_data) >> m) & 1);

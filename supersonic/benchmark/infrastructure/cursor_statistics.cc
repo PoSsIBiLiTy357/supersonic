@@ -30,8 +30,8 @@ namespace supersonic {
 namespace {
 
 inline double CalculateRate(
-    int64 numerator,
-    int64 denominator,
+    int64_t numerator,
+    int64_t denominator,
     bool to_percentage) {
   double rate = static_cast<double>(numerator) / denominator;
   rate *= to_percentage ? 100.0 : 1.0;
@@ -93,10 +93,10 @@ class PassSomeStatistics : public CursorStatistics {
 void PassSomeStatistics::GatherData() {
   GatherCommonData(true);
 
-  int64 time_difference = GetTotalOutputTime() - GetTotalInputTime();
-  int64 rows_out = output_listener_->RowsProcessed();
-  int64 max_rows_in  = GetInputRowCountMax();
-  int64 total_rows_in  = GetInputRowCountSum();
+  int64_t time_difference = GetTotalOutputTime() - GetTotalInputTime();
+  int64_t rows_out = output_listener_->RowsProcessed();
+  int64_t max_rows_in  = GetInputRowCountMax();
+  int64_t total_rows_in  = GetInputRowCountSum();
 
   // The input to PassSome nodes is assumed to have a "horizontal" shape, that
   // is tuples of input tables are merged together. When calculating the
@@ -195,10 +195,10 @@ class JoinStatistics : public CursorStatistics {
 void JoinStatistics::GatherData() {
   GatherCommonData(true);
 
-  int64 total_left_time = GetLHS()->TotalTimeUsec();
-  int64 total_right_time = GetRHS()->TotalTimeUsec();
+  int64_t total_left_time = GetLHS()->TotalTimeUsec();
+  int64_t total_right_time = GetRHS()->TotalTimeUsec();
 
-  int64 first_left_time = GetLHS()->FirstNextTimeUsec();
+  int64_t first_left_time = GetLHS()->FirstNextTimeUsec();
 
   // The index build build time computed below is not exact - it also takes
   // into account the time spent on matching the first streamed batch with the
@@ -211,7 +211,7 @@ void JoinStatistics::GatherData() {
   // TODO(tkaftal): ...or, once listeners with history have been implemented,
   // use them to get the exact first call to lhs to be able to exclude the
   // time spent on matching the data it fetched.
-  int64 index_build_time =
+  int64_t index_build_time =
       GetFirstNextOutputTime() - total_right_time - first_left_time;
 
   // The matching time describes how long it took to match the streamed input
@@ -223,7 +223,7 @@ void JoinStatistics::GatherData() {
   // returned an empty view on the first call to Next(), since as of now, in the
   // case of a single call matching and index build times are indiscernible.
 
-  int64 matching_time =
+  int64_t matching_time =
       GetTotalOutputTime() - GetFirstNextOutputTime() - total_left_time +
       first_left_time;  // adding - it was deleted twice
 
@@ -319,9 +319,9 @@ void CursorStatistics::GatherCommonData(bool sequential) {
   benchmark_data_.set_total_subtree_time(computation_time_);
 
   BenchmarkListener* above = output_listener_;
-  int64 rows_processed = above->RowsProcessed();
+  int64_t rows_processed = above->RowsProcessed();
 
-  int64 processing_time = sequential
+  int64_t processing_time = sequential
                           ? GetTotalOutputTime() - GetTotalInputTime()
                           : GetTotalOutputTime();
 
@@ -340,40 +340,40 @@ void CursorStatistics::GatherCommonData(bool sequential) {
   benchmark_data_.set_next_calls(above->NextCalls());
 }
 
-int64 CursorStatistics::GetTotalInputTime() const {
-  int64 time_sum = 0;
+int64_t CursorStatistics::GetTotalInputTime() const {
+  int64_t time_sum = 0;
   for (auto input_listener: input_listeners_) {
     time_sum += input_listener->TotalTimeUsec();
   }
   return time_sum;
 }
 
-int64 CursorStatistics::GetTotalOutputTime() const {
+int64_t CursorStatistics::GetTotalOutputTime() const {
   return output_listener_->TotalTimeUsec();
 }
 
-int64 CursorStatistics::GetFirstNextInputTime() const {
-  int64 time_sum = 0;
+int64_t CursorStatistics::GetFirstNextInputTime() const {
+  int64_t time_sum = 0;
   for (auto input_listener: input_listeners_) {
     time_sum += input_listener->FirstNextTimeUsec();
   }
   return time_sum;
 }
 
-int64 CursorStatistics::GetFirstNextOutputTime() const {
+int64_t CursorStatistics::GetFirstNextOutputTime() const {
   return output_listener_->FirstNextTimeUsec();
 }
 
-int64 CursorStatistics::GetInputRowCountSum() const {
-  int64 total_rows_in = 0;
+int64_t CursorStatistics::GetInputRowCountSum() const {
+  int64_t total_rows_in = 0;
   for (auto input_listener: input_listeners_) {
     total_rows_in += input_listener->RowsProcessed();
   }
   return total_rows_in;
 }
 
-int64 CursorStatistics::GetInputRowCountMax() const {
-  int64 rows_max = 0;
+int64_t CursorStatistics::GetInputRowCountMax() const {
+  int64_t rows_max = 0;
   for (auto input_listener: input_listeners_) {
     rows_max = std::max(rows_max, input_listener->RowsProcessed());
   }

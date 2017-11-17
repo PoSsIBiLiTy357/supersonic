@@ -95,7 +95,7 @@ class CopyColumnTest : public testing::Test {
     switch (schema_.attribute(0).type()) {
       case INT64: {
         // Sets column values to 0, 1, 2, ..., row_capacity-1
-        int64* p = block_->mutable_column(0)->mutable_typed_data<INT64>();
+        int64_t* p = block_->mutable_column(0)->mutable_typed_data<INT64>();
         for (rowcount_t i = 0; i < block_->row_capacity(); i++, p++)
           *p = i;
         break;
@@ -114,7 +114,7 @@ class CopyColumnTest : public testing::Test {
             mutable_typed_data<STRING>();
         Arena* arena = block_->mutable_column(0)->arena();
         for (rowcount_t i = 0; i < block_->row_capacity(); i++, p++) {
-          string s = StringPrintf("%08" GG_LL_FORMAT "d", i);
+          string s = StringPrintf("%08" GG_INT64_FORMAT, i);
           const char* location = arena->AddStringPieceContent(s);
           ASSERT_TRUE(location != NULL);
           p->set(location, s.length());

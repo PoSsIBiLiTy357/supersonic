@@ -64,12 +64,12 @@ TEST_F(AggregatorsTest, ComputeSimpleAggregation) {
           MIN, INT64, result_block.get(), 0)));
 
   const rowid_t result_index[] = { 0, 1, 2, 3 };
-  const int64 input1[] = { -5, 0, 4, 4 };
+  const int64_t input1[] = { -5, 0, 4, 4 };
   View view(TupleSchema::Singleton("", INT64, NOT_NULLABLE));
   view.mutable_column(0)->Reset(input1, bool_ptr(NULL));
   ASSERT_TRUE(aggregator->UpdateAggregation(&view.column(0), 4, result_index)
               .is_success());
-  const int64 input2[] = { -2, 3, 1, -1 };
+  const int64_t input2[] = { -2, 3, 1, -1 };
   view.mutable_column(0)->Reset(input2, bool_ptr(NULL));
   ASSERT_TRUE(aggregator->UpdateAggregation(&view.column(0), 4, result_index)
               .is_success());
@@ -95,11 +95,11 @@ TEST_F(AggregatorsTest,
 
   const rowid_t result_index[] = { 0, 1, 2, 3 };
   View view(TupleSchema::Singleton("", INT64, NULLABLE));
-  const int32 input1[] = { -5, 0, 4, 4 };
+  const int32_t input1[] = { -5, 0, 4, 4 };
   view.mutable_column(0)->Reset(input1, bool_ptr(NULL));
   ASSERT_TRUE(aggregator->UpdateAggregation(&view.column(0), 4, result_index)
               .is_success());
-  const int32 input2[] = { -2, 3, 1, -1 };
+  const int32_t input2[] = { -2, 3, 1, -1 };
   view.mutable_column(0)->Reset(input2, bool_ptr(NULL));
   ASSERT_TRUE(aggregator->UpdateAggregation(&view.column(0), 4, result_index)
               .is_success());
@@ -125,11 +125,11 @@ TEST_F(AggregatorsTest,
 
   const rowid_t result_index[] = { 0, 1, 2, 3 };
   View view(TupleSchema::Singleton("", UINT32, NULLABLE));
-  const uint32 input1[] = { 2, 3, 1, 0xFFFFFFFF };
+  const uint32_t input1[] = { 2, 3, 1, 0xFFFFFFFF };
   view.mutable_column(0)->Reset(input1, bool_ptr(NULL));
   ASSERT_TRUE(aggregator->UpdateAggregation(&view.column(0), 4, result_index)
               .is_success());
-  const uint32 input2[] = { 5, 0, 4, 4 };
+  const uint32_t input2[] = { 5, 0, 4, 4 };
   view.mutable_column(0)->Reset(input2, bool_ptr(NULL));
   ASSERT_TRUE(aggregator->UpdateAggregation(&view.column(0), 4, result_index)
               .is_success());
@@ -151,7 +151,7 @@ TEST_F(AggregatorsTest, ComputeAggregationOfValuesWithNulls) {
           SUM, INT32, result_block.get(), 0)));
 
   const rowid_t result_index[] = { 0, 1, 2, 3 };
-  int32 input1[] = { -2, 3, 1, 0};
+  int32_t input1[] = { -2, 3, 1, 0};
   small_bool_array input1_is_null;
   bool input1_is_null_data[] = { false, true, false, true};
   bit_pointer::FillFrom(input1_is_null.mutable_data(), input1_is_null_data, 4);
@@ -160,7 +160,7 @@ TEST_F(AggregatorsTest, ComputeAggregationOfValuesWithNulls) {
   ASSERT_TRUE(aggregator->UpdateAggregation(&view.column(0), 4, result_index)
               .is_success());
 
-  const int32 input2[] = { -5, 0, 4, 4};
+  const int32_t input2[] = { -5, 0, 4, 4};
   small_bool_array input2_is_null;
   const bool input2_is_null_data[] = { true, true, false, false};
   bit_pointer::FillFrom(input2_is_null.mutable_data(), input2_is_null_data, 4);
@@ -220,7 +220,7 @@ TEST_F(AggregatorsTest, ResultIndexRespectedWhileUpdatingAggregation) {
           SUM, INT32, result_block.get(), 0)));
 
   View view(TupleSchema::Singleton("", INT32, NULLABLE));
-  const int32 input[] = { 1, 1, 1, 1 };
+  const int32_t input[] = { 1, 1, 1, 1 };
   view.mutable_column(0)->Reset(input, bool_ptr(NULL));
   // Agregate all results in 3rd element of result table.
   const rowid_t result_index[] = { 2, 2, 2, 2 };
@@ -239,7 +239,7 @@ TEST_F(AggregatorsTest, ComputeCount) {
       ColumnAggregatorFactory().CreateCountAggregator(result_block.get(), 0)));
 
   View view(TupleSchema::Singleton("", INT64, NULLABLE));
-  const int64 input[] = { -5, 0, 4, 4 };
+  const int64_t input[] = { -5, 0, 4, 4 };
   view.mutable_column(0)->Reset(input, bool_ptr(NULL));
   const rowid_t result_index[] = { 0, 0, 0, 0 };
   ASSERT_TRUE(aggregator->UpdateAggregation(&view.column(0), 4, result_index)
@@ -273,7 +273,7 @@ TEST_F(AggregatorsTest, ComputeCountOfValuesWithNulls) {
       ColumnAggregatorFactory().CreateCountAggregator(result_block.get(), 0)));
 
   View view(TupleSchema::Singleton("", INT32, NULLABLE));
-  const int64 input[] = { -5, 0, 4, 4 };
+  const int64_t input[] = { -5, 0, 4, 4 };
   small_bool_array input_is_null;
   const bool input_is_null_data[] = { true, false, true, false};
   bit_pointer::FillFrom(input_is_null.mutable_data(), input_is_null_data, 4);
@@ -297,7 +297,7 @@ TEST_F(AggregatorsTest, ComputeDistinctCountOfIntegers) {
 
   const rowid_t result_index[] = { 0, 0, 0, 0 };
   // Only distinct values are counted, so result should be 2.
-  const int64 input1[] = { -5, 2, -5, -5 };
+  const int64_t input1[] = { -5, 2, -5, -5 };
   View view(TupleSchema::Singleton("", INT64, NULLABLE));
   view.mutable_column(0)->Reset(input1, bool_ptr(NULL));
   ASSERT_TRUE(aggregator->UpdateAggregation(&view.column(0), 4, result_index)
@@ -373,11 +373,11 @@ TEST_F(AggregatorsTest, ComputeConcatOfInts) {
 
   const rowid_t result_index[] = { 0, 0, 0, 0 };
   View view(TupleSchema::Singleton("", STRING, NULLABLE));
-  const int32 input1[] = { -5, 0, 345, 2 };
+  const int32_t input1[] = { -5, 0, 345, 2 };
   view.mutable_column(0)->Reset(input1, bool_ptr(NULL));
   ASSERT_TRUE(aggregator->UpdateAggregation(&view.column(0), 4, result_index)
               .is_success());
-  const int32 input2[] = { -2, 3, 1};
+  const int32_t input2[] = { -2, 3, 1};
   view.mutable_column(0)->Reset(input2, bool_ptr(NULL));
   ASSERT_TRUE(aggregator->UpdateAggregation(&view.column(0), 3, result_index)
               .is_success());
@@ -418,7 +418,7 @@ TEST_F(AggregatorsTest, ResetSetsAllResultsToNulls) {
           MIN, INT64, result_block.get(), 0)));
 
   const rowid_t result_index[] = { 0, 1, 2, 3 };
-  const int64 input1[] = { -5, 0, 4, 4 };
+  const int64_t input1[] = { -5, 0, 4, 4 };
   View view(TupleSchema::Singleton("", INT64, NULLABLE));
   view.mutable_column(0)->Reset(input1, bool_ptr(NULL));
   ASSERT_TRUE(aggregator->UpdateAggregation(&view.column(0), 4, result_index)
@@ -441,7 +441,7 @@ TEST_F(AggregatorsTest, ResetSetsAllCountResultsToZero) {
       ColumnAggregatorFactory().CreateCountAggregator(result_block.get(), 0)));
 
   View view(TupleSchema::Singleton("", INT64, NULLABLE));
-  const int64 input[] = { -5, 0, 4, 4 };
+  const int64_t input[] = { -5, 0, 4, 4 };
   view.mutable_column(0)->Reset(input, bool_ptr(NULL));
   const rowid_t result_index[] = { 0, 0, 0, 0 };
   ASSERT_TRUE(aggregator->UpdateAggregation(&view.column(0), 4, result_index)

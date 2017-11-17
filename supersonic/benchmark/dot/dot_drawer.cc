@@ -68,7 +68,7 @@ inline string ToCompactString(double value) {
   return HumanReadableNum::DoubleToString(value);
 }
 
-inline double ToDouble(int64 value) {
+inline double ToDouble(int64_t value) {
   return static_cast<double>(value);
 }
 
@@ -77,7 +77,7 @@ string ReadableRowRate(double rows_per_micro) {
                 " rows/s");
 }
 
-string ReadableTime(int64 micros) {
+string ReadableTime(int64_t micros) {
   if (micros > kNumMicrosPerSecond) {
     return StrCat(ToCompactString(ToDouble(micros) / kNumMicrosPerSecond),
                   " s");

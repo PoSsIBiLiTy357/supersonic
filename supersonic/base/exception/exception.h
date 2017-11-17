@@ -60,7 +60,7 @@ class Exception {
 
   // Returns the time at which the exception occurred. The returned number
   // denotes the number of microseconds since Epoch.
-  int64 timestamp() const { return serial_.timestamp(); }
+  int64_t timestamp() const { return serial_.timestamp(); }
 
   // Returns the return code.
   ReturnCode return_code() const { return serial_.return_code(); }

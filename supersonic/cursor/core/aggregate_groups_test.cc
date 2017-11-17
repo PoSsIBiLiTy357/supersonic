@@ -51,7 +51,7 @@ FailureOrOwned<Cursor> CreateGroupAggregate(
     const SingleSourceProjector& group_by,
     const AggregationSpecification& aggregation,
     unique_ptr<Cursor> input,
-    const int64 max_unique_rows = 20000) {
+    const int64_t max_unique_rows = 20000) {
   FailureOrOwned<Aggregator> aggregator = Aggregator::Create(
       aggregation, input->schema(), HeapBufferAllocator::Get(), 1);
   PROPAGATE_ON_FAILURE(aggregator);

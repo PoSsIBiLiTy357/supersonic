@@ -100,21 +100,21 @@ class CursorStatistics {
 
   // Utility calculation functions which compute the total input and output
   // operation times.
-  int64 GetTotalInputTime() const;
+  int64_t GetTotalInputTime() const;
 
-  int64 GetTotalOutputTime() const;
+  int64_t GetTotalOutputTime() const;
 
   // Functions returning total input and output times spent on the first call to
   // Next().
-  int64 GetFirstNextInputTime() const;
+  int64_t GetFirstNextInputTime() const;
 
-  int64 GetFirstNextOutputTime() const;
+  int64_t GetFirstNextOutputTime() const;
 
   // Utility functions for calculating the sum and the maximum of the row counts
   // among input sources.
-  int64 GetInputRowCountSum() const;
+  int64_t GetInputRowCountSum() const;
 
-  int64 GetInputRowCountMax() const;
+  int64_t GetInputRowCountMax() const;
 
   // Utility function which adds benchmark values for row count, number
   // of calls to the Next() function, relative and absolute processing time
@@ -144,7 +144,7 @@ class CursorStatistics {
   // Field storing the total time the node spent on processing. It is populated
   // by the GatherData() function and is intended to be used to calculate the
   // relative computation times of the node's descendants.
-  int64 computation_time_;
+  int64_t computation_time_;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(CursorStatistics);

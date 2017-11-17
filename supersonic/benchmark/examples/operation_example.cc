@@ -45,8 +45,8 @@ const size_t kGroupNum = 50;
 unique_ptr<Operation> CreateGroup() {
   MTRandom random(0);
   BlockBuilder<STRING, INT32> builder;
-  for (int64 i = 0; i < kInputRowCount; ++i) {
-    builder.AddRow(StringPrintf("test_string_%lld", i % kGroupNum),
+  for (int64_t i = 0; i < kInputRowCount; ++i) {
+    builder.AddRow(StringPrintf("test_string_%" PRIi64, i % kGroupNum),
                    random.Rand32());
   }
 
@@ -60,7 +60,7 @@ unique_ptr<Operation> CreateGroup() {
 unique_ptr<Operation> CreateCompute() {
   MTRandom random(0);
   BlockBuilder<INT32, INT64, DOUBLE> builder;
-  for (int64 i = 0; i < kInputRowCount; ++i) {
+  for (int64_t i = 0; i < kInputRowCount; ++i) {
     builder.AddRow(random.Rand32(), random.Rand64(), random.RandDouble());
   }
 
@@ -80,8 +80,8 @@ unique_ptr<SortOrder> CreateExampleSortOrder() {
 unique_ptr<Operation> CreateSort(size_t input_row_count) {
   MTRandom random(0);
   BlockBuilder<INT32, STRING> builder;
-  for (int64 i = 0; i < input_row_count; ++i) {
-    builder.AddRow(random.Rand32(), StringPrintf("test_string_%lld", i));
+  for (int64_t i = 0; i < input_row_count; ++i) {
+    builder.AddRow(random.Rand32(), StringPrintf("test_string_%" PRIi64, i));
   }
 
   return Sort(
@@ -121,12 +121,12 @@ unique_ptr<Operation> SimpleTreeExample() {
   // col0, col1  , col2  , col3, col4
   // name, salary, intern, age , boss_name
   BlockBuilder<STRING, INT32, BOOL, INT32, STRING> builder;
-  for (int64 i = 0; i < kInputRowCount; ++i) {
-    builder.AddRow(StringPrintf("Name%lld", i),
+  for (int64_t i = 0; i < kInputRowCount; ++i) {
+    builder.AddRow(StringPrintf("Name%" PRIi64, i),
                    (random.Rand16() % 80) * 100,
                    random.Rand16() % 1000 == 0 && i > kGroupNum,
                    (random.Rand16() % 60) + 20,
-                   StringPrintf("Name%lld", i % kGroupNum));
+                   StringPrintf("Name%" PRIi64, i % kGroupNum));
   }
 
   auto named_columns = Project(

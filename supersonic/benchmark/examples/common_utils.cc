@@ -61,8 +61,8 @@ void BenchmarkOperation(unique_ptr<Operation> operation,
   CreateGraph(benchmark_name, data_wrapper->node(), options);
 }
 
-int32 EpochDaysFromStringDate(const string& date_string) {
-  int32 days_since_epoch = GetDaysSinceEpoch(date_string.c_str());
+int32_t EpochDaysFromStringDate(const string& date_string) {
+  int32_t days_since_epoch = GetDaysSinceEpoch(date_string.c_str());
   CHECK_GT(days_since_epoch, 0)
       << "Cannot parse date: " << date_string
       << "; it must be in year-month-day format";

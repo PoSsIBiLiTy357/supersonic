@@ -1040,7 +1040,7 @@ class STLCountingAllocator : public Alloc {
   typedef typename Alloc::size_type size_type;
 
   STLCountingAllocator() : bytes_used_(NULL) { }
-  STLCountingAllocator(int64* b) : bytes_used_(b) {}
+  STLCountingAllocator(int64_t* b) : bytes_used_(b) {}
 
   // Constructor used for rebinding
   template<typename U>
@@ -1068,10 +1068,10 @@ class STLCountingAllocator : public Alloc {
         other;
   };
 
-  int64* bytes_used() const { return bytes_used_; }
+  int64_t* bytes_used() const { return bytes_used_; }
 
  private:
-  int64* bytes_used_;
+  int64_t* bytes_used_;
 };
 
 template <typename T, typename A>

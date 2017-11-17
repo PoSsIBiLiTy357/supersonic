@@ -38,18 +38,18 @@ namespace simd_operators {
 // --------------------- Arithmetic --------------------------------------------
 
 template <typename LeftType, typename RightType> struct SimdPlus;
-SIMD_OPERATION(SimdPlus, int32,  __m128i, _mm_add_epi32);  // ADD 4x32bit s/u
-SIMD_OPERATION(SimdPlus, uint32, __m128i, _mm_add_epi32);  // ADD 4x32bit s/u
-SIMD_OPERATION(SimdPlus, int64,  __m128i, _mm_add_epi64);  // ADD 2x64bit s/u
-SIMD_OPERATION(SimdPlus, uint64, __m128i, _mm_add_epi64);  // ADD 2x64bit s/u
+SIMD_OPERATION(SimdPlus, int32_t,  __m128i, _mm_add_epi32);  // ADD 4x32bit s/u
+SIMD_OPERATION(SimdPlus, uint32_t, __m128i, _mm_add_epi32);  // ADD 4x32bit s/u
+SIMD_OPERATION(SimdPlus, int64_t,  __m128i, _mm_add_epi64);  // ADD 2x64bit s/u
+SIMD_OPERATION(SimdPlus, uint64_t, __m128i, _mm_add_epi64);  // ADD 2x64bit s/u
 SIMD_OPERATION(SimdPlus, float,  __m128 , _mm_add_ps);     // ADD 4xfloats
 SIMD_OPERATION(SimdPlus, double, __m128d, _mm_add_pd);     // ADD 2xdoubles
 
 template <typename LeftType, typename RightType> struct SimdSubtract;
-SIMD_OPERATION(SimdSubtract, int32,  __m128i, _mm_sub_epi32);
-SIMD_OPERATION(SimdSubtract, uint32, __m128i, _mm_sub_epi32);
-SIMD_OPERATION(SimdSubtract, int64,  __m128i, _mm_sub_epi64);
-SIMD_OPERATION(SimdSubtract, uint64, __m128i, _mm_sub_epi64);
+SIMD_OPERATION(SimdSubtract, int32_t,  __m128i, _mm_sub_epi32);
+SIMD_OPERATION(SimdSubtract, uint32_t, __m128i, _mm_sub_epi32);
+SIMD_OPERATION(SimdSubtract, int64_t,  __m128i, _mm_sub_epi64);
+SIMD_OPERATION(SimdSubtract, uint64_t, __m128i, _mm_sub_epi64);
 SIMD_OPERATION(SimdSubtract, float,  __m128 , _mm_sub_ps);
 SIMD_OPERATION(SimdSubtract, double, __m128d, _mm_sub_pd);
 
@@ -67,24 +67,24 @@ SIMD_OPERATION(SimdDivide, double, __m128d, _mm_div_pd);
 
 template <typename LeftType, typename RightType> struct SimdOr;
 SIMD_OPERATION(SimdOr, bool,   __m128i, _mm_or_si128);  // Bitwise OR
-SIMD_OPERATION(SimdOr, int32,  __m128i, _mm_or_si128);  // Bitwise OR
-SIMD_OPERATION(SimdOr, uint32, __m128i, _mm_or_si128);  // Bitwise OR
-SIMD_OPERATION(SimdOr, int64,  __m128i, _mm_or_si128);  // Bitwise OR
-SIMD_OPERATION(SimdOr, uint64, __m128i, _mm_or_si128);  // Bitwise OR
+SIMD_OPERATION(SimdOr, int32_t,  __m128i, _mm_or_si128);  // Bitwise OR
+SIMD_OPERATION(SimdOr, uint32_t, __m128i, _mm_or_si128);  // Bitwise OR
+SIMD_OPERATION(SimdOr, int64_t,  __m128i, _mm_or_si128);  // Bitwise OR
+SIMD_OPERATION(SimdOr, uint64_t, __m128i, _mm_or_si128);  // Bitwise OR
 
 template <typename LeftType, typename RightType> struct SimdAnd;
 SIMD_OPERATION(SimdAnd, bool,   __m128i, _mm_and_si128);  // Bitwise AND
-SIMD_OPERATION(SimdAnd, int32,  __m128i, _mm_and_si128);  // Bitwise AND
-SIMD_OPERATION(SimdAnd, uint32, __m128i, _mm_and_si128);  // Bitwise AND
-SIMD_OPERATION(SimdAnd, int64,  __m128i, _mm_and_si128);  // Bitwise AND
-SIMD_OPERATION(SimdAnd, uint64, __m128i, _mm_and_si128);  // Bitwise AND
+SIMD_OPERATION(SimdAnd, int32_t,  __m128i, _mm_and_si128);  // Bitwise AND
+SIMD_OPERATION(SimdAnd, uint32_t, __m128i, _mm_and_si128);  // Bitwise AND
+SIMD_OPERATION(SimdAnd, int64_t,  __m128i, _mm_and_si128);  // Bitwise AND
+SIMD_OPERATION(SimdAnd, uint64_t, __m128i, _mm_and_si128);  // Bitwise AND
 
 template <typename LeftType, typename RightType> struct SimdAndNot;
 SIMD_OPERATION(SimdAndNot, bool,   __m128i, _mm_andnot_si128);
-SIMD_OPERATION(SimdAndNot, int32,  __m128i, _mm_andnot_si128);
-SIMD_OPERATION(SimdAndNot, uint32, __m128i, _mm_andnot_si128);
-SIMD_OPERATION(SimdAndNot, int64,  __m128i, _mm_andnot_si128);
-SIMD_OPERATION(SimdAndNot, uint64, __m128i, _mm_andnot_si128);
+SIMD_OPERATION(SimdAndNot, int32_t,  __m128i, _mm_andnot_si128);
+SIMD_OPERATION(SimdAndNot, uint32_t, __m128i, _mm_andnot_si128);
+SIMD_OPERATION(SimdAndNot, int64_t,  __m128i, _mm_andnot_si128);
+SIMD_OPERATION(SimdAndNot, uint64_t, __m128i, _mm_andnot_si128);
 
 template <typename LeftType, typename RightType> struct SimdXor;
 SIMD_OPERATION(SimdXor, bool, __m128i, _mm_xor_si128);
@@ -95,7 +95,7 @@ SIMD_OPERATION(SimdXor, bool, __m128i, _mm_xor_si128);
 // template <typename LeftType, typename RightType> struct SimdEqual;
 // SIMD_OPERATION(SimdEqual, bool,   __m128i, _mm_cmpeq_epi8);
 // SIMD_OPERATION(SimdEqual, int32,  __m128i, _mm_cmpeq_epi32);
-// SIMD_OPERATION(SimdEqual, uint32, __m128i, _mm_cmpeq_epi32);
+// SIMD_OPERATION(SimdEqual, uint32_t, __m128i, _mm_cmpeq_epi32);
 
 // template <typename LeftType, typename RightType> struct SimdGreater;
 // SIMD_OPERATION(SimdGreater, bool,   __m128i, _mm_cmpgt_epi8);

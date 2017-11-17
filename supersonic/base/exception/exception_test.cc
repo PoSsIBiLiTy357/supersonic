@@ -37,9 +37,9 @@ using ::testing::EqualsProto;
 class ExceptionTest : public testing::Test {};
 
 TEST_F(ExceptionTest, BasicFunctionality) {
-  int64 time1 = GetCurrentTimeMicros();
+  int64_t time1 = GetCurrentTimeMicros();
   Exception exception(ERROR_ATTRIBUTE_COUNT_MISMATCH, "foo");
-  int64 time2 = GetCurrentTimeMicros();
+  int64_t time2 = GetCurrentTimeMicros();
   EXPECT_GE(exception.timestamp(), time1);
   EXPECT_LE(exception.timestamp(), time2);
   EXPECT_EQ("foo", exception.message());

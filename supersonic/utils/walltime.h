@@ -32,10 +32,10 @@ namespace supersonic {using std::string; }
 #endif
 
 // Time conversion utilities.
-static const int64 kNumMillisPerSecond = 1000LL;
+static const int64_t kNumMillisPerSecond = 1000LL;
 
-static const int64 kNumMicrosPerMilli = 1000LL;
-static const int64 kNumMicrosPerSecond = kNumMicrosPerMilli * 1000LL;
+static const int64_t kNumMicrosPerMilli = 1000LL;
+static const int64_t kNumMicrosPerSecond = kNumMicrosPerMilli * 1000LL;
 
 typedef double WallTime;
 
@@ -59,7 +59,7 @@ bool WallTime_Parse_Timezone(const char* time_spec,
 // Return current time in seconds as a WallTime.
 WallTime WallTime_Now();
 
-typedef int64 MicrosecondsInt64;
+typedef int64_t MicrosecondsInt64;
 
 // Returns the time since the Epoch measured in microseconds.
 inline MicrosecondsInt64 GetCurrentTimeMicros() {
@@ -81,14 +81,14 @@ inline MicrosecondsInt64 GetCurrentTimeMicros() {
 // Returns the number of days from epoch that elapsed until the specified date.
 // The date must be in year-month-day format. Returns -1 when the date argument
 // is invalid.
-int32 GetDaysSinceEpoch(const char* date);
+int32_t GetDaysSinceEpoch(const char* date);
 
 // A CycleClock yields the value of a cycle counter that increments at a rate
 // that is approximately constant.
 class CycleClock {
  public:
   // Return the value of the counter.
-  static inline int64 Now();
+  static inline int64_t Now();
 
  private:
   CycleClock();

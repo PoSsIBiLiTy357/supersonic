@@ -36,20 +36,20 @@ class BenchmarkListener : public SpyListener {
   virtual void AfterNext(const string& id,
                          rowcount_t max_row_count,
                          const ResultView& result_view,
-                         int64 time_nanos) = 0;
+                         int64_t time_nanos) = 0;
 
   // Returns the number of calls to the cursor's Next() function.
-  virtual int64 NextCalls() const = 0;
+  virtual int64_t NextCalls() const = 0;
 
   // Returns the number of processed rows.
-  virtual int64 RowsProcessed() const = 0;
+  virtual int64_t RowsProcessed() const = 0;
 
   // Returns the total time spent processing the data in milliseconds.
-  virtual int64 TotalTimeUsec() const = 0;
+  virtual int64_t TotalTimeUsec() const = 0;
 
   // Returns the number of milliseconds spent processing the first call
   // to Next().
-  virtual int64 FirstNextTimeUsec() const = 0;
+  virtual int64_t FirstNextTimeUsec() const = 0;
 
   // Produces a string description of benchmarking results.
   virtual string GetResults() const = 0;

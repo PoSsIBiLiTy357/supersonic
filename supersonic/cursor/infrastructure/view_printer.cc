@@ -103,8 +103,8 @@ void ViewPrinter::AppendRowToStream(const View& view,
       }
 #ifndef NDEBUG
       if (column.type_info().type() == BOOL) {
-        const uint8 int_value =
-            *reinterpret_cast<const uint8*>(value.as<BOOL>());
+        const uint8_t int_value =
+            *reinterpret_cast<const uint8_t*>(value.as<BOOL>());
         // Numeric value of a bool should be 0 or 1. Report it if it isn't.
         if (int_value > 1) {
           char buffer[kFastToBufferSize];

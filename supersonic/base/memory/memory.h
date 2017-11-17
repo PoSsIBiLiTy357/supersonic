@@ -832,7 +832,7 @@ class GuaranteeMemory : public BufferAllocator {
                                   size_t minimal,
                                   Buffer* buffer,
                                   BufferAllocator* originator) {
-    int64 additional_memory = requested - (buffer != NULL ? buffer->size() : 0);
+    int64_t additional_memory = requested - (buffer != NULL ? buffer->size() : 0);
     return additional_memory <= Available()
         && DelegateReallocate(&limit_, requested, requested,
                               buffer, originator);

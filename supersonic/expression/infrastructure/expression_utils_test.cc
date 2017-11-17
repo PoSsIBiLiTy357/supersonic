@@ -37,9 +37,9 @@ namespace supersonic {
 
 class ExpressionUtilsTest : public ::testing::Test {
  protected:
-  TupleSchema CreateSchema(int32 attributes) {
+  TupleSchema CreateSchema(int32_t attributes) {
     TupleSchema schema;
-    for (int32 i = 0; i < attributes; ++i) {
+    for (int32_t i = 0; i < attributes; ++i) {
       schema.add_attribute(Attribute(StrCat("Name", i), BOOL, NULLABLE));
     }
     return schema;

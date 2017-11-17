@@ -77,7 +77,7 @@ class RowHashSet {
   // All columns are key.
   RowHashSet(const TupleSchema& block_schema,
              BufferAllocator* const allocator,
-             int64 max_unique_keys_in_result);
+             int64_t max_unique_keys_in_result);
 
   // Takes ownership of a SingleSourceProjector that indicates the subset of
   // internal block's columns that are key columns. It must be bound to block's
@@ -85,7 +85,7 @@ class RowHashSet {
   RowHashSet(const TupleSchema& block_schema,
              BufferAllocator* const allocator,
              unique_ptr<const BoundSingleSourceProjector> key_selector,
-             int64 max_unique_keys_in_result);
+             int64_t max_unique_keys_in_result);
 
   // Ensures that the hash set has capacity for at least the specified
   // number of rows. Returns false on OOM. Using this method may reduce

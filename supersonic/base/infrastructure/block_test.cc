@@ -89,7 +89,7 @@ TEST_F(BlockTest, SuccessfulReallocShouldPreserveContentWithNulls) {
 TEST_F(BlockTest, UnsuccessfulReallocShouldAccountToNoOp) {
   unique_ptr<Block> test(test_block());
   MemoryLimit limit(3 * (sizeof(StringPiece) +
-                         sizeof(int32) + 9 /* for string arena */));
+                         sizeof(int32_t) + 9 /* for string arena */));
   Block block(test->schema(), &limit);
   ASSERT_TRUE(block.Reallocate(2));
   ASSERT_EQ(test->row_capacity(), Copy(test->view(), &block));
@@ -129,9 +129,9 @@ TEST_F(BlockTest, OffsetsShouldCalculateCorrectly) {
             (test->column(0).data_plus_offset(2).as<STRING>()) -
             (test->column(0).data().as<STRING>()));
   EXPECT_EQ(2,
-            static_cast<const int32*>(
+            static_cast<const int32_t*>(
                 test->mutable_column(1)->mutable_data_plus_offset(2)) -
-            static_cast<const int32*>(test->mutable_column(1)->mutable_data()));
+            static_cast<const int32_t*>(test->mutable_column(1)->mutable_data()));
   EXPECT_EQ(2,
             (test->column(1).data_plus_offset(2).as<INT32>()) -
             (test->column(1).data().as<INT32>()));

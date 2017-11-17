@@ -36,15 +36,15 @@ class Expression;
 unique_ptr<const Expression> Null(DataType type);
 
 // Create typed constants.
-unique_ptr<const Expression> ConstInt32(const int32 &value);
-unique_ptr<const Expression> ConstInt64(const int64 &value);
-unique_ptr<const Expression> ConstUint32(const uint32 &value);
-unique_ptr<const Expression> ConstUint64(const uint64 &value);
+unique_ptr<const Expression> ConstInt32(const int32_t &value);
+unique_ptr<const Expression> ConstInt64(const int64_t &value);
+unique_ptr<const Expression> ConstUint32(const uint32_t &value);
+unique_ptr<const Expression> ConstUint64(const uint64_t &value);
 unique_ptr<const Expression> ConstFloat(const float &value);
 unique_ptr<const Expression> ConstDouble(const double &value);
 unique_ptr<const Expression> ConstBool(const bool &value);
-unique_ptr<const Expression> ConstDate(const int32 &value);
-unique_ptr<const Expression> ConstDateTime(const int64 &value);
+unique_ptr<const Expression> ConstDate(const int32_t &value);
+unique_ptr<const Expression> ConstDateTime(const int64_t &value);
 unique_ptr<const Expression> ConstString(const StringPiece &value);
 unique_ptr<const Expression> ConstBinary(const StringPiece &value);
 unique_ptr<const Expression> ConstDataType(const DataType &value);

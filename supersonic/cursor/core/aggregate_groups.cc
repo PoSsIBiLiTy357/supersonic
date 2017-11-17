@@ -76,7 +76,7 @@ class GroupKeySet {
       unique_ptr<const BoundSingleSourceProjector> group_by,
       BufferAllocator* allocator,
       rowcount_t initial_row_capacity,
-      const int64 max_unique_keys_in_result) {
+      const int64_t max_unique_keys_in_result) {
     unique_ptr<GroupKeySet> group_key_set(
         new GroupKeySet(std::move(group_by), allocator,
                         max_unique_keys_in_result));
@@ -124,7 +124,7 @@ class GroupKeySet {
  private:
   GroupKeySet(unique_ptr<const BoundSingleSourceProjector> group_by,
               BufferAllocator* allocator,
-              const int64 max_unique_keys_in_result)
+              const int64_t max_unique_keys_in_result)
       : key_projector_(std::move(group_by)),
         child_key_view_(key_projector_->result_schema()),
         key_row_set_(key_projector_->result_schema(), allocator,
@@ -169,7 +169,7 @@ class GroupAggregateCursor : public BasicCursor {
       unique_ptr<BufferAllocator> allocator,// Takes ownership
       BufferAllocator* original_allocator,  // Doesn't take ownership.
       bool best_effort,
-      const int64 max_unique_keys_in_result,
+      const int64_t max_unique_keys_in_result,
       unique_ptr<Cursor> child) {
     CHECK_NOTNULL(allocator.get());
     FailureOrOwned<GroupKeySet> key = GroupKeySet::Create(
@@ -257,7 +257,7 @@ class GroupAggregateCursor : public BasicCursor {
                        unique_ptr<Aggregator> aggregator,
                        unique_ptr<const BoundMultiSourceProjector> result_projector,
                        bool best_effort,
-                       const int64 max_unique_keys_in_result,
+                       const int64_t max_unique_keys_in_result,
                        unique_ptr<Cursor> child)
       : BasicCursor(result_schema),
         allocator_(std::move(allocator)),
@@ -323,7 +323,7 @@ class GroupAggregateCursor : public BasicCursor {
   // Maximum number of unique key combination(as per input order) to aggregate
   // the results upon. If limit is hit, all remaining rows are aggregated
   // together in the last row at index = max_unique_keys_in_result_
-  const int64 max_unique_keys_in_result_;
+  const int64_t max_unique_keys_in_result_;
 
   DISALLOW_COPY_AND_ASSIGN(GroupAggregateCursor);
 };
@@ -1013,7 +1013,7 @@ FailureOrOwned<Cursor> BoundGroupAggregate(
       std::move(allocator),
       original_allocator,
       best_effort,
-      kint64max,
+      INT64_MAX,
       std::move(child));
 }
 
@@ -1023,7 +1023,7 @@ FailureOrOwned<Cursor> BoundGroupAggregateWithLimit(
     unique_ptr<BufferAllocator> allocator,
     BufferAllocator* original_allocator,
     bool best_effort,
-    const int64 max_unique_keys_in_result,
+    const int64_t max_unique_keys_in_result,
     unique_ptr<Cursor> child) {
   // UGLY: need to save it to pass it in after move
   auto new_allocator = allocator.get();
@@ -1078,7 +1078,7 @@ FailureOrOwned<Cursor> BoundHybridGroupAggregate(
           std::move(limit_allocator),
           allocator,
           true,  // best effort.
-          kint64max,
+          INT64_MAX,
           transformed_input.move());
   PROPAGATE_ON_FAILURE(pregroup_cursor);
   // Building final_aggregator and final_group_by_columns to compute the

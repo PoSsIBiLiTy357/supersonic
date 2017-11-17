@@ -113,7 +113,7 @@ typedef unsigned long ulong;
 #define __BYTE_ORDER __LITTLE_ENDIAN
 #define bswap_16(x) _byteswap_ushort(x)
 #define bswap_32(x) _byteswap_ulong(x)
-#define bswap_64(x) _byteswap_uint64(x)
+#define bswap_64(x) _byteswap_uint64_t(x)
 
 #elif defined(__APPLE__)
 // Mac OS X / Darwin features
@@ -127,18 +127,18 @@ typedef unsigned long ulong;
 
 #else
 
-static inline uint16 bswap_16(uint16 x) {
-  return static_cast<uint16>(((x & 0xFF) << 8) | ((x & 0xFF00) >> 8));
+static inline uint16_t bswap_16(uint16_t x) {
+  return static_cast<uint16_t>(((x & 0xFF) << 8) | ((x & 0xFF00) >> 8));
 }
 #define bswap_16(x) bswap_16(x)
-static inline uint32 bswap_32(uint32 x) {
+static inline uint32_t bswap_32(uint32_t x) {
   return (((x & 0xFF) << 24) |
           ((x & 0xFF00) << 8) |
           ((x & 0xFF0000) >> 8) |
           ((x & 0xFF000000) >> 24));
 }
 #define bswap_32(x) bswap_32(x)
-static inline uint64 bswap_64(uint64 x) {
+static inline uint64_t bswap_64(uint64_t x) {
   return (((x & GG_ULONGLONG(0xFF)) << 56) |
           ((x & GG_ULONGLONG(0xFF00)) << 40) |
           ((x & GG_ULONGLONG(0xFF0000)) << 24) |
@@ -250,7 +250,7 @@ class AssignAttributeStartEnd {
     // Find out what dynamic library name is defined in
     for (int i = _dyld_image_count() - 1; i >= 0; --i) {
       const mach_header* hdr = _dyld_get_image_header(i);
-      uint32_t len;
+      uint32_t_t len;
       *pstart = getsectdatafromheader(hdr, "__DATA", name, &len);
       if (*pstart) {   // NULL if not defined in this dynamic library
         *pstart += _dyld_get_image_vmaddr_slide(i);   // correct for reloc
@@ -259,7 +259,7 @@ class AssignAttributeStartEnd {
       }
     }
     // If we get here, not defined in a dll at all.  See if defined statically.
-    unsigned long len;    // don't ask me why this type isn't uint32_t too...
+    unsigned long len;    // don't ask me why this type isn't uint32_t_t too...
     *pstart = getsectdata("__DATA", name, &len);
     *pend = *pstart + len;
   }
@@ -998,7 +998,7 @@ inline int fpclassify_double(double x) {
 // bit_cast is avoided to simplify dependency and to create a code that is
 // easy to deploy in C code
 inline int fpclassify_float(float x) {
-  uint32 bitwise_representation;
+  uint32_t bitwise_representation;
   memcpy(&bitwise_representation, &x, 4);
   if ((bitwise_representation & 0x7f800000) == 0 &&
       (bitwise_representation & 0x007fffff) != 0)
@@ -1125,43 +1125,43 @@ struct PortableHashBase { };
 // For all three tools, replacing an unaligned access with a tool-specific
 // callback solves the problem.
 
-// Make sure uint16_t/uint32_t/uint64_t are defined.
+// Make sure uint16_t_t/uint32_t_t/uint64_t_t are defined.
 #include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
-uint16_t __sanitizer_unaligned_load16(const void *p);
-uint32_t __sanitizer_unaligned_load32(const void *p);
-uint64_t __sanitizer_unaligned_load64(const void *p);
-void __sanitizer_unaligned_store16(void *p, uint16_t v);
-void __sanitizer_unaligned_store32(void *p, uint32_t v);
-void __sanitizer_unaligned_store64(void *p, uint64_t v);
+uint16_t_t __sanitizer_unaligned_load16(const void *p);
+uint32_t_t __sanitizer_unaligned_load32(const void *p);
+uint64_t_t __sanitizer_unaligned_load64(const void *p);
+void __sanitizer_unaligned_store16(void *p, uint16_t_t v);
+void __sanitizer_unaligned_store32(void *p, uint32_t_t v);
+void __sanitizer_unaligned_store64(void *p, uint64_t_t v);
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-inline uint16 UNALIGNED_LOAD16(const void *p) {
+inline uint16_t UNALIGNED_LOAD16(const void *p) {
   return __sanitizer_unaligned_load16(p);
 }
 
-inline uint32 UNALIGNED_LOAD32(const void *p) {
+inline uint32_t UNALIGNED_LOAD32(const void *p) {
   return __sanitizer_unaligned_load32(p);
 }
 
-inline uint64 UNALIGNED_LOAD64(const void *p) {
+inline uint64_t UNALIGNED_LOAD64(const void *p) {
   return __sanitizer_unaligned_load64(p);
 }
 
-inline void UNALIGNED_STORE16(void *p, uint16 v) {
+inline void UNALIGNED_STORE16(void *p, uint16_t v) {
   __sanitizer_unaligned_store16(p, v);
 }
 
-inline void UNALIGNED_STORE32(void *p, uint32 v) {
+inline void UNALIGNED_STORE32(void *p, uint32_t v) {
   __sanitizer_unaligned_store32(p, v);
 }
 
-inline void UNALIGNED_STORE64(void *p, uint64 v) {
+inline void UNALIGNED_STORE64(void *p, uint64_t v) {
   __sanitizer_unaligned_store64(p, v);
 }
 
@@ -1172,13 +1172,13 @@ inline void UNALIGNED_STORE64(void *p, uint64 v) {
 // modern PowerPC hardware can also do unaligned integer loads and stores;
 // but note: the FPU still sends unaligned loads and stores to a trap handler!
 
-#define UNALIGNED_LOAD16(_p) (*reinterpret_cast<const uint16 *>(_p))
-#define UNALIGNED_LOAD32(_p) (*reinterpret_cast<const uint32 *>(_p))
-#define UNALIGNED_LOAD64(_p) (*reinterpret_cast<const uint64 *>(_p))
+#define UNALIGNED_LOAD16(_p) (*reinterpret_cast<const uint16_t *>(_p))
+#define UNALIGNED_LOAD32(_p) (*reinterpret_cast<const uint32_t *>(_p))
+#define UNALIGNED_LOAD64(_p) (*reinterpret_cast<const uint64_t *>(_p))
 
-#define UNALIGNED_STORE16(_p, _val) (*reinterpret_cast<uint16 *>(_p) = (_val))
-#define UNALIGNED_STORE32(_p, _val) (*reinterpret_cast<uint32 *>(_p) = (_val))
-#define UNALIGNED_STORE64(_p, _val) (*reinterpret_cast<uint64 *>(_p) = (_val))
+#define UNALIGNED_STORE16(_p, _val) (*reinterpret_cast<uint16_t *>(_p) = (_val))
+#define UNALIGNED_STORE32(_p, _val) (*reinterpret_cast<uint32_t *>(_p) = (_val))
+#define UNALIGNED_STORE64(_p, _val) (*reinterpret_cast<uint64_t *>(_p) = (_val))
 
 #elif defined(__arm__) && \
       !defined(__ARM_ARCH_5__) && \
@@ -1203,23 +1203,23 @@ inline void UNALIGNED_STORE64(void *p, uint64 v) {
 //
 // This is a mess, but there's not much we can do about it.
 
-#define UNALIGNED_LOAD16(_p) (*reinterpret_cast<const uint16 *>(_p))
-#define UNALIGNED_LOAD32(_p) (*reinterpret_cast<const uint32 *>(_p))
+#define UNALIGNED_LOAD16(_p) (*reinterpret_cast<const uint16_t *>(_p))
+#define UNALIGNED_LOAD32(_p) (*reinterpret_cast<const uint32_t *>(_p))
 
-#define UNALIGNED_STORE16(_p, _val) (*reinterpret_cast<uint16 *>(_p) = (_val))
-#define UNALIGNED_STORE32(_p, _val) (*reinterpret_cast<uint32 *>(_p) = (_val))
+#define UNALIGNED_STORE16(_p, _val) (*reinterpret_cast<uint16_t *>(_p) = (_val))
+#define UNALIGNED_STORE32(_p, _val) (*reinterpret_cast<uint32_t *>(_p) = (_val))
 
 // TODO(user): NEON supports unaligned 64-bit loads and stores.
 // See if that would be more efficient on platforms supporting it,
 // at least for copies.
 
-inline uint64 UNALIGNED_LOAD64(const void *p) {
-  uint64 t;
+inline uint64_t UNALIGNED_LOAD64(const void *p) {
+  uint64_t t;
   memcpy(&t, p, sizeof t);
   return t;
 }
 
-inline void UNALIGNED_STORE64(void *p, uint64 v) {
+inline void UNALIGNED_STORE64(void *p, uint64_t v) {
   memcpy(p, &v, sizeof v);
 }
 
@@ -1230,33 +1230,33 @@ inline void UNALIGNED_STORE64(void *p, uint64 v) {
 // These functions are provided for architectures that don't support
 // unaligned loads and stores.
 
-inline uint16 UNALIGNED_LOAD16(const void *p) {
-  uint16 t;
+inline uint16_t UNALIGNED_LOAD16(const void *p) {
+  uint16_t t;
   memcpy(&t, p, sizeof t);
   return t;
 }
 
-inline uint32 UNALIGNED_LOAD32(const void *p) {
-  uint32 t;
+inline uint32_t UNALIGNED_LOAD32(const void *p) {
+  uint32_t t;
   memcpy(&t, p, sizeof t);
   return t;
 }
 
-inline uint64 UNALIGNED_LOAD64(const void *p) {
-  uint64 t;
+inline uint64_t UNALIGNED_LOAD64(const void *p) {
+  uint64_t t;
   memcpy(&t, p, sizeof t);
   return t;
 }
 
-inline void UNALIGNED_STORE16(void *p, uint16 v) {
+inline void UNALIGNED_STORE16(void *p, uint16_t v) {
   memcpy(p, &v, sizeof v);
 }
 
-inline void UNALIGNED_STORE32(void *p, uint32 v) {
+inline void UNALIGNED_STORE32(void *p, uint32_t v) {
   memcpy(p, &v, sizeof v);
 }
 
-inline void UNALIGNED_STORE64(void *p, uint64 v) {
+inline void UNALIGNED_STORE64(void *p, uint64_t v) {
   memcpy(p, &v, sizeof v);
 }
 

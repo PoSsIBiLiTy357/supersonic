@@ -33,11 +33,11 @@ class MockBenchmarkListener : public BenchmarkListener {
   MOCK_METHOD4(AfterNext, void(const string& id,
                                rowcount_t max_row_count,
                                const ResultView& result_view,
-                               int64 time_usec));
-  MOCK_CONST_METHOD0(NextCalls, int64());
-  MOCK_CONST_METHOD0(RowsProcessed, int64());
-  MOCK_CONST_METHOD0(TotalTimeUsec, int64());
-  MOCK_CONST_METHOD0(FirstNextTimeUsec, int64());
+                               int64_t time_usec));
+  MOCK_CONST_METHOD0(NextCalls, int64_t());
+  MOCK_CONST_METHOD0(RowsProcessed, int64_t());
+  MOCK_CONST_METHOD0(TotalTimeUsec, int64_t());
+  MOCK_CONST_METHOD0(FirstNextTimeUsec, int64_t());
   MOCK_CONST_METHOD0(GetResults, string());
   MOCK_CONST_METHOD1(GetResults, string(const BenchmarkListener& subtract));
 };

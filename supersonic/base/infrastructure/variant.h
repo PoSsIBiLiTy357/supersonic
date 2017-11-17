@@ -77,8 +77,8 @@ class VariantDatum {
   union {
     TypeTraits<INT32>::hold_type value_int32_;
     TypeTraits<INT64>::hold_type value_int64_;
-    TypeTraits<UINT32>::hold_type value_uint32_;
-    TypeTraits<UINT64>::hold_type value_uint64_;
+    TypeTraits<UINT32>::hold_type value_uint32_t_;
+    TypeTraits<UINT64>::hold_type value_uint64_t_;
     TypeTraits<FLOAT>::hold_type value_float_;
     TypeTraits<DOUBLE>::hold_type value_double_;
     TypeTraits<BOOL>::hold_type value_bool_;
@@ -110,13 +110,13 @@ inline const TypeTraits<INT64>::hold_type& VariantDatum::value<INT64>() const {
 template <>
 inline const TypeTraits<UINT32>::hold_type& VariantDatum::value<UINT32>()
     const {
-  return value_uint32_;
+  return value_uint32_t_;
 }
 
 template <>
 inline const TypeTraits<UINT64>::hold_type& VariantDatum::value<UINT64>()
     const {
-  return value_uint64_;
+  return value_uint64_t_;
 }
 
 template <>
@@ -184,13 +184,13 @@ inline void VariantDatum::set_value<INT64>(TypeTraits<INT64>::cpp_type value) {
 template <>
 inline void VariantDatum::set_value<UINT32>(
     TypeTraits<UINT32>::cpp_type value) {
-  value_uint32_ = value;
+  value_uint32_t_ = value;
 }
 
 template <>
 inline void VariantDatum::set_value<UINT64>(
     TypeTraits<UINT64>::cpp_type value) {
-  value_uint64_ = value;
+  value_uint64_t_ = value;
 }
 
 template <>

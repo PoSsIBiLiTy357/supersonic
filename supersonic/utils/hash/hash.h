@@ -31,23 +31,23 @@ namespace supersonic {using std::string; }
 
 // --------------- Hashing -----------------------------------------------------
 
-uint32 Hash32StringWithSeedReferenceImplementation(const char *s, uint32 len,
-                                                   uint32 seed);
+uint32_t Hash32StringWithSeedReferenceImplementation(const char *s, uint32_t len,
+                                                   uint32_t seed);
 
-uint32 Hash32StringWithSeed(const char *s, uint32 len, uint32 c);
+uint32_t Hash32StringWithSeed(const char *s, uint32_t len, uint32_t c);
 
-uint64 Hash64StringWithSeed(const char *s, uint32 len, uint64 seed);
+uint64_t Hash64StringWithSeed(const char *s, uint32_t len, uint64_t seed);
 
 template<typename T>
-inline uint64 Hash64NumWithSeed(T num, uint64 seed) {
+inline uint64_t Hash64NumWithSeed(T num, uint64_t seed) {
   return Hash64StringWithSeed(reinterpret_cast<const char*>(&num),
                               sizeof(num), seed);
 }
-inline uint64 Hash64FloatWithSeed(float num, uint64 seed) {
+inline uint64_t Hash64FloatWithSeed(float num, uint64_t seed) {
   return Hash64StringWithSeed(reinterpret_cast<const char*>(&num),
                               sizeof(num), seed);
 }
-inline uint64 Hash64DoubleWithSeed(double num, uint64 seed) {
+inline uint64_t Hash64DoubleWithSeed(double num, uint64_t seed) {
   return Hash64StringWithSeed(reinterpret_cast<const char*>(&num),
                               sizeof(num), seed);
 }
@@ -66,31 +66,31 @@ enum { x86_64 = false, sixty_four_bit = false };
 #endif
 
 // Arbitrary mix constants.
-static const uint32 kMix32 = 0xdfdb04fcUL;
-static const uint64 kMix64 = GG_ULONGLONG(0x92c3575458ddc83f);
+static const uint32_t kMix32 = 0xdfdb04fcUL;
+static const uint64_t kMix64 = GG_ULONGLONG(0x92c3575458ddc83f);
 
 }  // namespace hash_internal
 
 inline size_t HashStringThoroughly(const char* s, size_t len) {
   if (hash_internal::sixty_four_bit) {
-    return Hash64StringWithSeed(s, static_cast<uint32>(len),
+    return Hash64StringWithSeed(s, static_cast<uint32_t>(len),
                                 hash_internal::kMix64);
   }
-  return static_cast<size_t>(Hash32StringWithSeed(s, static_cast<uint32>(len),
+  return static_cast<size_t>(Hash32StringWithSeed(s, static_cast<uint32_t>(len),
                              hash_internal::kMix32));
 }
 
 inline size_t HashTo32(const char* s, size_t len) {
-  return Hash32StringWithSeed(s, static_cast<uint32>(len),
+  return Hash32StringWithSeed(s, static_cast<uint32_t>(len),
                               hash_internal::kMix32);
 }
 
 // --------------- Fingerprints ------------------------------------------------
 
-uint64 Fingerprint(const char *s, uint32 len);
+uint64_t Fingerprint(const char *s, uint32_t len);
 
 template<typename T>
-inline uint64 Fingerprint(T num) {
+inline uint64_t Fingerprint(T num) {
   return Fingerprint(reinterpret_cast<const char*>(&num), sizeof(num));
 }
 

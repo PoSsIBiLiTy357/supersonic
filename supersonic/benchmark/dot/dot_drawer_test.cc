@@ -79,12 +79,12 @@ class DOTDrawerTest : public testing::Test {
   void SetCommonBenchmarkData(BenchmarkData* data,
                               const string& name,
                               BenchmarkData::CursorType type,
-                              int64 total_subtree_time,
-                              int64 processing_time,
+                              int64_t total_subtree_time,
+                              int64_t processing_time,
                               double relative_time,
-                              int64 rows_processed,
+                              int64_t rows_processed,
                               double throughput,
-                              int64 next_calls) {
+                              int64_t next_calls) {
     data->set_cursor_name(name);
     data->set_cursor_type(type);
     data->set_total_subtree_time(total_subtree_time);

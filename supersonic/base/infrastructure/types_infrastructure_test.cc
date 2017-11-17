@@ -293,7 +293,7 @@ TEST(SortComparatorTest, ThreeWayCompareStringToString) {
 }
 
 TEST(SortComparatorTest, ShouldSortIntegersAscendingNonTerminal) {
-  const int32 data[] = { -5, 0, 4, 4};
+  const int32_t data[] = { -5, 0, 4, 4};
   InequalityComparator comp = GetSortComparator(INT32, false, false, false);
   EXPECT_EQ(RESULT_LESS, comp(&data[0], &data[1]));
   EXPECT_EQ(RESULT_LESS, comp(&data[1], &data[2]));
@@ -305,7 +305,7 @@ TEST(SortComparatorTest, ShouldSortIntegersAscendingNonTerminal) {
 }
 
 TEST(SortComparatorTest, ShouldSortIntegersAscendingTerminal) {
-  const int32 data[] = { -5, 0, 4, 4};
+  const int32_t data[] = { -5, 0, 4, 4};
   InequalityComparator comp = GetSortComparator(INT32, false, false, true);
   EXPECT_EQ(RESULT_LESS, comp(&data[0], &data[1]));
   EXPECT_EQ(RESULT_LESS, comp(&data[1], &data[2]));
@@ -317,7 +317,7 @@ TEST(SortComparatorTest, ShouldSortIntegersAscendingTerminal) {
 }
 
 TEST(SortComparatorTest, ShouldSortIntegersDescendingNonTerminal) {
-  const int32 data[] = { -5, 0, 4, 4};
+  const int32_t data[] = { -5, 0, 4, 4};
   InequalityComparator comp = GetSortComparator(INT32, true, false, false);
   EXPECT_EQ(RESULT_LESS, comp(&data[1], &data[0]));
   EXPECT_EQ(RESULT_LESS, comp(&data[2], &data[1]));
@@ -329,7 +329,7 @@ TEST(SortComparatorTest, ShouldSortIntegersDescendingNonTerminal) {
 }
 
 TEST(SortComparatorTest, ShouldSortIntegersDescendingTerminal) {
-  const int32 data[] = { -5, 0, 4, 4};
+  const int32_t data[] = { -5, 0, 4, 4};
   InequalityComparator comp = GetSortComparator(INT32, true, false, true);
   EXPECT_EQ(RESULT_LESS, comp(&data[1], &data[0]));
   EXPECT_EQ(RESULT_LESS, comp(&data[2], &data[1]));
@@ -368,8 +368,8 @@ class StaticBindingTest : public testing::Test {};
 
 TEST_F(StaticBindingTest, Equality) {
   EqualityWithNullsComparator<INT32, INT64, false, false> comp;
-  const int32 data1[] = { -5, 0, 4 };
-  const int64 data2[] = { -5, 0, 4 };
+  const int32_t data1[] = { -5, 0, 4 };
+  const int64_t data2[] = { -5, 0, 4 };
   EXPECT_TRUE(comp(&data1[0], &data2[0]));
   EXPECT_TRUE(comp(&data1[1], &data2[1]));
   EXPECT_TRUE(comp(&data1[2], &data2[2]));
@@ -381,8 +381,8 @@ TEST_F(StaticBindingTest, Equality) {
 TEST_F(StaticBindingTest, Inequality) {
   InequalityWithNullsComparator<INT32, INT64, false, false,
                                 false, false, false> comp;
-  const int32 data1[] = { -5, 0, 4 };
-  const int64 data2[] = { -5, 0, 4 };
+  const int32_t data1[] = { -5, 0, 4 };
+  const int64_t data2[] = { -5, 0, 4 };
   EXPECT_EQ(RESULT_EQUAL, comp(&data1[0], &data2[0]));
   EXPECT_EQ(RESULT_EQUAL, comp(&data1[1], &data2[1]));
   EXPECT_EQ(RESULT_EQUAL, comp(&data1[2], &data2[2]));
@@ -398,8 +398,8 @@ TEST_F(StaticBindingTest, Inequality) {
 class EqualsComparatorTest : public testing::Test {};
 
 TEST_F(EqualsComparatorTest, ShouldCompareMixedIntegers) {
-  const int32 data1[] = { -5, 0, 4 };
-  const int64 data2[] = { -5, 0, 4 };
+  const int32_t data1[] = { -5, 0, 4 };
+  const int64_t data2[] = { -5, 0, 4 };
   EqualityComparator comp = GetEqualsComparator(INT32, INT64, true, true);
   EXPECT_TRUE(comp(&data1[0], &data2[0]));
   EXPECT_TRUE(comp(&data1[1], &data2[1]));
@@ -422,8 +422,8 @@ TEST_F(EqualsComparatorTest, ShouldCompareStrings) {
 }
 
 TEST_F(EqualsComparatorTest, ShouldCompareIntegersWithNull) {
-  const int32 data1[] = { -5, NULL, 4 };
-  const int32 data2[] = { NULL, 1, 4 };
+  const int32_t data1[] = { -5, 0, 4 };
+  const int32_t data2[] = { 0, 1, 4 };
   EqualityComparator comp = GetEqualsComparator(INT32, INT32, false, false);
   EXPECT_FALSE(comp(&data1[0], NULL));
   EXPECT_FALSE(comp(NULL, &data2[1]));
@@ -435,8 +435,8 @@ TEST_F(EqualsComparatorTest, ShouldCompareIntegersWithNull) {
 class MergeComparatorTest : public testing::Test {};
 
 TEST_F(MergeComparatorTest, ShouldCompareMixedIntegersAscending) {
-  const int32 data1[] = { -5, 0, 4 };
-  const int64 data2[] = { -5, 0, 4 };
+  const int32_t data1[] = { -5, 0, 4 };
+  const int64_t data2[] = { -5, 0, 4 };
   InequalityComparator comp =
       GetMergeComparator(INT32, INT64, false, false, false);
   EXPECT_EQ(RESULT_EQUAL, comp(&data1[0], &data2[0]));
@@ -471,9 +471,9 @@ TEST_F(MergeComparatorTest, ShouldCompareStringsDescending) {
 class HasherTest : public testing::Test {};
 
 TEST_F(HasherTest, ShouldHashIntegers) {
-  const int32 data[] = { -5, 0, 4 };
+  const int32_t data[] = { -5, 0, 4 };
   Hasher hasher = GetHasher(INT32, false);
-  std::hash<int32> reference;
+  std::hash<int32_t> reference;
   EXPECT_EQ(0xdeadbabe, hasher(NULL));
   EXPECT_EQ(reference(data[0]), hasher(&data[0]));
   EXPECT_EQ(reference(data[1]), hasher(&data[1]));
@@ -496,14 +496,14 @@ TEST_F(HasherTest, ShouldHashStrings) {
 class ColumnHasherTest : public testing::Test {};
 
 TEST_F(ColumnHasherTest, ShouldHashColumns) {
-  const int32 data[] = { -5, 0, 4, 4 };
+  const int32_t data[] = { -5, 0, 4, 4 };
   small_bool_array is_null;
   const bool is_null_data[] = { false, false, false, true };
   bit_pointer::FillFrom(is_null.mutable_data(), is_null_data, 4);
   ColumnHasher hasher = GetColumnHasher(INT32, false, false);
   size_t result[4];
   hasher(data, is_null.const_data(), 4, result);
-  std::hash<int32> reference;
+  std::hash<int32_t> reference;
   EXPECT_EQ(reference(data[0]), result[0]);
   EXPECT_EQ(reference(data[1]), result[1]);
   EXPECT_EQ(reference(data[2]), result[2]);
@@ -525,11 +525,11 @@ TEST_F(ColumnHasherTest, ShouldHashUpdateColumns) {
 }
 
 TEST_F(ColumnHasherTest, ShouldHashNotNullColumns) {
-  const int32 data[] = { -5, 0, 4, 4 };
+  const int32_t data[] = { -5, 0, 4, 4 };
   ColumnHasher hasher = GetColumnHasher(INT32, false, true);
   size_t result[4];
   hasher(data, bool_ptr(NULL), 4, result);
-  std::hash<int32> reference;
+  std::hash<int32_t> reference;
   EXPECT_EQ(reference(data[0]), result[0]);
   EXPECT_EQ(reference(data[1]), result[1]);
   EXPECT_EQ(reference(data[2]), result[2]);

@@ -249,7 +249,7 @@ using std::vector;               // a sparsetable is a vector of groups
 // A lot of work to get a type that's guaranteed to be 16 bits...
 #ifndef HAVE_U_INT16_T
 # if defined HAVE_UINT16_T
-    typedef uint16_t u_int16_t;    // true on solaris, possibly other C99 libc's
+    typedef uint16_t_t u_int16_t;    // true on solaris, possibly other C99 libc's
 # elif defined HAVE___UINT16
     typedef __int16 int16_t;       // true on vc++7
     typedef unsigned __int16 u_int16_t;

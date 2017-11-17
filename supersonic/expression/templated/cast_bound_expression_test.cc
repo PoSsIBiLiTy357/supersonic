@@ -92,7 +92,7 @@ TEST(CastBoundExpressionTest, ImplicitBoundCastExpression) {
 
 TEST(CastBoundExpressionTest, ProjectingCastCollectReferredAttributeNames) {
   TupleSchema schema;
-  schema.add_attribute(Attribute("uint32", UINT32, NULLABLE));
+  schema.add_attribute(Attribute("uint32_t", UINT32, NULLABLE));
   schema.add_attribute(Attribute("int32",  INT32, NOT_NULLABLE));
   schema.add_attribute(Attribute("string", STRING, NOT_NULLABLE));
   FailureOrOwned<BoundExpression> bound_cast = BoundInternalCast(

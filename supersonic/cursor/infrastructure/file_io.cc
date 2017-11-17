@@ -86,13 +86,13 @@ FailureOrVoid Write(const void* buffer, const size_t length,
   return Success();
 }
 
-FailureOrVoid WriteUint64(const uint64 datum, File* output_file) {
-  PROPAGATE_ON_FAILURE(Write(&datum, sizeof(uint64), output_file));
+FailureOrVoid WriteUint64(const uint64_t datum, File* output_file) {
+  PROPAGATE_ON_FAILURE(Write(&datum, sizeof(uint64_t), output_file));
   return Success();
 }
 
 FailureOrVoid WriteRowCount(const rowcount_t datum, File* output_file) {
-  PROPAGATE_ON_FAILURE(WriteUint64(static_cast<uint64>(datum), output_file));
+  PROPAGATE_ON_FAILURE(WriteUint64(static_cast<uint64_t>(datum), output_file));
   return Success();
 }
 
@@ -125,7 +125,7 @@ FailureOrVoid WriteVariableLengthData(const Column& column,
 
   // Write lengths of strings first (0 for null and empty strings).
   for (rowid_t row = 0; row < row_count; row++) {
-    uint64 string_length = 0;
+    uint64_t string_length = 0;
     if (!(column.is_null() != NULL && column.is_null()[row])) {
       string_length = string_pieces[row].length();
     }
@@ -248,27 +248,27 @@ enum ReadResult { DATA, END_OF_FILE };
 FailureOr<ReadResult> Read(File* input_file,
                            const size_t length,
                            void* buffer) {
-  int64 read = input_file->Read(buffer, length);
+  int64_t read = input_file->Read(buffer, length);
   if (read == length) return Success(DATA);
   if (read == 0 && input_file->eof()) return Success(END_OF_FILE);
   THROW(NewFileInputException());
 }
 
-FailureOr<ReadResult> ReadUint64(File* input_file, uint64* datum) {
-  FailureOr<ReadResult> result = Read(input_file, sizeof(uint64), datum);
+FailureOr<ReadResult> ReadUint64(File* input_file, uint64_t* datum) {
+  FailureOr<ReadResult> result = Read(input_file, sizeof(uint64_t), datum);
   PROPAGATE_ON_FAILURE(result);
   return result;
 }
 
 FailureOr<ReadResult> ReadRowCount(File* input_file, rowcount_t* datum) {
-  uint64 datum_uint64;
-  FailureOr<ReadResult> result = ReadUint64(input_file, &datum_uint64);
+  uint64_t datum_uint64_t;
+  FailureOr<ReadResult> result = ReadUint64(input_file, &datum_uint64_t);
   PROPAGATE_ON_FAILURE(result);
   if (result.get() == END_OF_FILE) return Success(END_OF_FILE);
-  if (datum_uint64 > std::numeric_limits<rowcount_t>::max()) {
+  if (datum_uint64_t > std::numeric_limits<rowcount_t>::max()) {
     THROW(new Exception(ERROR_GENERAL_IO_ERROR, "Row ID overflow."));
   }
-  *datum = static_cast<rowcount_t>(datum_uint64);
+  *datum = static_cast<rowcount_t>(datum_uint64_t);
   return Success(DATA);
 }
 
@@ -324,7 +324,7 @@ class FileInputCursor : public BasicCursor {
         delete_when_done_(delete_when_done),
         rows_pending_in_block_(0),
         first_pending_row_offset_(0),
-        strings_length_buffer_(new uint64[kMaxChunkRowCount]) {}
+        strings_length_buffer_(new uint64_t[kMaxChunkRowCount]) {}
 
   virtual ~FileInputCursor() {
     if (delete_when_done_) {
@@ -352,7 +352,7 @@ class FileInputCursor : public BasicCursor {
   rowcount_t first_pending_row_offset_;
   // Temporary buffer used by ReadVariableLengthColumn() to store strings'
   // lengths.
-  std::unique_ptr<uint64[]> strings_length_buffer_;
+  std::unique_ptr<uint64_t[]> strings_length_buffer_;
 
   DISALLOW_COPY_AND_ASSIGN(FileInputCursor);
 };
@@ -442,7 +442,7 @@ FailureOrVoid FileInputCursor::ReadVariableLengthData(
     OwnedColumn* column,
     const rowcount_t row_count) {
   PROPAGATE_ON_FAILURE(ExpectData(
-      Read(input_file_, sizeof(uint64) * row_count,
+      Read(input_file_, sizeof(uint64_t) * row_count,
            strings_length_buffer_.get())));
 
   size_t total_strings_length = 0;

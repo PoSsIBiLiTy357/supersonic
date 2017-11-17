@@ -135,7 +135,7 @@ TEST(DateTimeExpressionTest, ConstDateTime) {
                  &MalformedDateTime);
 }
 
-template<int64 value>
+template<int64_t value>
 unique_ptr<const Expression> DateTimeFromMicroseconds() {
   return ConstDateTimeFromMicrosecondsSinceEpoch(value);
 }
@@ -148,7 +148,7 @@ TEST(DateTimeExpressionTest, ConstDateTimeFromMicrosecondsSinceEpoch) {
 }
 
 // Value is nanoseconds since epoch.
-template<int64 value>
+template<int64_t value>
 unique_ptr<const Expression> DateTimeFromSeconds() {
   return ConstDateTimeFromSecondsSinceEpoch(
       static_cast<double>(value) / 1000000000.);

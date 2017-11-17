@@ -33,7 +33,7 @@ TEST(BitPointersTest, Normalization) {
 }
 
 TEST(BitPointersTest, Accessors) {
-  uint32 data[2];
+  uint32_t data[2];
   bit_ptr ptr(data);
   EXPECT_EQ(data, ptr.data());
   EXPECT_EQ(0, ptr.shift());
@@ -44,7 +44,7 @@ TEST(BitPointersTest, Accessors) {
 }
 
 TEST(BitPointersTest, ShiftCreator) {
-  uint32 data[2];
+  uint32_t data[2];
   bit_ptr ptr(data, 3);
   EXPECT_EQ(data, ptr.data());
   EXPECT_EQ(3, ptr.shift());
@@ -55,7 +55,7 @@ TEST(BitPointersTest, ShiftCreator) {
 }
 
 TEST(BitPointersTest, Equality) {
-  uint32 data[2];
+  uint32_t data[2];
   bit_ptr ptr1(data);
   bit_ptr ptr2(data);
   bit_ptr ptr3(&data[1]);
@@ -113,7 +113,7 @@ TEST(BitPointersTest, NullPointer) {
 }
 
 TEST(BitPointersTest, Copy) {
-  uint32 data[2];
+  uint32_t data[2];
   bit_ptr ptr(data, 5);
   bit_ptr ptr2(ptr);
   EXPECT_EQ(ptr, ptr2);
@@ -127,7 +127,7 @@ TEST(BitPointersTest, Copy) {
 }
 
 TEST(BitPointersTest, Incrementation) {
-  uint32 data[2];
+  uint32_t data[2];
   bit_ptr ptr(data);
   EXPECT_EQ(bit_ptr(data, 1), ++ptr);
   for (int i = 0; i < 31; ++i) ++ptr;
@@ -140,7 +140,7 @@ TEST(BitPointersTest, Incrementation) {
 }
 
 TEST(BitPointersTest, IterationByPointer) {
-  uint32 data[3];
+  uint32_t data[3];
   int loop_length = 0;
   // The bit_ptr(&data[3]) is the equivalent of an "end()" of a STL container -
   // is is the first out of bounds index.
@@ -151,7 +151,7 @@ TEST(BitPointersTest, IterationByPointer) {
 }
 
 TEST(BitPointersTest, Decrementation) {
-  uint32 data[2];
+  uint32_t data[2];
   bit_ptr ptr(&data[1]);
   EXPECT_EQ(bit_ptr(data, 31), --ptr);
   for (int i = 0; i < 31; ++i) --ptr;
@@ -164,7 +164,7 @@ TEST(BitPointersTest, Decrementation) {
 }
 
 TEST(BitPointersTest, Addition) {
-  uint32 data[2];
+  uint32_t data[2];
   bit_ptr ptr(data);
   EXPECT_EQ(bit_ptr(data, 5), ptr += 5);
   EXPECT_EQ(bit_ptr(data, 10), ptr += 5);
@@ -179,7 +179,7 @@ TEST(BitPointersTest, Addition) {
 }
 
 TEST(BitPointersTest, Assignment) {
-  uint32 data[2];
+  uint32_t data[2];
   bit_ptr ptr(data);
   ptr += 7;
   bit_ptr ptr2 = ptr;
@@ -196,7 +196,7 @@ TEST(BitPointersTest, Assignment) {
 }
 
 TEST(BitPointersTest, BitAssignment) {
-  uint32 data[1] = {0};
+  uint32_t data[1] = {0};
   bit_ptr ptr(data);
 
   ptr[2] |= true;
@@ -223,7 +223,7 @@ TEST(BitPointersTest, BitAssignment) {
 }
 
 TEST(BitPointersTest, DereferenceAndRead) {
-  uint32 data[2];
+  uint32_t data[2];
   data[0] = 7;
   data[1] = 3;
   bit_ptr ptr(data);
@@ -240,7 +240,7 @@ TEST(BitPointersTest, DereferenceAndRead) {
 }
 
 TEST(BitPointersTest, DereferenceAndWrite) {
-  uint32 data[2];
+  uint32_t data[2];
   data[0] = 0;
   data[1] = ~0;
   bit_ptr ptr(data);
@@ -305,9 +305,9 @@ TEST(BitPointersTest, BitArrayReallocateFailurePreservesData) {
 // data. Expects the const pointer also to be aligned, and to read the data
 // the non-const pointer writes.
 void ExpectAlignedPointer(bit_ptr ptr, bit_const_ptr const_ptr) {
-  int64 int_ptr = reinterpret_cast<int64>(ptr.data());
+  int64_t int_ptr = reinterpret_cast<int64_t>(ptr.data());
   EXPECT_EQ(0, int_ptr & 15) << int_ptr;  // Expect to be 16-byte aligned.
-  int_ptr = reinterpret_cast<int64>(ptr.data());
+  int_ptr = reinterpret_cast<int64_t>(ptr.data());
   EXPECT_EQ(0, int_ptr & 15) << int_ptr;
   ptr[3] = true;
   EXPECT_EQ(true, const_ptr[3]);
@@ -337,7 +337,7 @@ TEST(BitPointersTest, StaticArray) {
 }
 
 TEST(BitPointersTest, Subscript) {
-  uint32 data[2];
+  uint32_t data[2];
   data[0] = 0;
   data[1] = ~0;
   bit_ptr ptr(data);
@@ -347,7 +347,7 @@ TEST(BitPointersTest, Subscript) {
 }
 
 TEST(BitPointersTest, PopCount) {
-  uint32 data[3];
+  uint32_t data[3];
   data[0] = data[1] = 0;
   data[2] = ~0;
   bit_ptr ptr(data);
@@ -363,8 +363,8 @@ TEST(BitPointersTest, PopCount) {
 }
 
 TEST(BitPointersTest, FillFromBitPointerAligned) {
-  uint32 source_data[3];
-  uint32 dest_data[3];
+  uint32_t source_data[3];
+  uint32_t dest_data[3];
   bit_ptr source(source_data);
   bit_ptr dest(dest_data);
 
@@ -375,8 +375,8 @@ TEST(BitPointersTest, FillFromBitPointerAligned) {
 }
 
 TEST(BitPointersTest, FillFromBitPointerSingleByte) {
-  uint32 source_data[1] = {0};
-  uint32 dest_data[1] = {0};
+  uint32_t source_data[1] = {0};
+  uint32_t dest_data[1] = {0};
   bit_ptr source(source_data);
   bit_ptr dest(dest_data);
 
@@ -392,8 +392,8 @@ TEST(BitPointersTest, FillFromBitPointerSingleByte) {
 }
 
 TEST(BitPointersTest, FillFromBitPointerEquiAligned) {
-  uint32 source_data[4] = {0, 123456789, 0, 0};
-  uint32 dest_data[4] = {0, 0, 0, 123124};
+  uint32_t source_data[4] = {0, 123456789, 0, 0};
+  uint32_t dest_data[4] = {0, 0, 0, 123124};
 
   bit_ptr source(source_data);
   bit_ptr dest(dest_data);
@@ -412,9 +412,9 @@ TEST(BitPointersTest, FillFromBitPointerEquiAligned) {
 }
 
 TEST(BitPointersTest, FillFromBitPointerUnalignedDest) {
-  uint32 source_data[4] = {111, 1111, 111111, 1007};
-  uint32 dest_data[4] = {3, 0, 0, 1007};
-  uint32 expected_data[4] = {447, 4444, 444444, 1006};
+  uint32_t source_data[4] = {111, 1111, 111111, 1007};
+  uint32_t dest_data[4] = {3, 0, 0, 1007};
+  uint32_t expected_data[4] = {447, 4444, 444444, 1006};
 
   bit_ptr source(source_data);
   bit_ptr dest(dest_data);
@@ -425,9 +425,9 @@ TEST(BitPointersTest, FillFromBitPointerUnalignedDest) {
 }
 
 TEST(BitPointersTest, FillFromBitPointerUnalignedBoth) {
-  uint32 source_data[3] = {49, (1 << 7) | (1 << 15), (1 << 7) | (1 << 15)};
-  uint32 dest_data[3] = {26, 2314, (1 << 16)};
-  uint32 expected_data[3] = {14, (1 << 5) | (1 << 13), (1 << 5) | (1 << 16)};
+  uint32_t source_data[3] = {49, (1 << 7) | (1 << 15), (1 << 7) | (1 << 15)};
+  uint32_t dest_data[3] = {26, 2314, (1 << 16)};
+  uint32_t expected_data[3] = {14, (1 << 5) | (1 << 13), (1 << 5) | (1 << 16)};
 
   bit_ptr source(source_data);
   bit_ptr dest(dest_data);
@@ -440,8 +440,8 @@ TEST(BitPointersTest, FillFromBitPointerUnalignedBoth) {
 
 // Regression test for a previous bug (bad loop initialization).
 TEST(BitPointersTest, FillFromBitPointerUnalignedSingleByte) {
-  uint32 source_data[1] = {0};
-  uint32 dest_data[1] = {~0U};
+  uint32_t source_data[1] = {0};
+  uint32_t dest_data[1] = {~0U};
 
   bit_ptr source(source_data);
   ++source;
@@ -452,7 +452,7 @@ TEST(BitPointersTest, FillFromBitPointerUnalignedSingleByte) {
 }
 
 TEST(BitPointersTest, FillFromBooleanAligned) {
-  uint32 data[3] = {13245678, 87654321, 13579864};
+  uint32_t data[3] = {13245678, 87654321, 13579864};
   bool source[80];
   bit_ptr ptr(data);
 
@@ -463,7 +463,7 @@ TEST(BitPointersTest, FillFromBooleanAligned) {
 }
 
 TEST(BitPointersTest, FillFromBooleanUnaligned) {
-  uint32 data[3] = {2, 0, 1 << 30};
+  uint32_t data[3] = {2, 0, 1 << 30};
   bool source[85];
   bit_ptr ptr(data);
 
@@ -476,7 +476,7 @@ TEST(BitPointersTest, FillFromBooleanUnaligned) {
 }
 
 TEST(BitPointersTest, FillFromBitPtrToBooleanAligned) {
-  uint32 data[3] = {0, 0, 0};
+  uint32_t data[3] = {0, 0, 0};
   bool dest[96];
   bit_ptr ptr(data);
 
@@ -487,7 +487,7 @@ TEST(BitPointersTest, FillFromBitPtrToBooleanAligned) {
 }
 
 TEST(BitPointersTest, FillFromBitPtrToBooleanUnaligned) {
-  uint32 data[3] = {0, 0, 0};
+  uint32_t data[3] = {0, 0, 0};
   bool dest[96];
   dest[0] = dest[94] = false;
   dest[1] = dest[95] = true;
@@ -561,7 +561,7 @@ TEST(BitPointersTest, AssignEvil) {
 #endif
 
 TEST(BitPointersTest, FillWithTrue) {
-  uint32 data[2] = {0, 0};
+  uint32_t data[2] = {0, 0};
   bit_ptr ptr(data);
 
   bit_pointer::FillWithTrue(ptr, 40);
@@ -570,7 +570,7 @@ TEST(BitPointersTest, FillWithTrue) {
 }
 
 TEST(BitPointersTest, FillWithTrueUnaligned) {
-  uint32 data[4] = {0, 0, 0, 0};
+  uint32_t data[4] = {0, 0, 0, 0};
   bit_ptr ptr(data);
   ptr += 19;
   bit_pointer::FillWithTrue(ptr, 25);
@@ -583,7 +583,7 @@ TEST(BitPointersTest, FillWithTrueUnaligned) {
 }
 
 TEST(BitPointersTest, FillWithTrueInSingleByte) {
-  uint32 data = 0;
+  uint32_t data = 0;
   bit_ptr ptr(&data);
   ptr += 10;
   bit_pointer::FillWithTrue(ptr, 3);
@@ -596,7 +596,7 @@ TEST(BitPointersTest, FillWithTrueInSingleByte) {
 }
 
 TEST(BitPointersTest, FillWithFalse) {
-  uint32 data[3] = {~0U, ~0U, ~0U};
+  uint32_t data[3] = {~0U, ~0U, ~0U};
   bit_ptr ptr(data);
 
   bit_pointer::FillWithFalse(ptr, 37);
@@ -606,7 +606,7 @@ TEST(BitPointersTest, FillWithFalse) {
 }
 
 TEST(BitPointersTest, FillWithFalseUnaligned) {
-  uint32 data[4] = {~0U, ~0U, ~0U, ~0U};
+  uint32_t data[4] = {~0U, ~0U, ~0U, ~0U};
   bit_ptr ptr(data);
   ptr += 35;
   bit_pointer::FillWithFalse(ptr, 47);
@@ -619,7 +619,7 @@ TEST(BitPointersTest, FillWithFalseUnaligned) {
 }
 
 TEST(BitPointersTest, FillWithFalseInSingleByte) {
-  uint32 data[1] = {~0U};
+  uint32_t data[1] = {~0U};
   bit_ptr ptr(data);
   ptr += 1;
   bit_pointer::FillWithFalse(ptr, 6);

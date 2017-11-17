@@ -96,14 +96,14 @@ class BoundMakeDatetimeExpression : public BasicBoundExpression {
       results.push_back(&result.get());
     }
 
-    const int64* year = results[0]->column(0).typed_data<INT64>();
-    const int64* month = results[1]->column(0).typed_data<INT64>();
-    const int64* day = results[2]->column(0).typed_data<INT64>();
-    const int64* hour = results[3]->column(0).typed_data<INT64>();
-    const int64* minute = results[4]->column(0).typed_data<INT64>();
-    const int64* second = results[5]->column(0).typed_data<INT64>();
+    const int64_t* year = results[0]->column(0).typed_data<INT64>();
+    const int64_t* month = results[1]->column(0).typed_data<INT64>();
+    const int64_t* day = results[2]->column(0).typed_data<INT64>();
+    const int64_t* hour = results[3]->column(0).typed_data<INT64>();
+    const int64_t* minute = results[4]->column(0).typed_data<INT64>();
+    const int64_t* second = results[5]->column(0).typed_data<INT64>();
 
-    int64* destination =
+    int64_t* destination =
         my_block()->mutable_column(0)->mutable_typed_data<DATETIME>();
     // We will implement MakeDatetime in terms of MakeDate, to avoid code
     // duplication.
@@ -114,7 +114,7 @@ class BoundMakeDatetimeExpression : public BasicBoundExpression {
     // the skip_vector with new nulls anyway.
     for (int i = 0; i < input.row_count(); ++i) {
       if (*skip_vector == false) {
-        int64 result = make_date(year[i], month[i], day[i]);
+        int64_t result = make_date(year[i], month[i], day[i]);
         // If the calculation failed, we set the result to NULL. Makedate
         // signals a failure with a negative result.
         *skip_vector |= (result < 0LL);

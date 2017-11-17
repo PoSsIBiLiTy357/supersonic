@@ -72,8 +72,8 @@ template<DataType datatype> struct BasicTypeTraits {};
 // Specializations.
 
 template<> struct BasicTypeTraits<INT32> : public BasicIntegerTypeTraits {
-  typedef int32 cpp_type;
-  typedef int32 hold_type;
+  typedef int32_t cpp_type;
+  typedef int32_t hold_type;
   static hold_type CppTypeToHoldType(cpp_type data) {
     return data;
   }
@@ -83,8 +83,8 @@ template<> struct BasicTypeTraits<INT32> : public BasicIntegerTypeTraits {
 };
 
 template<> struct BasicTypeTraits<INT64> : public BasicIntegerTypeTraits {
-  typedef int64 cpp_type;
-  typedef int64 hold_type;
+  typedef int64_t cpp_type;
+  typedef int64_t hold_type;
   static hold_type CppTypeToHoldType(cpp_type data) {
     return data;
   }
@@ -94,8 +94,8 @@ template<> struct BasicTypeTraits<INT64> : public BasicIntegerTypeTraits {
 };
 
 template<> struct BasicTypeTraits<UINT32> : public BasicIntegerTypeTraits {
-  typedef uint32 cpp_type;
-  typedef uint32 hold_type;
+  typedef uint32_t cpp_type;
+  typedef uint32_t hold_type;
   static const bool is_unsigned = true;
   static hold_type CppTypeToHoldType(cpp_type data) {
     return data;
@@ -106,8 +106,8 @@ template<> struct BasicTypeTraits<UINT32> : public BasicIntegerTypeTraits {
 };
 
 template<> struct BasicTypeTraits<UINT64> : public BasicIntegerTypeTraits {
-  typedef uint64 cpp_type;
-  typedef uint64 hold_type;
+  typedef uint64_t cpp_type;
+  typedef uint64_t hold_type;
   static const bool is_unsigned = true;
   static hold_type CppTypeToHoldType(cpp_type data) {
     return data;
@@ -156,8 +156,8 @@ template<> struct BasicTypeTraits<BOOL> {
 };
 
 template<> struct BasicTypeTraits<ENUM> {
-  typedef int32 cpp_type;
-  typedef int32 hold_type;
+  typedef int32_t cpp_type;
+  typedef int32_t hold_type;
   static const bool is_variable_length = false;
   static const bool is_numeric = false;
   static const bool is_integer = false;
@@ -177,8 +177,8 @@ template<> struct BasicTypeTraits<BINARY>
     : public BasicVariableLengthTypeTraits {};  // NOLINT
 
 template<> struct BasicTypeTraits<DATETIME> {
-  typedef int64 cpp_type;
-  typedef int64 hold_type;
+  typedef int64_t cpp_type;
+  typedef int64_t hold_type;
   static const bool is_variable_length = false;
   static const bool is_numeric = false;
   static const bool is_integer = false;
@@ -192,8 +192,8 @@ template<> struct BasicTypeTraits<DATETIME> {
 };
 
 template<> struct BasicTypeTraits<DATE> {
-  typedef int32 cpp_type;
-  typedef int32 hold_type;
+  typedef int32_t cpp_type;
+  typedef int32_t hold_type;
   static const bool is_variable_length = false;
   static const bool is_numeric = false;
   static const bool is_integer = false;
@@ -249,29 +249,29 @@ template<DataType datatype> struct TypeTraits
 };
 
 // Represents 'RowID'. Should be used everywhere when we refer to row IDs.
-typedef int64 rowid_t;
+typedef int64_t rowid_t;
 
 // Represents 'row count'. Unsigned. Should be used everywhere we refer to
 // row counts or positive row offsets.
-typedef uint64 rowcount_t;
+typedef uint64_t rowcount_t;
 
 // Lets to obtain the DataType enumeration that corresponds to the specified
 // C++ type.
 template<typename T> struct InverseTypeTraits {};
 
-template<> struct InverseTypeTraits<int32> {
+template<> struct InverseTypeTraits<int32_t> {
   static const DataType supersonic_type = INT32;
 };
 
-template<> struct InverseTypeTraits<uint32> {
+template<> struct InverseTypeTraits<uint32_t> {
   static const DataType supersonic_type = UINT32;
 };
 
-template<> struct InverseTypeTraits<int64> {
+template<> struct InverseTypeTraits<int64_t> {
   static const DataType supersonic_type = INT64;
 };
 
-template<> struct InverseTypeTraits<uint64> {
+template<> struct InverseTypeTraits<uint64_t> {
   static const DataType supersonic_type = UINT64;
 };
 

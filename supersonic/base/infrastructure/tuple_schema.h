@@ -42,9 +42,9 @@ namespace supersonic {
 class EnumDefinition {
  public:
   EnumDefinition();
-  FailureOrVoid AddEntry(const int32 number, StringPiece name);
-  FailureOr<StringPiece> NumberToName(int32 number) const;
-  FailureOr<int32> NameToNumber(StringPiece name) const;
+  FailureOrVoid AddEntry(const int32_t number, StringPiece name);
+  FailureOr<StringPiece> NumberToName(int32_t number) const;
+  FailureOr<int32_t> NameToNumber(StringPiece name) const;
   size_t entry_count() const;
   static FailureOrVoid VerifyEquals(const EnumDefinition& a,
                                     const EnumDefinition& b);
@@ -54,9 +54,9 @@ class EnumDefinition {
    public:
     explicit Rep(BufferAllocator* buffer_allocator);
     void CopyFrom(const Rep& other);
-    FailureOrVoid Add(const int32 number, StringPiece name);
-    FailureOr<StringPiece> NumberToName(int32 number) const;
-    FailureOr<int32> NameToNumber(StringPiece name) const;
+    FailureOrVoid Add(const int32_t number, StringPiece name);
+    FailureOr<StringPiece> NumberToName(int32_t number) const;
+    FailureOr<int32_t> NameToNumber(StringPiece name) const;
     size_t entry_count() const { return name_to_number_.size(); }
     BufferAllocator* buffer_allocator() const { return buffer_allocator_; }
 
@@ -65,8 +65,8 @@ class EnumDefinition {
    private:
     BufferAllocator* const buffer_allocator_;
     Arena arena_;
-    map<StringPiece, int32> name_to_number_;
-    map<int32, StringPiece> number_to_name_;
+    map<StringPiece, int32_t> name_to_number_;
+    map<int32_t, StringPiece> number_to_name_;
     DISALLOW_COPY_AND_ASSIGN(Rep);
   };
   shared_ptr<Rep> rep_;

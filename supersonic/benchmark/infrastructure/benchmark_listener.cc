@@ -27,7 +27,7 @@ namespace supersonic {
 
 namespace {
 
-const int64 kNumNanosInMicro = 1000ll;
+const int64_t kNumNanosInMicro = 1000ll;
 
 // Implementation of spy based performance benchmarking listener.
 // Counts time that has been spent during "next" invocations.
@@ -46,21 +46,21 @@ class BenchmarkListenerImpl : public BenchmarkListener {
   virtual void AfterNext(const string& id,
                          rowcount_t max_row_count,
                          const ResultView& result_view,
-                         int64 time_nanos);
+                         int64_t time_nanos);
 
-  virtual int64 NextCalls() const {
+  virtual int64_t NextCalls() const {
     return next_calls_;
   }
 
-  virtual int64 RowsProcessed() const {
+  virtual int64_t RowsProcessed() const {
     return rows_processed_;
   }
 
-  virtual int64 TotalTimeUsec() const {
+  virtual int64_t TotalTimeUsec() const {
     return total_time_nanos_ / kNumNanosInMicro;
   }
 
-  virtual int64 FirstNextTimeUsec() const {
+  virtual int64_t FirstNextTimeUsec() const {
     return first_next_time_nanos_ / kNumNanosInMicro;
   }
 
@@ -69,16 +69,16 @@ class BenchmarkListenerImpl : public BenchmarkListener {
   virtual string GetResults(const BenchmarkListener& subtract) const;
 
  private:
-  int64 next_calls_;
-  int64 rows_processed_;
-  int64 total_time_nanos_;
-  int64 first_next_time_nanos_;
+  int64_t next_calls_;
+  int64_t rows_processed_;
+  int64_t total_time_nanos_;
+  int64_t first_next_time_nanos_;
 };
 
 void BenchmarkListenerImpl::AfterNext(const string& id,
                                       rowcount_t max_row_count,
                                       const ResultView& result_view,
-                                      int64 time_nanos) {
+                                      int64_t time_nanos) {
   next_calls_++;
   rows_processed_ += result_view.has_data() ?
       result_view.view().row_count() : 0;
@@ -89,7 +89,7 @@ void BenchmarkListenerImpl::AfterNext(const string& id,
 }
 
 string BenchmarkListenerImpl::GetResults() const {
-  return StringPrintf("%lld rows in %lld calls in %f ms (rows %f/s)",
+  return StringPrintf("%" PRIi64 " rows in %" PRIi64" calls in %f ms (rows %f/s)",
                       rows_processed_, next_calls_,
                           TotalTimeUsec() / (kNumMillisPerSecond * 1.0),
                       (rows_processed_* kNumMicrosPerSecond * 1.0) /
@@ -98,7 +98,7 @@ string BenchmarkListenerImpl::GetResults() const {
 
 string BenchmarkListenerImpl::GetResults(
     const BenchmarkListener& subtract) const {
-  return StringPrintf("%lld rows, %f ms, %f rows/s",
+  return StringPrintf("%" PRId64" rows, %f ms, %f rows/s",
       rows_processed_,
       (TotalTimeUsec() - subtract.TotalTimeUsec()) /
           (kNumMillisPerSecond * 1.0),

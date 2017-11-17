@@ -73,21 +73,21 @@ class File {
 
   // Reads data and returns it in OUTPUT. Returns a value < 0 on error,
   // or the of bytes read otherwise. Returns zero on end-of-file.
-  virtual int64 Read(void* OUTPUT, uint64 length) ABSTRACT;
+  virtual int64_t Read(void* OUTPUT, uint64_t length) ABSTRACT;
 
   // Reads one line, or max_length characters if the line is longer, into
   // the buffer.
-  virtual char* ReadLine(char* buffer, uint64 max_length) ABSTRACT;
+  virtual char* ReadLine(char* buffer, uint64_t max_length) ABSTRACT;
 
   // Try to write 'length' bytes from 'buffer', returning
   // the number of bytes that were actually written.
   // Return <= 0 on error.
-  virtual int64 Write(const void* buffer, uint64 length) ABSTRACT;
+  virtual int64_t Write(const void* buffer, uint64_t length) ABSTRACT;
 
   // Traditional seek + read/write interface.
   // We do not support seeking beyond the end of the file and writing to
   // extend the file. Use Append() to extend the file.
-  virtual bool Seek(int64 position) ABSTRACT;
+  virtual bool Seek(int64_t position) ABSTRACT;
 
   // If we're currently at eof.
   virtual bool eof() ABSTRACT;

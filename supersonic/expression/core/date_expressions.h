@@ -33,7 +33,7 @@ unique_ptr<const Expression> ConstDateTime(const StringPiece &value);
 // Creates a DATETIME constant from the given number of microseconds
 // since January 1st, 1970 00:00 UTC.
 unique_ptr<const Expression>
-ConstDateTimeFromMicrosecondsSinceEpoch(const int64 &value);
+ConstDateTimeFromMicrosecondsSinceEpoch(const int64_t &value);
 
 // Creates a DATETIME constant from the given number of seconds
 // since January 1st, 1970 00:00 UTC.

@@ -64,13 +64,13 @@ class VariantPointer {
 
   // Returns a pointer equal to this pointer + offset, where the offset
   // specifies the count of typed items, as indicated by type_info.
-  VariantPointer offset(int64 offset, const TypeInfo& type_info) const {
+  VariantPointer offset(int64_t offset, const TypeInfo& type_info) const {
     return VariantPointer(
         static_cast<char*>(pointer_) + (offset << type_info.log2_size()));
   }
 
   // As above, for when the offset is known at compile time.
-  template<int64 typed_offset>
+  template<int64_t typed_offset>
   VariantPointer static_offset(const TypeInfo& type_info) const {
     return VariantPointer(static_cast<void*>(
         static_cast<char*>(pointer_) + typed_offset * type_info.size()));
@@ -120,13 +120,13 @@ class VariantConstPointer {
 
   // Returns a pointer equal to this pointer + offset, where the offset
   // specifies the count of typed items, as indicated by type_info.
-  VariantConstPointer offset(int64 offset, const TypeInfo& type_info) const {
+  VariantConstPointer offset(int64_t offset, const TypeInfo& type_info) const {
     return VariantConstPointer(
         static_cast<const char*>(pointer_) + (offset << type_info.log2_size()));
   }
 
   // As above, for when the offset is known at compile time.
-  template<int64 typed_offset>
+  template<int64_t typed_offset>
   VariantConstPointer static_offset(const TypeInfo& type_info) const {
     return VariantConstPointer(static_cast<const void*>(
         static_cast<const char*>(pointer_) + typed_offset * type_info.size()));

@@ -26,14 +26,14 @@
 #include <glog/logging.h>
 #include "supersonic/utils/logging-inl.h"
 
-// Returns true if a uint64 actually looks like a negative int64. This checks
+// Returns true if a uint64_t actually looks like a negative int64. This checks
 // if the most significant bit is one.
 //
 // This function exists because the file interface declares some length/size
-// fields to be uint64, and we want to catch the error case where someone
+// fields to be uint64_t, and we want to catch the error case where someone
 // accidently passes an negative number to one of the interface routines.
-inline static bool IsUInt64ANegativeInt64(uint64 num) {
-  return (static_cast<int64>(num) < 0);
+inline static bool IsUInt64ANegativeInt64(uint64_t num) {
+  return (static_cast<int64_t>(num) < 0);
 }
 
 File::File(const string& name)
@@ -72,10 +72,10 @@ class LocalFileImpl : public File {
   virtual bool Open();
   virtual bool Delete();
   virtual bool Close();
-  virtual int64 Read(void* OUTPUT, uint64 length);
-  virtual char* ReadLine(char* buffer, uint64 max_length);
-  virtual int64 Write(const void* buffer, uint64 length);
-  virtual bool Seek(int64 position);
+  virtual int64_t Read(void* OUTPUT, uint64_t length);
+  virtual char* ReadLine(char* buffer, uint64_t max_length);
+  virtual int64_t Write(const void* buffer, uint64_t length);
+  virtual bool Seek(int64_t position);
   virtual bool eof();
 
  protected:
@@ -195,7 +195,7 @@ bool LocalFileImpl::Close() {
   return result;
 }
 
-int64 LocalFileImpl::Read(void* buffer, uint64 length) {
+int64_t LocalFileImpl::Read(void* buffer, uint64_t length) {
   if ((buffer == NULL) || IsUInt64ANegativeInt64(length)) {
     LOG(ERROR) << "Bad read arguments.  Buff: " << buffer
                << " length: " << length << " file: "
@@ -205,10 +205,10 @@ int64 LocalFileImpl::Read(void* buffer, uint64 length) {
   if (internal_file_ == NULL) {
     return -1;
   }
-  const uint64 max_bytes_to_read = INT_MAX;
-  uint64 bytes_to_read = 0;
-  uint64 bytes_read = 0;
-  uint64 total_bytes_read = 0;
+  const uint64_t max_bytes_to_read = INT_MAX;
+  uint64_t bytes_to_read = 0;
+  uint64_t bytes_read = 0;
+  uint64_t total_bytes_read = 0;
   do {
     bytes_to_read = std::min(length-total_bytes_read, max_bytes_to_read);
     bytes_read = fread(static_cast<char *>(buffer) + total_bytes_read, 1,
@@ -223,12 +223,12 @@ int64 LocalFileImpl::Read(void* buffer, uint64 length) {
   return total_bytes_read;
 }
 
-char* LocalFileImpl::ReadLine(char* buffer, uint64 max_length) {
+char* LocalFileImpl::ReadLine(char* buffer, uint64_t max_length) {
   if (internal_file_ == NULL) return NULL;
   return (fgets(buffer, static_cast<int>(max_length), internal_file_));
 }
 
-int64 LocalFileImpl::Write(const void* buffer, uint64 length) {
+int64_t LocalFileImpl::Write(const void* buffer, uint64_t length) {
   if ((buffer == NULL) || IsUInt64ANegativeInt64(length)) {
     LOG(ERROR) << "Bad write arguments.  Buff: " << buffer
                << " length: " << length << " file: "
@@ -238,7 +238,7 @@ int64 LocalFileImpl::Write(const void* buffer, uint64 length) {
   if (internal_file_ == NULL) {
     return -1;
   } else {
-    const int64 bytes_written = fwrite(buffer, 1, length, internal_file_);
+    const int64_t bytes_written = fwrite(buffer, 1, length, internal_file_);
 
     // Checking ferror() here flags errors sooner, though we could skip it
     // since caller should not assume that a "successful" write makes it to
@@ -253,7 +253,7 @@ int64 LocalFileImpl::Write(const void* buffer, uint64 length) {
 
 // The following require a bunch of assertions to make sure
 // the 32 to 64 bit conversions are ok.
-bool LocalFileImpl::Seek(int64 position) {
+bool LocalFileImpl::Seek(int64_t position) {
   if (internal_file_ == NULL) {
     LOG(ERROR) << "Can't seek on an un-open file: " << create_file_name_;
     return false;

@@ -33,9 +33,9 @@ namespace supersonic {
 TEST(VectorBinaryPrimitiveTest, AddDirect) {
   VectorBinaryPrimitive<OPERATOR_ADD, DirectIndexResolver, DirectIndexResolver,
                         INT32, INT32, INT32, false> addOperation;
-  const int32 input1[]   = {1, INT_MAX, -5, 0, INT_MAX, 13};
-  const int32 input2[]   = {1, INT_MIN,  0, 0,       1, 14};
-  int32 result[6];
+  const int32_t input1[]   = {1, INT_MAX, -5, 0, INT_MAX, 13};
+  const int32_t input2[]   = {1, INT_MIN,  0, 0,       1, 14};
+  int32_t result[6];
   result[5] = 451;
 
   addOperation(input1, input2, NULL, NULL, 5, result, NULL);
@@ -53,10 +53,10 @@ TEST(VectorBinaryPrimitiveTest, AddDirect) {
 TEST(VectorBinaryPrimitiveTest, AddIndirect) {
   VectorBinaryPrimitive<OPERATOR_ADD, DirectIndexResolver,
       IndirectIndexResolver, INT32, INT32, INT32, false> addOperation;
-  const int32 input1[]   = {1, INT_MAX, -5, 0, INT_MAX};
-  const int32 input2[]   = {1, INT_MIN,  0, 0,       1};
+  const int32_t input1[]   = {1, INT_MAX, -5, 0, INT_MAX};
+  const int32_t input2[]   = {1, INT_MIN,  0, 0,       1};
   const index_t indirect[] = {4, 3, 2, 1, 0};
-  int32 result[5];
+  int32_t result[5];
 
   addOperation(input1, input2, NULL, indirect, 5, result, NULL);
   ASSERT_EQ(2, result[0]);
@@ -104,19 +104,19 @@ template <> struct Normalize<float> {
 
 // Set of strange values that will cause many overflows in arithmetic.
 const int SIZE_PATTERN = 16;
-const int32 LEFT_PATTERN[SIZE_PATTERN] =
+const int32_t LEFT_PATTERN[SIZE_PATTERN] =
     {0xdead, 0xff00, 0x0000, 0x00ff, 0x0f0f, 0xffff, 0xcccc, 0xcafe,
      0xcccc, 0xffff, 0x0000, 0x9999, 0x6666, 0xefff, 0xefff, 0xefef};
-const int32 RIGHT_PATTERN[SIZE_PATTERN] =
+const int32_t RIGHT_PATTERN[SIZE_PATTERN] =
     {0xbeaf, 0xff00, 0x0000, 0xff00, 0xf0f0, 0xffff, 0xcccc, 0xbabe,
      0xcccc, 0xefff, 0x1234, 0x6666, 0x0001, 0xefff, 0xefff, 0xefef};
 
 class AbstractPrimitiveTest {
  protected:
-  void FillWithData(void* dst, int dst_size_bytes, const int32* pattern) {
+  void FillWithData(void* dst, int dst_size_bytes, const int32_t* pattern) {
       memcpy(dst, pattern,
-             min(static_cast<int64>(dst_size_bytes),
-                 static_cast<int64>(SIZE_PATTERN * sizeof(*pattern))));
+             min(static_cast<int64_t>(dst_size_bytes),
+                 static_cast<int64_t>(SIZE_PATTERN * sizeof(*pattern))));
       for (int i = SIZE_PATTERN * sizeof(*pattern); i < dst_size_bytes; ++i) {
         (reinterpret_cast<char*>(dst))[i] = static_cast<char>(i);
       }
@@ -128,11 +128,11 @@ class AbstractPrimitiveTest {
     CppDataType *res;
     posix_memalign(reinterpret_cast<void**>(&res), 16, new_size);
     return reinterpret_cast<CppDataType*>(
-        reinterpret_cast<uint64>(res) + offset);
+        reinterpret_cast<uint64_t>(res) + offset);
   }
 
   void DemallocAligned(void *ptr) {
-    free(reinterpret_cast<void**>((reinterpret_cast<uint64>(ptr) / 16) * 16));
+    free(reinterpret_cast<void**>((reinterpret_cast<uint64_t>(ptr) / 16) * 16));
   }
 };
 

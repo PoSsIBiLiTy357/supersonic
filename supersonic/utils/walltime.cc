@@ -162,11 +162,11 @@ WallTime WallTime_Now() {
   return GetCurrentTimeMicros() / static_cast<double>(1e9);
 }
 
-int32 GetDaysSinceEpoch(const char* date) {
+int32_t GetDaysSinceEpoch(const char* date) {
   struct tm time;
   memset(&time, 0, sizeof(time));
   CHECK(strptime(date, "%Y-%m-%d", &time)) << "Could not parse date: " << date;
-  int64 seconds_since_epoch = gmktime(&time);
+  int64_t seconds_since_epoch = gmktime(&time);
   return seconds_since_epoch > 0 ? seconds_since_epoch / (60 * 60 * 24) : -1;
 }
 

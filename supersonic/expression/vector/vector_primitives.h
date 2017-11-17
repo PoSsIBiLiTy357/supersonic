@@ -42,7 +42,7 @@ namespace supersonic {
 // Type used to describe indexes used by indirection vectors.
 class Arena;
 
-typedef int64 index_t;
+typedef int64_t index_t;
 
 // ===================== IndexResolvers ======================================
 // IndexResolver is a policy to translate position using indirection vector
@@ -229,9 +229,9 @@ void EvaluateSimd(const DataCppType* left, const DataCppType* right,
   SimdLoaderType simd_loader;
 
   // SIMD works if the vectors are aligned.
-  DCHECK_EQ(0, reinterpret_cast<uint64>(left) % 16);
-  DCHECK_EQ(0, reinterpret_cast<uint64>(right) % 16);
-  DCHECK_EQ(0, reinterpret_cast<uint64>(result) % 16);
+  DCHECK_EQ(0, reinterpret_cast<uint64_t>(left) % 16);
+  DCHECK_EQ(0, reinterpret_cast<uint64_t>(right) % 16);
+  DCHECK_EQ(0, reinterpret_cast<uint64_t>(result) % 16);
 
   const int step = 16 / sizeof(DataCppType);
   DCHECK_EQ(0, size % step);
@@ -302,10 +302,10 @@ template<OperatorId operation_type, typename DataCppType>
 struct DirectEvaluator<operation_type, DataCppType, true> {
   bool operator()(const DataCppType* left, const DataCppType* right,
                   const index_t size, DataCppType* result) const {
-    const uint64 left_offset = reinterpret_cast<uint64>(left) % 16;
-    if ((left_offset == reinterpret_cast<uint64>(right) % 16)
-     && (left_offset == reinterpret_cast<uint64>(result) % 16)) {
-      const int16 step = 16 / sizeof(DataCppType);
+    const uint64_t left_offset = reinterpret_cast<uint64_t>(left) % 16;
+    if ((left_offset == reinterpret_cast<uint64_t>(right) % 16)
+     && (left_offset == reinterpret_cast<uint64_t>(result) % 16)) {
+      const int16_t step = 16 / sizeof(DataCppType);
       if (left_offset == 0) {
         const index_t nsize = (size / step) * step;
         // Ideal case - the vectors are already 16-aligned
@@ -319,7 +319,7 @@ struct DirectEvaluator<operation_type, DataCppType, true> {
           // We are able to skip heads of the vectors to align them.
           // Prefix -> how many items to skip.
           const int prefix = offset / sizeof(DataCppType);
-          const int nsize = max(0LL, ((size - prefix) / step) * step);
+          const int nsize = max((index_t) 0, (index_t) (((size - prefix) / step) * step));
           EvaluateNoSimd<operation_type, DataCppType>(
               left, right, prefix < size ? prefix : size, result);
           EvaluateSimd<operation_type, DataCppType>(
@@ -327,7 +327,7 @@ struct DirectEvaluator<operation_type, DataCppType, true> {
           // Tail.
           EvaluateNoSimd<operation_type, DataCppType>(
               left  + prefix + nsize, right + prefix + nsize,
-              max(size - nsize - prefix, 0LL), result + prefix + nsize);
+              max((index_t) (size - nsize - prefix), (index_t) 0), result + prefix + nsize);
         } else {
           // Cannot use SIMD, because result, right and left inputs have
           // alignment that cannot be corrected by by iteration over the prefix

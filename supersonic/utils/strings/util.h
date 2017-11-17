@@ -446,7 +446,7 @@ void UniformInsertString(string* s, int interval, const char* separator);
 // Inserts separator into s at each specified index. indices must be sorted in
 // ascending order.
 void InsertString(
-    string* s, const vector<uint32>& indices, char const* separator);
+    string* s, const vector<uint32_t>& indices, char const* separator);
 
 // Finds the nth occurrence of c in s; returns the index in s of that
 // occurrence, or string::npos if fewer than n occurrences.

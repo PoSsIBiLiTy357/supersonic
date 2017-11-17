@@ -116,9 +116,7 @@ FailureOrOwned<BoundExpression> CheckTypeAndPassAlong(
   if (check.is_success()) {
     check = CheckExpressionType(type, expression.get());
   }  // That's not an "else" - check could have become false.
-  if (check.is_failure()) {
-    return Failure(check.move_exception());
-  }
+  PROPAGATE_ON_FAILURE(check);
   return Success(std::move(expression));
 }
 

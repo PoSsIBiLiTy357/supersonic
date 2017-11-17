@@ -48,26 +48,14 @@ struct AlphaNum {
   // No bool ctor -- bools convert to an integral type.
   // A bool ctor would also convert incoming pointers (bletch).
 
-  AlphaNum(int32 i32)  // NOLINT(runtime/explicit)
+  AlphaNum(int32_t i32)  // NOLINT(runtime/explicit)
       : piece(digits, FastInt32ToBufferLeft(i32, digits) - &digits[0]) {}
-  AlphaNum(uint32 u32)  // NOLINT(runtime/explicit)
+  AlphaNum(uint32_t u32)  // NOLINT(runtime/explicit)
       : piece(digits, FastUInt32ToBufferLeft(u32, digits) - &digits[0]) {}
-  AlphaNum(int64 i64)  // NOLINT(runtime/explicit)
+  AlphaNum(int64_t i64)  // NOLINT(runtime/explicit)
       : piece(digits, FastInt64ToBufferLeft(i64, digits) - &digits[0]) {}
-  AlphaNum(uint64 u64)  // NOLINT(runtime/explicit)
+  AlphaNum(uint64_t u64)  // NOLINT(runtime/explicit)
       : piece(digits, FastUInt64ToBufferLeft(u64, digits) - &digits[0]) {}
-
-#ifdef _LP64
-  AlphaNum(long x)  // NOLINT(runtime/explicit)
-    : piece(digits, FastInt64ToBufferLeft(x, digits) - &digits[0]) {}
-  AlphaNum(unsigned long x)  // NOLINT(runtime/explicit)
-    : piece(digits, FastUInt64ToBufferLeft(x, digits) - &digits[0]) {}
-#else
-  AlphaNum(long x)  // NOLINT(runtime/explicit)
-    : piece(digits, FastInt32ToBufferLeft(x, digits) - &digits[0]) {}
-  AlphaNum(unsigned long x)  // NOLINT(runtime/explicit)
-    : piece(digits, FastUInt32ToBufferLeft(x, digits) - &digits[0]) {}
-#endif
 
   AlphaNum(float f)  // NOLINT(runtime/explicit)
     : piece(digits, strlen(FloatToBuffer(f, digits))) {}

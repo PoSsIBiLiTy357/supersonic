@@ -26,7 +26,7 @@ const char* GetNegStr(T* value) {
 }  // namespace
 
 bool HumanReadableNumBytes::LessThan(const string &a, const string &b) {
-  int64 a_bytes, b_bytes;
+  int64_t a_bytes, b_bytes;
   if (!HumanReadableNumBytes::ToInt64(a, &a_bytes))
     a_bytes = 0;
   if (!HumanReadableNumBytes::ToInt64(b, &b_bytes))
@@ -34,13 +34,13 @@ bool HumanReadableNumBytes::LessThan(const string &a, const string &b) {
   return (a_bytes < b_bytes);
 }
 
-bool HumanReadableNumBytes::ToInt64(const string &str, int64 *num_bytes) {
+bool HumanReadableNumBytes::ToInt64(const string &str, int64_t *num_bytes) {
   char *end;
   double d = strtod(str.c_str(), &end);
   // If this didn't consume the entire string, fail.
   if ((end - str.c_str()) + 1 < str.size())
     return false;
-  int64 scale = 1;
+  int64_t scale = 1;
   switch (*end) {
     // NB: an int64 can only go up to <8 EB.
     case 'E':
@@ -70,15 +70,15 @@ bool HumanReadableNumBytes::ToInt64(const string &str, int64 *num_bytes) {
   }
   d *= scale;
   if (d > 0) {
-    // Note that double(kint64max) is 2^63 exactly, so we cannot convert such
+    // Note that double(INT64_MAX) is 2^63 exactly, so we cannot convert such
     // a value back to an int64.
-    if (d + 0.5 >= kint64max)
+    if (d + 0.5 >= INT64_MAX)
       return false;
-    *num_bytes = static_cast<int64>(d + 0.5);
+    *num_bytes = static_cast<int64_t>(d + 0.5);
   } else {
-    if (d - 0.5 < kint64min)
+    if (d - 0.5 < INT64_MIN)
       return false;
-    *num_bytes = static_cast<int64>(d - 0.5);
+    *num_bytes = static_cast<int64_t>(d - 0.5);
   }
   return true;
 }
@@ -141,8 +141,8 @@ string HumanReadableNumBytes::DoubleToString(double num_bytes) {
   }
 }
 
-string HumanReadableNumBytes::ToString(int64 num_bytes) {
-  if (num_bytes == kint64min) {
+string HumanReadableNumBytes::ToString(int64_t num_bytes) {
+  if (num_bytes == INT64_MIN) {
     // Special case for number with not representable nagation.
     return "-8E";
   }
@@ -152,7 +152,7 @@ string HumanReadableNumBytes::ToString(int64 num_bytes) {
   // Special case for bytes.
   if (num_bytes < GG_LONGLONG(1024)) {
     // No fractions for bytes.
-    return StringPrintf("%s%" GG_LL_FORMAT "dB", neg_str, num_bytes);
+    return StringPrintf("%s%" GG_INT64_FORMAT "B", neg_str, num_bytes);
   }
 
   static const char units[] = "KMGTPE";  // int64 only goes up to E.
@@ -168,8 +168,8 @@ string HumanReadableNumBytes::ToString(int64 num_bytes) {
                        : "%s%.2f%c"), neg_str, num_bytes / 1024.0, *unit);
 }
 
-string HumanReadableNumBytes::ToStringWithoutRounding(int64 num_bytes) {
-  if (num_bytes == kint64min) {
+string HumanReadableNumBytes::ToStringWithoutRounding(int64_t num_bytes) {
+  if (num_bytes == INT64_MIN) {
     // Special case for number with not representable nagation.
     return "-8E";
   }
@@ -177,7 +177,7 @@ string HumanReadableNumBytes::ToStringWithoutRounding(int64 num_bytes) {
   const char *neg_str = GetNegStr(&num_bytes);
   static const char units[] = "BKMGTPE";  // int64 only goes up to E.
 
-  int64 num_units = num_bytes;
+  int64_t num_units = num_bytes;
   int unit_type = 0;
   for (; unit_type < arraysize(units); unit_type++) {
     if (num_units % 1024 != 0) {
@@ -185,7 +185,7 @@ string HumanReadableNumBytes::ToStringWithoutRounding(int64 num_bytes) {
       break;
     }
 
-    int64 next_units = num_units >> 10;
+    int64_t next_units = num_units >> 10;
     if (next_units == 0) {
       // Less than the next unit.
       break;
@@ -193,17 +193,17 @@ string HumanReadableNumBytes::ToStringWithoutRounding(int64 num_bytes) {
 
     num_units = next_units;
   }
-  return StringPrintf("%s%lld%c", neg_str, num_units, units[unit_type]);
+  return StringPrintf("%s%" PRId64 "%c", neg_str, num_units, units[unit_type]);
 }
 
-string HumanReadableInt::ToString(int64 value) {
+string HumanReadableInt::ToString(int64_t value) {
   string s;
   if (value < 0) {
     s += "-";
     value = -value;
   }
   if (value < GG_LONGLONG(1000)) {
-    StringAppendF(&s, "%" GG_LL_FORMAT "d", value);
+    StringAppendF(&s, "%" GG_INT64_FORMAT, value);
   } else if (value >= GG_LONGLONG(1000000000000000)) {
     // Number bigger than 1E15; use that notation.
     StringAppendF(&s, "%0.3G", static_cast<double>(value));
@@ -220,7 +220,7 @@ string HumanReadableInt::ToString(int64 value) {
   return s;
 }
 
-string HumanReadableNum::ToString(int64 value) {
+string HumanReadableNum::ToString(int64_t value) {
   return HumanReadableInt::ToString(value);
 }
 
@@ -276,10 +276,10 @@ bool HumanReadableNum::ToDouble(const string &str, double *value) {
   return true;
 }
 
-bool HumanReadableInt::ToInt64(const string &str, int64 *value) {
+bool HumanReadableInt::ToInt64(const string &str, int64_t *value) {
   char *end;
   double d = strtod(str.c_str(), &end);
-  if (d > kint64max || d < kint64min)
+  if (d > INT64_MAX || d < INT64_MIN)
     return false;
   if (*end == 'k') {
     d *= 1000;
@@ -292,7 +292,7 @@ bool HumanReadableInt::ToInt64(const string &str, int64 *value) {
   } else if (*end != '\0') {
     return false;
   }
-  *value = static_cast<int64>(d < 0 ? d - 0.5 : d + 0.5);
+  *value = static_cast<int64_t>(d < 0 ? d - 0.5 : d + 0.5);
   return true;
 }
 

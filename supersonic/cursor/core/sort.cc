@@ -140,7 +140,7 @@ struct LessThanComparator {
   explicit LessThanComparator(
       const typename TypeTraits<type>::cpp_type* const data)
       : data(data) {}
-  bool operator()(const int64 a, const int64 b) const {
+  bool operator()(const int64_t a, const int64_t b) const {
     return (descending ? ThreeWayCompare<type, type, true>(data[b], data[a])
                        : ThreeWayCompare<type, type, true>(data[a], data[b]))
         == RESULT_LESS;
@@ -153,16 +153,16 @@ struct LessThanComparator {
 // the range gets broken into smaller pieces.
 struct Range {
   Range() : from(0), to(0) {}
-  Range(int64 from, int64 to) : from(from), to(to) {}
-  int64 from;
-  int64 to;
+  Range(int64_t from, int64_t to) : from(from), to(to) {}
+  int64_t from;
+  int64_t to;
 };
 
 // Predicate used in stl::partition to percolate all NULLs to the top/bottom.
 template<bool descending>
 struct NullPartitionPredicate {
   explicit NullPartitionPredicate(bool_const_ptr is_null) : is_null(is_null) {}
-  bool operator()(int64 i) { return is_null[i] != descending; }
+  bool operator()(int64_t i) { return is_null[i] != descending; }
   bool_const_ptr is_null;
 };
 
@@ -175,8 +175,8 @@ void SortNonNullRange(const typename TypeTraits<type>::cpp_type* data,
   LessThanComparator<type, descending> less_than(data);
   permutation->Sort(source.from, source.to, less_than);
   if (is_last_column) return;
-  int64 current_from = source.from;
-  for (int64 j = current_from + 1; j < source.to; ++j) {
+  int64_t current_from = source.from;
+  for (int64_t j = current_from + 1; j < source.to; ++j) {
     if (less_than(permutation->at(current_from), permutation->at(j))) {
       if (j - current_from > 1) {
         target->push_back(Range(current_from, j));

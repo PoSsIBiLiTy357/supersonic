@@ -29,42 +29,42 @@ namespace operators {
 // The reason for the weird name is to avoid a collision with the hash.h
 // fingerprint function.
 struct FingerprintEvaluator {
-  uint64 operator()(uint64 number) {
+  uint64_t operator()(uint64_t number) {
     return Fingerprint(number);
   }
 
-  uint64 operator()(StringPiece str) {
-    return Fingerprint(str.data(), static_cast<uint32>(str.length()));
+  uint64_t operator()(StringPiece str) {
+    return Fingerprint(str.data(), static_cast<uint32_t>(str.length()));
   }
 };
 
 // Here, in turn, we risk collision with our internal Hash struct in types.h.
 struct HashEvaluator {
-  uint64 operator()(int32 number, uint64 seed) {
-    return Hash64NumWithSeed(static_cast<uint64>(number), seed);
+  uint64_t operator()(int32_t number, uint64_t seed) {
+    return Hash64NumWithSeed(static_cast<uint64_t>(number), seed);
   }
 
-  uint64 operator()(uint32 number, uint64 seed) {
-    return Hash64NumWithSeed(static_cast<uint64>(number), seed);
+  uint64_t operator()(uint32_t number, uint64_t seed) {
+    return Hash64NumWithSeed(static_cast<uint64_t>(number), seed);
   }
 
-  uint64 operator()(int64 number, uint64 seed) {
+  uint64_t operator()(int64_t number, uint64_t seed) {
     return Hash64NumWithSeed(number, seed);
   }
 
-  uint64 operator()(uint64 number, uint64 seed) {
+  uint64_t operator()(uint64_t number, uint64_t seed) {
     return Hash64NumWithSeed(number, seed);
   }
 
-  uint64 operator()(float number, uint64 seed) {
+  uint64_t operator()(float number, uint64_t seed) {
     return Hash64FloatWithSeed(number, seed);
   }
 
-  uint64 operator()(double number, uint64 seed) {
+  uint64_t operator()(double number, uint64_t seed) {
     return Hash64DoubleWithSeed(number, seed);
   }
 
-  uint64 operator()(StringPiece str, uint64 seed) {
+  uint64_t operator()(StringPiece str, uint64_t seed) {
     return Hash64StringWithSeed(str.data(), str.length(), seed);
   }
 };

@@ -10,8 +10,8 @@
 #include "supersonic/utils/logging-inl.h"
 
 const uint128_pod kuint128max = {
-    static_cast<uint64>(GG_LONGLONG(0xFFFFFFFFFFFFFFFF)),
-    static_cast<uint64>(GG_LONGLONG(0xFFFFFFFFFFFFFFFF))
+    static_cast<uint64_t>(GG_LONGLONG(0xFFFFFFFFFFFFFFFF)),
+    static_cast<uint64_t>(GG_LONGLONG(0xFFFFFFFFFFFFFFFF))
 };
 
 // Long division/modulo for uint128. Simple, but probably slow.
@@ -34,7 +34,7 @@ void div_mod_impl(const uint128& dividend, const uint128& divisor,
     // Splitting into two loops has a roughly 40% improvement on the benchmark.
     if (dividend.hi_ != 0) {
       // Mask the dividend with 'cur_bit'.
-      for (uint64 cur_bit = static_cast<uint64>(1) << 63;
+      for (uint64_t cur_bit = static_cast<uint64_t>(1) << 63;
            cur_bit != 0; cur_bit >>= 1) {
         remainder.lo_ <<= 1;
         if ((dividend.hi_ & cur_bit) != 0) {
@@ -49,7 +49,7 @@ void div_mod_impl(const uint128& dividend, const uint128& divisor,
         //   dividend == quotient * divisor + remainder * pos + dividend % pos
       }
     }
-    for (uint64 cur_bit = static_cast<uint64>(1) << 63;
+    for (uint64_t cur_bit = static_cast<uint64_t>(1) << 63;
          cur_bit != 0; cur_bit >>= 1) {
       remainder <<= 1;
       if ((dividend.lo_ & cur_bit) != 0) {

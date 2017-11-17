@@ -85,7 +85,7 @@ template<> struct TypedParseString<ENUM> {
       : enum_definition(attribute.enum_definition()) {}
 
   void operator()(StringPiece input, OutputCppType* output, bool_ptr failure) {
-    FailureOr<int32> result = enum_definition.NameToNumber(input);
+    FailureOr<int32_t> result = enum_definition.NameToNumber(input);
     if (result.is_success()) {
       *output = result.get();
     } else {

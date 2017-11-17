@@ -74,7 +74,7 @@ class ViewCursorTest : public ::testing::Test {
   }
 
  private:
-  int64 selection_vector[4];
+  int64_t selection_vector[4];
   std::unique_ptr<Block> block_;
 };
 

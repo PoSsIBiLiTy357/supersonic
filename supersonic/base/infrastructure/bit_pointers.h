@@ -77,13 +77,13 @@ inline bool normalize(bool value) {
 }
 
 // A bit_reference is a reference to a single bit (interpreted as a boolean
-// true/false value). The reference is stored as a pointer to uint32, and a
-// shift (between 0 and 31) describing which bit of the uint32 we are pointing
+// true/false value). The reference is stored as a pointer to uint32_t, and a
+// shift (between 0 and 31) describing which bit of the uint32_t we are pointing
 // to.
 class bit_reference {
  public:
   // Accessors.
-  inline uint32* data() const { return data_; }
+  inline uint32_t* data() const { return data_; }
   inline int shift() const { return shift_; }
   inline operator bool() const { return ((*data_) >> shift_) & 1; }
 
@@ -113,10 +113,10 @@ class bit_reference {
   // The bit_ptr needs access to the private constructor of the reference.
   friend class bit_ptr;
 
-  uint32* data_;
+  uint32_t* data_;
   int shift_;
 
-  bit_reference(uint32* data, int shift)
+  bit_reference(uint32_t* data, int shift)
       : data_(CHECK_NOTNULL(data)), shift_(shift) {}
 
   // Copyable.
@@ -129,12 +129,12 @@ class bit_const_ptr;
 class bit_ptr {
  public:
   // Constructors. None of them take ownership of data.
-  explicit bit_ptr(uint32* data) : data_(data), shift_(0) {}
-  bit_ptr(uint32* data, int shift) : data_(data), shift_(shift) {}
+  explicit bit_ptr(uint32_t* data) : data_(data), shift_(0) {}
+  bit_ptr(uint32_t* data, int shift) : data_(data), shift_(shift) {}
   bit_ptr() : data_(NULL), shift_(0) {}
 
   // Accessors.
-  uint32* data() const { return data_; }
+  uint32_t* data() const { return data_; }
   int shift() const { return shift_; }
   bool is_aligned() const { return shift_ == 0; }
   bool is_null() const { return data_ == NULL; }
@@ -220,7 +220,7 @@ class bit_ptr {
   }
 
  private:
-  uint32* data_;
+  uint32_t* data_;
   int shift_;
 
   // Copyable, assigneable.
@@ -234,18 +234,18 @@ class bit_const_reference {
       : data_(source.data()), shift_(source.shift()) {}
 
   // Accessors.
-  inline const uint32* data() const { return data_; }
+  inline const uint32_t* data() const { return data_; }
   inline int shift() const { return shift_; }
   inline operator bool() const { return (((*data_) >> shift_) & 1) == 1; }
 
  private:
-  const uint32* data_;
+  const uint32_t* data_;
   int shift_;
 
   friend class bit_const_ptr;
-  bit_const_reference(const uint32* data, int shift)
+  bit_const_reference(const uint32_t* data, int shift)
       : data_(CHECK_NOTNULL(data)), shift_(shift) {}
-  explicit bit_const_reference(const uint32* data)
+  explicit bit_const_reference(const uint32_t* data)
       : data_(CHECK_NOTNULL(data)) {}
 };
 
@@ -259,12 +259,12 @@ class bit_const_ptr {
       : data_(source.data()), shift_(source.shift()) {}
   bit_const_ptr(const bit_ptr& source)                                 // NOLINT
       : data_(source.data()), shift_(source.shift()) {}
-  explicit bit_const_ptr(const uint32* data) : data_(data), shift_(0) {}
-  bit_const_ptr(const uint32* data, int shift) : data_(data), shift_(shift) {}
+  explicit bit_const_ptr(const uint32_t* data) : data_(data), shift_(0) {}
+  bit_const_ptr(const uint32_t* data, int shift) : data_(data), shift_(shift) {}
   bit_const_ptr() : data_(NULL), shift_(0) {}
 
   // Accessors.
-  inline const uint32* data() const { return data_; }
+  inline const uint32_t* data() const { return data_; }
   inline int shift() const { return shift_; }
   inline bool is_aligned() const { return shift_ == 0; }
   inline bool is_null() const { return data_ == NULL; }
@@ -326,7 +326,7 @@ class bit_const_ptr {
   bool operator!= (const bit_ptr& other) const { return !(*this == other); }
 
  private:
-  const uint32* data_;
+  const uint32_t* data_;
   int shift_;
 
   // Copyable, assigneable.
@@ -349,12 +349,12 @@ class bit_array {
 
   bit_ptr mutable_data() const {
     return (data_buffer_ == NULL) ? bit_ptr() :
-        bit_ptr(reinterpret_cast<uint32*>(data_buffer_->data()));
+        bit_ptr(reinterpret_cast<uint32_t*>(data_buffer_->data()));
   }
 
   bit_const_ptr const_data() const {
     return (data_buffer_ == NULL) ? bit_const_ptr() :
-        bit_const_ptr(reinterpret_cast<uint32*>(data_buffer_->data()));
+        bit_const_ptr(reinterpret_cast<uint32_t*>(data_buffer_->data()));
   }
 
  private:
@@ -410,18 +410,18 @@ class static_bit_array {
  private:
   // We allocate more memory than necessary, to be able to assure that w
   // return a pointer to 16-byte-aligned data.
-  uint32 buffer_[(size / 32) + 4];                                      //NOLINT
+  uint32_t buffer_[(size / 32) + 4];                                      //NOLINT
 
   // Returns an incrementation of buffer_ to the next 16-byte aligned value.
-  uint32* aligned_buffer() {
-    int64 buf_address = reinterpret_cast<int64>(buffer_);
+  uint32_t* aligned_buffer() {
+    int64_t buf_address = reinterpret_cast<int64_t>(buffer_);
     // The number of bytes we have to shift to get 16-byte aligned data.
-    int64 shift = (~buf_address + 1LL) & 15LL;
+    int64_t shift = (~buf_address + 1LL) & 15LL;
     // The purpose of converting to char and back again is to be able to move
     // forward in bytes (instead of in quads of bytes, as would happen when
-    // incrementing a uint32* pointer).
+    // incrementing a uint32_t* pointer).
     return
-      reinterpret_cast<uint32*>(reinterpret_cast<char*>(buffer_) + shift);
+      reinterpret_cast<uint32_t*>(reinterpret_cast<char*>(buffer_) + shift);
   }
 
   DISALLOW_COPY_AND_ASSIGN(static_bit_array);

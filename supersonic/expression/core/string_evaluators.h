@@ -40,9 +40,9 @@ namespace operators {
 
 struct SubstringTernary {
   StringPiece operator()(const StringPiece& input,
-                         int64 position,
-                         int64 length) {
-    length = std::max(length, 0LL);
+                         int64_t position,
+                         int64_t length) {
+    length = std::max(length, (int64_t) 0);
     if (position > 0LL) {
       position -= 1LL;
     } else {
@@ -55,7 +55,7 @@ struct SubstringTernary {
 
 struct SubstringBinary {
   StringPiece operator()(const StringPiece& input,
-                         int64 position) {
+                         int64_t position) {
     if (position > 0LL) {
       position -= 1LL;
     } else {
@@ -67,7 +67,7 @@ struct SubstringBinary {
 };
 
 struct StringOffset {
-  int32 operator()(const StringPiece& haystack,
+  int32_t operator()(const StringPiece& haystack,
                    const StringPiece& needle) {
     return haystack.find(needle) + 1;
   }
@@ -90,7 +90,7 @@ struct StringReplaceEvaluator {
 };
 
 struct Length {
-  int32 operator()(const StringPiece& str) { return str.length(); }
+  int32_t operator()(const StringPiece& str) { return str.length(); }
 };
 
 struct Ltrim {

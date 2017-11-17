@@ -318,8 +318,8 @@ TEST(MathExpressionTest, Abs) {
       .AddRow(0, 0)
       .AddRow(1, 1)
       .AddRow(-3, 3)
-      .AddRow(static_cast<int32>(-2147483648LL),
-              static_cast<uint32>(2147483648LL))  // MININT
+      .AddRow(static_cast<int32_t>(-2147483648LL),
+              static_cast<uint32_t>(2147483648LL))  // MININT
       .Build(), &Abs);
 }
 

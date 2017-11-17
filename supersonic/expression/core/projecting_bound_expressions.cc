@@ -32,7 +32,6 @@
 #include "supersonic/expression/vector/vector_logic.h"
 #include "supersonic/utils/iterator_adaptors.h"
 #include "supersonic/utils/pointer_vector.h"
-#include "supersonic/utils/mathlimits.h"
 
 namespace supersonic {
 
@@ -49,7 +48,7 @@ class BoundInputProjectionExpression : public BoundExpression {
   virtual ~BoundInputProjectionExpression() {}
 
   virtual rowcount_t row_capacity() const {
-    return MathLimits<rowcount_t>::kMax;
+    return std::numeric_limits<rowcount_t>::max();
   }
 
   virtual EvaluationResult DoEvaluate(const View& input,
@@ -119,7 +118,7 @@ class BoundProjectionExpression : public BoundExpression {
   virtual ~BoundProjectionExpression() {}
 
   virtual rowcount_t row_capacity() const {
-    return MathLimits<rowcount_t>::kMax;
+    return std::numeric_limits<rowcount_t>::max();
   }
 
   virtual EvaluationResult DoEvaluate(const View& input,

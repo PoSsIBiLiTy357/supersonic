@@ -224,7 +224,7 @@ class RowHashSetImpl {
       BufferAllocator* const allocator,
       unique_ptr<const BoundSingleSourceProjector> key_selector,
       bool is_multiset,
-      const int64 max_unique_keys_in_result);
+      const int64_t max_unique_keys_in_result);
 
   bool ReserveRowCapacity(rowcount_t block_capacity);
 
@@ -319,7 +319,7 @@ class RowHashSetImpl {
 
   const bool is_multiset_;
 
-  const int64 max_unique_keys_in_result_;
+  const int64_t max_unique_keys_in_result_;
 
   friend class RowIdSetIterator;
 };
@@ -339,7 +339,7 @@ RowHashSetImpl::RowHashSetImpl(
     BufferAllocator* const allocator,
     unique_ptr<const BoundSingleSourceProjector> key_selector,
     bool is_multiset,
-    const int64 max_unique_keys_in_result)
+    const int64_t max_unique_keys_in_result)
     : key_selector_(key_selector_or_default(std::move(key_selector), block_schema)),
       index_(block_schema, allocator),
       index_appender_(&index_, true),
@@ -466,7 +466,7 @@ size_t RowHashSetImpl::InsertUnique(
 
   ViewRowIterator iterator(query);
   while (iterator.next()) {
-    const int64 query_row_id = iterator.current_row_index();
+    const int64_t query_row_id = iterator.current_row_index();
     rowid_t* const result_row_id =
         result ? (result->mutable_row_ids() + query_row_id) : NULL;
     if (selection_vector != NULL && !selection_vector[query_row_id]) {
@@ -649,25 +649,25 @@ void RowIdSetIterator::Next() {
 RowHashSet::RowHashSet(const TupleSchema& block_schema,
                        BufferAllocator* const allocator)
     : impl_(new RowHashSetImpl(block_schema, allocator, NULL, false,
-                               kint64max)) {}
+                               INT64_MAX)) {}
 
 RowHashSet::RowHashSet(
     const TupleSchema& block_schema,
     BufferAllocator* const allocator,
     unique_ptr<const BoundSingleSourceProjector> key_selector)
     : impl_(new RowHashSetImpl(block_schema, allocator, std::move(key_selector), false,
-                               kint64max)) {}
+                               INT64_MAX)) {}
 
 RowHashSet::RowHashSet(const TupleSchema &block_schema,
                        BufferAllocator *const allocator,
-                       const int64 max_unique_keys_in_result)
+                       const int64_t max_unique_keys_in_result)
     : impl_(new RowHashSetImpl(block_schema, allocator, NULL, false,
                                max_unique_keys_in_result)) {}
 
 RowHashSet::RowHashSet(
     const TupleSchema &block_schema, BufferAllocator *const allocator,
     unique_ptr<const BoundSingleSourceProjector> key_selector,
-    const int64 max_unique_keys_in_result)
+    const int64_t max_unique_keys_in_result)
     : impl_(new RowHashSetImpl(block_schema, allocator, std::move(key_selector),
                                false, max_unique_keys_in_result)) {}
 
@@ -722,13 +722,13 @@ rowcount_t RowHashSet::size() const { return indexed_view().row_count(); }
 RowHashMultiSet::RowHashMultiSet(const TupleSchema& block_schema,
                                  BufferAllocator* const allocator)
     : impl_(make_unique<RowHashSetImpl>(block_schema, allocator, nullptr, true,
-                               kint64max)) {}
+                               INT64_MAX)) {}
 
 RowHashMultiSet::RowHashMultiSet(const TupleSchema &block_schema,
                                  BufferAllocator *const allocator,
                                  unique_ptr<const BoundSingleSourceProjector> key_selector)
     : impl_(make_unique<RowHashSetImpl>(
-          block_schema, allocator, std::move(key_selector), true, kint64max)) {}
+          block_schema, allocator, std::move(key_selector), true, INT64_MAX)) {}
 
 RowHashMultiSet::~RowHashMultiSet() { }
 

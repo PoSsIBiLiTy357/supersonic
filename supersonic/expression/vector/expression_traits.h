@@ -1840,17 +1840,17 @@ template<OperatorId op, typename DataType> struct SimdTraits {
     typedef SimdOperator<DataType, DataType> simd_operator;                    \
   };
 
-SIMD_TRAITS_FOR(OPERATOR_ADD, int32,  simd_operators::SimdPlus);
-SIMD_TRAITS_FOR(OPERATOR_ADD, int64,  simd_operators::SimdPlus);
-SIMD_TRAITS_FOR(OPERATOR_ADD, uint32, simd_operators::SimdPlus);
-SIMD_TRAITS_FOR(OPERATOR_ADD, uint64, simd_operators::SimdPlus);
+SIMD_TRAITS_FOR(OPERATOR_ADD, int32_t,  simd_operators::SimdPlus);
+SIMD_TRAITS_FOR(OPERATOR_ADD, int64_t,  simd_operators::SimdPlus);
+SIMD_TRAITS_FOR(OPERATOR_ADD, uint32_t, simd_operators::SimdPlus);
+SIMD_TRAITS_FOR(OPERATOR_ADD, uint64_t, simd_operators::SimdPlus);
 SIMD_TRAITS_FOR(OPERATOR_ADD, float,  simd_operators::SimdPlus);
 SIMD_TRAITS_FOR(OPERATOR_ADD, double, simd_operators::SimdPlus);
 
-SIMD_TRAITS_FOR(OPERATOR_SUBTRACT, int32,  simd_operators::SimdSubtract);
-SIMD_TRAITS_FOR(OPERATOR_SUBTRACT, int64,  simd_operators::SimdSubtract);
-SIMD_TRAITS_FOR(OPERATOR_SUBTRACT, uint32, simd_operators::SimdSubtract);
-SIMD_TRAITS_FOR(OPERATOR_SUBTRACT, uint64, simd_operators::SimdSubtract);
+SIMD_TRAITS_FOR(OPERATOR_SUBTRACT, int32_t,  simd_operators::SimdSubtract);
+SIMD_TRAITS_FOR(OPERATOR_SUBTRACT, int64_t,  simd_operators::SimdSubtract);
+SIMD_TRAITS_FOR(OPERATOR_SUBTRACT, uint32_t, simd_operators::SimdSubtract);
+SIMD_TRAITS_FOR(OPERATOR_SUBTRACT, uint64_t, simd_operators::SimdSubtract);
 SIMD_TRAITS_FOR(OPERATOR_SUBTRACT, float,  simd_operators::SimdSubtract);
 SIMD_TRAITS_FOR(OPERATOR_SUBTRACT, double, simd_operators::SimdSubtract);
 
@@ -1861,42 +1861,42 @@ SIMD_TRAITS_FOR(OPERATOR_DIVIDE_SIGNALING, float,  simd_operators::SimdDivide);
 SIMD_TRAITS_FOR(OPERATOR_DIVIDE_SIGNALING, double, simd_operators::SimdDivide);
 
 SIMD_TRAITS_FOR(OPERATOR_OR, bool,   simd_operators::SimdOr);
-SIMD_TRAITS_FOR(OPERATOR_OR, int32,  simd_operators::SimdOr);
-SIMD_TRAITS_FOR(OPERATOR_OR, int64,  simd_operators::SimdOr);
-SIMD_TRAITS_FOR(OPERATOR_OR, uint32, simd_operators::SimdOr);
-SIMD_TRAITS_FOR(OPERATOR_OR, uint64, simd_operators::SimdOr);
+SIMD_TRAITS_FOR(OPERATOR_OR, int32_t,  simd_operators::SimdOr);
+SIMD_TRAITS_FOR(OPERATOR_OR, int64_t,  simd_operators::SimdOr);
+SIMD_TRAITS_FOR(OPERATOR_OR, uint32_t, simd_operators::SimdOr);
+SIMD_TRAITS_FOR(OPERATOR_OR, uint64_t, simd_operators::SimdOr);
 
 SIMD_TRAITS_FOR(OPERATOR_AND, bool,   simd_operators::SimdAnd);
-SIMD_TRAITS_FOR(OPERATOR_AND, int32,  simd_operators::SimdAnd);
-SIMD_TRAITS_FOR(OPERATOR_AND, int64,  simd_operators::SimdAnd);
-SIMD_TRAITS_FOR(OPERATOR_AND, uint32, simd_operators::SimdAnd);
-SIMD_TRAITS_FOR(OPERATOR_AND, uint64, simd_operators::SimdAnd);
+SIMD_TRAITS_FOR(OPERATOR_AND, int32_t,  simd_operators::SimdAnd);
+SIMD_TRAITS_FOR(OPERATOR_AND, int64_t,  simd_operators::SimdAnd);
+SIMD_TRAITS_FOR(OPERATOR_AND, uint32_t, simd_operators::SimdAnd);
+SIMD_TRAITS_FOR(OPERATOR_AND, uint64_t, simd_operators::SimdAnd);
 
 SIMD_TRAITS_FOR(OPERATOR_AND_NOT, bool,   simd_operators::SimdAndNot);
-SIMD_TRAITS_FOR(OPERATOR_AND_NOT, int32,  simd_operators::SimdAndNot);
-SIMD_TRAITS_FOR(OPERATOR_AND_NOT, int64,  simd_operators::SimdAndNot);
-SIMD_TRAITS_FOR(OPERATOR_AND_NOT, uint32, simd_operators::SimdAndNot);
-SIMD_TRAITS_FOR(OPERATOR_AND_NOT, uint64, simd_operators::SimdAndNot);
+SIMD_TRAITS_FOR(OPERATOR_AND_NOT, int32_t,  simd_operators::SimdAndNot);
+SIMD_TRAITS_FOR(OPERATOR_AND_NOT, int64_t,  simd_operators::SimdAndNot);
+SIMD_TRAITS_FOR(OPERATOR_AND_NOT, uint32_t, simd_operators::SimdAndNot);
+SIMD_TRAITS_FOR(OPERATOR_AND_NOT, uint64_t, simd_operators::SimdAndNot);
 
 SIMD_TRAITS_FOR(OPERATOR_XOR, bool, simd_operators::SimdXor);
 
 SIMD_TRAITS_FOR(OPERATOR_BITWISE_OR, bool,   simd_operators::SimdOr);
-SIMD_TRAITS_FOR(OPERATOR_BITWISE_OR, int32,  simd_operators::SimdOr);
-SIMD_TRAITS_FOR(OPERATOR_BITWISE_OR, int64,  simd_operators::SimdOr);
-SIMD_TRAITS_FOR(OPERATOR_BITWISE_OR, uint32, simd_operators::SimdOr);
-SIMD_TRAITS_FOR(OPERATOR_BITWISE_OR, uint64, simd_operators::SimdOr);
+SIMD_TRAITS_FOR(OPERATOR_BITWISE_OR, int32_t,  simd_operators::SimdOr);
+SIMD_TRAITS_FOR(OPERATOR_BITWISE_OR, int64_t,  simd_operators::SimdOr);
+SIMD_TRAITS_FOR(OPERATOR_BITWISE_OR, uint32_t, simd_operators::SimdOr);
+SIMD_TRAITS_FOR(OPERATOR_BITWISE_OR, uint64_t, simd_operators::SimdOr);
 
 SIMD_TRAITS_FOR(OPERATOR_BITWISE_AND, bool,   simd_operators::SimdAnd);
-SIMD_TRAITS_FOR(OPERATOR_BITWISE_AND, int32,  simd_operators::SimdAnd);
-SIMD_TRAITS_FOR(OPERATOR_BITWISE_AND, int64,  simd_operators::SimdAnd);
-SIMD_TRAITS_FOR(OPERATOR_BITWISE_AND, uint32, simd_operators::SimdAnd);
-SIMD_TRAITS_FOR(OPERATOR_BITWISE_AND, uint64, simd_operators::SimdAnd);
+SIMD_TRAITS_FOR(OPERATOR_BITWISE_AND, int32_t,  simd_operators::SimdAnd);
+SIMD_TRAITS_FOR(OPERATOR_BITWISE_AND, int64_t,  simd_operators::SimdAnd);
+SIMD_TRAITS_FOR(OPERATOR_BITWISE_AND, uint32_t, simd_operators::SimdAnd);
+SIMD_TRAITS_FOR(OPERATOR_BITWISE_AND, uint64_t, simd_operators::SimdAnd);
 
 SIMD_TRAITS_FOR(OPERATOR_BITWISE_ANDNOT, bool,   simd_operators::SimdAndNot);
-SIMD_TRAITS_FOR(OPERATOR_BITWISE_ANDNOT, int32,  simd_operators::SimdAndNot);
-SIMD_TRAITS_FOR(OPERATOR_BITWISE_ANDNOT, int64,  simd_operators::SimdAndNot);
-SIMD_TRAITS_FOR(OPERATOR_BITWISE_ANDNOT, uint32, simd_operators::SimdAndNot);
-SIMD_TRAITS_FOR(OPERATOR_BITWISE_ANDNOT, uint64, simd_operators::SimdAndNot);
+SIMD_TRAITS_FOR(OPERATOR_BITWISE_ANDNOT, int32_t,  simd_operators::SimdAndNot);
+SIMD_TRAITS_FOR(OPERATOR_BITWISE_ANDNOT, int64_t,  simd_operators::SimdAndNot);
+SIMD_TRAITS_FOR(OPERATOR_BITWISE_ANDNOT, uint32_t, simd_operators::SimdAndNot);
+SIMD_TRAITS_FOR(OPERATOR_BITWISE_ANDNOT, uint64_t, simd_operators::SimdAndNot);
 
 #endif  // __SSE2__
 

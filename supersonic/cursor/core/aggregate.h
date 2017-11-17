@@ -158,19 +158,19 @@ class AggregationSpecification {
 
 class GroupAggregateOptions {
  public:
-  static const int64 kDefaultResultEstimatedGroupCount = 16;
+  static const int64_t kDefaultResultEstimatedGroupCount = 16;
   GroupAggregateOptions()
       : memory_quota_(std::numeric_limits<size_t>::max()),
         enforce_quota_(false),
         estimated_result_row_count_(kDefaultResultEstimatedGroupCount),
-        max_unique_keys_in_result_(kint64max) {}
+        max_unique_keys_in_result_(INT64_MAX) {}
   size_t memory_quota() const { return memory_quota_; }
   bool enforce_quota() const { return enforce_quota_; }
-  int64 estimated_result_row_count() const {
+  int64_t estimated_result_row_count() const {
     return estimated_result_row_count_;
   }
 
-  int64 max_unique_keys_in_result() const {
+  int64_t max_unique_keys_in_result() const {
     return max_unique_keys_in_result_;
   }
 
@@ -185,12 +185,12 @@ class GroupAggregateOptions {
   }
 
   GroupAggregateOptions* set_max_unique_keys_in_result_(
-      int64 max_unique_keys_in_result) {
+      int64_t max_unique_keys_in_result) {
     max_unique_keys_in_result_ = max_unique_keys_in_result;
     return this;
   }
 
-  GroupAggregateOptions* set_estimated_result_row_count(int64 estimate) {
+  GroupAggregateOptions* set_estimated_result_row_count(int64_t estimate) {
     estimated_result_row_count_ = estimate;
     return this;
   }
@@ -198,8 +198,8 @@ class GroupAggregateOptions {
  private:
   size_t memory_quota_;
   bool enforce_quota_;
-  int64 estimated_result_row_count_;
-  int64 max_unique_keys_in_result_;
+  int64_t estimated_result_row_count_;
+  int64_t max_unique_keys_in_result_;
   DISALLOW_COPY_AND_ASSIGN(GroupAggregateOptions);
 };
 
@@ -271,7 +271,7 @@ BoundGroupAggregateWithLimit(
     BufferAllocator* original_allocator,    // Doesn't take ownership.
                                             // Can be equal allocator or NULL.
     bool best_effort,
-    const int64 max_unique_keys_in_result,
+    const int64_t max_unique_keys_in_result,
     unique_ptr<Cursor> child);
 
 // Creates a cursor to aggregate input that is already clustered by

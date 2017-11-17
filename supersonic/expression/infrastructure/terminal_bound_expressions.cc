@@ -34,7 +34,6 @@ namespace supersonic {using std::string; }
 #include "supersonic/expression/infrastructure/basic_bound_expression.h"
 #include "supersonic/expression/infrastructure/elementary_bound_const_expressions.h"
 #include "supersonic/expression/infrastructure/expression_utils.h"
-#include "supersonic/utils/mathlimits.h"
 #include "supersonic/utils/random.h"
 
 // TODO(onufry): this file should probably be merged with
@@ -55,7 +54,7 @@ class BoundNullExpression : public BasicBoundNoArgumentExpression {
   virtual bool is_constant() const { return true; }
   virtual bool can_be_resolved() const { return false; }
   virtual rowcount_t row_capacity() const {
-    return MathLimits<rowcount_t>::kMax;
+    return std::numeric_limits<rowcount_t>::max();
   }
 
   virtual EvaluationResult DoEvaluate(const View& input,
@@ -84,7 +83,7 @@ class BoundSequenceExpression : public BasicBoundNoArgumentExpression {
   virtual EvaluationResult DoEvaluate(const View& input,
                                       const BoolView& skip_vectors) {
     CHECK_EQ(1, skip_vectors.column_count());
-    int64* data = my_block()->mutable_column(0)->mutable_typed_data<INT64>();
+    int64_t* data = my_block()->mutable_column(0)->mutable_typed_data<INT64>();
     size_t count = input.row_count();
     while (count-- > 0) *data++ = current_++;
     my_view()->set_row_count(input.row_count());
@@ -96,7 +95,7 @@ class BoundSequenceExpression : public BasicBoundNoArgumentExpression {
   bool can_be_resolved() const { return false; }
 
  private:
-  int64 current_;
+  int64_t current_;
 
   DISALLOW_COPY_AND_ASSIGN(BoundSequenceExpression);
 };
@@ -113,7 +112,7 @@ class BoundRandInt32Expression : public BasicBoundNoArgumentExpression {
   virtual EvaluationResult DoEvaluate(const View& input,
                                       const BoolView& skip_pointers) {
     CHECK_EQ(1, skip_pointers.column_count());
-    int32* data = my_block()->mutable_column(0)->mutable_typed_data<INT32>();
+    int32_t* data = my_block()->mutable_column(0)->mutable_typed_data<INT32>();
     size_t count = input.row_count();
     // TODO(onufry): Consider skipping with selectivity_level around 10/20.
     while (count-- > 0) *data++ = random_generator_->Rand32();
@@ -152,7 +151,7 @@ FailureOrOwned<BoundExpression> BoundSequence(BufferAllocator* allocator,
       allocator);
 }
 
-FailureOrOwned<BoundExpression> BoundConstInt32(const int32& value,
+FailureOrOwned<BoundExpression> BoundConstInt32(const int32_t& value,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
@@ -160,7 +159,7 @@ FailureOrOwned<BoundExpression> BoundConstInt32(const int32& value,
                              allocator);
 }
 
-FailureOrOwned<BoundExpression> BoundConstInt64(const int64& value,
+FailureOrOwned<BoundExpression> BoundConstInt64(const int64_t& value,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
@@ -168,7 +167,7 @@ FailureOrOwned<BoundExpression> BoundConstInt64(const int64& value,
                              allocator);
 }
 
-FailureOrOwned<BoundExpression> BoundConstUInt32(const uint32& value,
+FailureOrOwned<BoundExpression> BoundConstUInt32(const uint32_t& value,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
@@ -176,7 +175,7 @@ FailureOrOwned<BoundExpression> BoundConstUInt32(const uint32& value,
                              allocator);
 }
 
-FailureOrOwned<BoundExpression> BoundConstUInt64(const uint64& value,
+FailureOrOwned<BoundExpression> BoundConstUInt64(const uint64_t& value,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
@@ -208,7 +207,7 @@ FailureOrOwned<BoundExpression> BoundConstBool(const bool& value,
                              allocator);
 }
 
-FailureOrOwned<BoundExpression> BoundConstDate(const int32& value,
+FailureOrOwned<BoundExpression> BoundConstDate(const int32_t& value,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,
@@ -216,7 +215,7 @@ FailureOrOwned<BoundExpression> BoundConstDate(const int32& value,
                              allocator);
 }
 
-FailureOrOwned<BoundExpression> BoundConstDateTime(const int64& value,
+FailureOrOwned<BoundExpression> BoundConstDateTime(const int64_t& value,
                                                    BufferAllocator* allocator,
                                                    rowcount_t max_row_count) {
   return InitBasicExpression(max_row_count,

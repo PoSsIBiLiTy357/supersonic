@@ -27,7 +27,7 @@ TEST(AggregationOperatorsTest, TrivialAssignment) {
   AssignmentOperator<INT32, INT32> assigner(HeapBufferAllocator::Get());
   unique_ptr<Buffer> buffer;
 
-  int32 result = 0;
+  int32_t result = 0;
   EXPECT_TRUE(assigner(1, &result, &buffer));
   EXPECT_EQ(1, result);
 }
@@ -36,7 +36,7 @@ TEST(AggregationOperatorsTest, CrossTypeAssignment) {
   AssignmentOperator<INT32, INT64> assigner(HeapBufferAllocator::Get());
   unique_ptr<Buffer> buffer;
 
-  int64 result = 1LL;
+  int64_t result = 1LL;
   EXPECT_TRUE(assigner(1, &result, &buffer));
   EXPECT_EQ(1, result);
 }
@@ -154,7 +154,7 @@ TEST(AggregationOperatorsTest, Sum) {
       HeapBufferAllocator::Get());
   unique_ptr<Buffer> buffer;
 
-  int64 result = -12LL;
+  int64_t result = -12LL;
   EXPECT_TRUE(aggregator(1, &result, &buffer));
   EXPECT_EQ(-11LL, result);
   EXPECT_TRUE(aggregator(30, &result, &buffer));
@@ -202,7 +202,7 @@ TEST(AggregationOperatorsTest, MaxNoCastArguments) {
       HeapBufferAllocator::Get());
   unique_ptr<Buffer> buffer;
 
-  uint32 result = 0;
+  uint32_t result = 0;
   EXPECT_TRUE(aggregator(1, &result, &buffer));
   EXPECT_EQ(1, result);
   EXPECT_TRUE(aggregator(-1, &result, &buffer));
@@ -277,7 +277,7 @@ TEST(AggregationOperatorsTest, First) {
       HeapBufferAllocator::Get());
   unique_ptr<Buffer> buffer;
 
-  int32 result = 7;
+  int32_t result = 7;
   EXPECT_TRUE(aggregator(1, &result, &buffer));
   EXPECT_EQ(7, result);
   EXPECT_TRUE(aggregator(9, &result, &buffer));
@@ -289,7 +289,7 @@ TEST(AggregationOperatorsTest, Last) {
       HeapBufferAllocator::Get());
   unique_ptr<Buffer> buffer;
 
-  int32 result = 7;
+  int32_t result = 7;
   EXPECT_TRUE(aggregator(1, &result, &buffer));
   EXPECT_EQ(1, result);
   EXPECT_TRUE(aggregator(9, &result, &buffer));

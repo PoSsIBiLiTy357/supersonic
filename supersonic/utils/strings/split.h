@@ -1038,8 +1038,8 @@ bool SplitStringIntoKeyValuePairs(const string& line,
 //    whitespace (does not consume trailing whitespace), and returns
 //    a pointer beyond the last character parsed.
 // --------------------------------------------------------------------
-const char* SplitLeadingDec32Values(const char* next, vector<int32>* result);
-const char* SplitLeadingDec64Values(const char* next, vector<int64>* result);
+const char* SplitLeadingDec32Values(const char* next, vector<int32_t>* result);
+const char* SplitLeadingDec64Values(const char* next, vector<int64_t>* result);
 
 // ----------------------------------------------------------------------
 // SplitOneIntToken()
@@ -1064,13 +1064,13 @@ const char* SplitLeadingDec64Values(const char* next, vector<int64>* result);
 bool SplitOneIntToken(const char** source, const char* delim,
                       int* value);
 bool SplitOneInt32Token(const char** source, const char* delim,
-                        int32* value);
+                        int32_t* value);
 bool SplitOneUint32Token(const char** source, const char* delim,
-                         uint32* value);
+                         uint32_t* value);
 bool SplitOneInt64Token(const char** source, const char* delim,
-                        int64* value);
+                        int64_t* value);
 bool SplitOneUint64Token(const char** source, const char* delim,
-                         uint64* value);
+                         uint64_t* value);
 bool SplitOneDoubleToken(const char** source, const char* delim,
                          double* value);
 bool SplitOneFloatToken(const char** source, const char* delim,
@@ -1081,12 +1081,12 @@ bool SplitOneFloatToken(const char** source, const char* delim,
 // certain macros with reflection when creating custom text formats for protos.
 
 inline bool SplitOneUInt32Token(const char** source, const char* delim,
-                         uint32* value) {
+                         uint32_t* value) {
   return SplitOneUint32Token(source, delim, value);
 }
 
 inline bool SplitOneUInt64Token(const char** source, const char* delim,
-                         uint64* value) {
+                         uint64_t* value) {
   return SplitOneUint64Token(source, delim, value);
 }
 
@@ -1102,22 +1102,22 @@ inline bool SplitOneUInt64Token(const char** source, const char* delim,
 bool SplitOneDecimalIntToken(const char** source, const char* delim,
                              int* value);
 bool SplitOneDecimalInt32Token(const char** source, const char* delim,
-                               int32* value);
+                               int32_t* value);
 bool SplitOneDecimalUint32Token(const char** source, const char* delim,
-                                uint32* value);
+                                uint32_t* value);
 bool SplitOneDecimalInt64Token(const char** source, const char* delim,
-                               int64* value);
+                               int64_t* value);
 bool SplitOneDecimalUint64Token(const char** source, const char* delim,
-                                uint64* value);
+                                uint64_t* value);
 
 // ----------------------------------------------------------------------
 // SplitOneHexUint32Token()
 // SplitOneHexUint64Token()
 // Once more, for hexadecimal numbers (unsigned only).
 bool SplitOneHexUint32Token(const char** source, const char* delim,
-                            uint32* value);
+                            uint32_t* value);
 bool SplitOneHexUint64Token(const char** source, const char* delim,
-                            uint64* value);
+                            uint64_t* value);
 
 
 // ###################### TEMPLATE INSTANTIATIONS BELOW #######################

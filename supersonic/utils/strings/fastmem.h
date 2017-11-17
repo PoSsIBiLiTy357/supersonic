@@ -42,8 +42,8 @@ inline bool memeq(const char* a, const char* b, size_t n) {
     return memcmp(a, b, n) == 0;
   }
   // n >= 8
-  uint64 u = UNALIGNED_LOAD64(a) ^ UNALIGNED_LOAD64(b);
-  uint64 v = UNALIGNED_LOAD64(a + n - 8) ^ UNALIGNED_LOAD64(b + n - 8);
+  uint64_t u = UNALIGNED_LOAD64(a) ^ UNALIGNED_LOAD64(b);
+  uint64_t v = UNALIGNED_LOAD64(a + n - 8) ^ UNALIGNED_LOAD64(b + n - 8);
   if ((u | v) != 0) {  // The first or last 8 bytes differ.
     return false;
   }
@@ -62,8 +62,8 @@ inline bool memeq(const char* a, const char* b, size_t n) {
   n -= e;
   // n is now in {0, 16, 32, ...}.  Process 0 or more 16-byte chunks.
   while (n > 0) {
-    uint64 x = UNALIGNED_LOAD64(a) ^ UNALIGNED_LOAD64(b);
-    uint64 y = UNALIGNED_LOAD64(a + 8) ^ UNALIGNED_LOAD64(b + 8);
+    uint64_t x = UNALIGNED_LOAD64(a) ^ UNALIGNED_LOAD64(b);
+    uint64_t y = UNALIGNED_LOAD64(a + 8) ^ UNALIGNED_LOAD64(b + 8);
     if ((x | y) != 0) {
       return false;
     }

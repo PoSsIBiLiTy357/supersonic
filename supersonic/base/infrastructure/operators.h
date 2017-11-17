@@ -52,17 +52,17 @@ struct Cast : public Copy {
 
 // Used for a Date to Datetime cast.
 struct DateToDatetime {
-  int64 operator()(const int32 arg) const { return arg * 24LL * 3600000000LL; }
+  int64_t operator()(const int32_t arg) const { return arg * 24LL * 3600000000LL; }
 };
 
 struct Negate {
-  int32 operator()(const int32 arg) const { return -arg; }
-  int64 operator()(const int64 arg) const { return -arg; }
+  int32_t operator()(const int32_t arg) const { return -arg; }
+  int64_t operator()(const int64_t arg) const { return -arg; }
   float operator()(const float arg) const { return -arg; }
   double operator()(const double arg) const { return -arg; }
 
-  int64 operator()(const uint32 arg) const { return -static_cast<int64>(arg); }
-  int64 operator()(const uint64 arg) const { return -static_cast<int64>(arg); }
+  int64_t operator()(const uint32_t arg) const { return -static_cast<int64_t>(arg); }
+  int64_t operator()(const uint64_t arg) const { return -static_cast<int64_t>(arg); }
 };
 
 struct Plus {
@@ -90,11 +90,11 @@ struct Modulus {
   T operator()(const T& a, const T& b) const { return a % b; }
 
   // Specializations for DOUBLE and FLOAT.
-  int64 operator()(const double& a, const double& b) const {
-    return static_cast<int64>(a) % static_cast<int64>(b);
+  int64_t operator()(const double& a, const double& b) const {
+    return static_cast<int64_t>(a) % static_cast<int64_t>(b);
   }
-  int64 operator()(const float& a, const float& b) const {
-    return static_cast<int64>(a) % static_cast<int64>(b);
+  int64_t operator()(const float& a, const float& b) const {
+    return static_cast<int64_t>(a) % static_cast<int64_t>(b);
   }
 };
 
@@ -104,10 +104,10 @@ struct IsOdd {
 
   // Specializations for DOUBLE and FLOAT.
   bool operator()(const double& arg) const {
-    return static_cast<int64>(arg) % 2;
+    return static_cast<int64_t>(arg) % 2;
   }
   bool operator()(const float& arg) const {
-    return static_cast<int64>(arg) % 2;
+    return static_cast<int64_t>(arg) % 2;
   }
 };
 
@@ -188,29 +188,29 @@ struct Equal {
 
   // Specializations to resolve signed-vs-unsigned.
 
-  bool operator()(const int32& a, const uint32&b) const {
-    return a >= 0 && static_cast<uint32>(a) == b;
+  bool operator()(const int32_t& a, const uint32_t&b) const {
+    return a >= 0 && static_cast<uint32_t>(a) == b;
   }
-  bool operator()(const int32& a, const uint64&b) const {
-    return a >= 0 && static_cast<uint32>(a) == b;
+  bool operator()(const int32_t& a, const uint64_t&b) const {
+    return a >= 0 && static_cast<uint32_t>(a) == b;
   }
-  bool operator()(const int64& a, const uint32&b) const {
-    return a >= 0 && static_cast<uint64>(a) == b;
+  bool operator()(const int64_t& a, const uint32_t&b) const {
+    return a >= 0 && static_cast<uint64_t>(a) == b;
   }
-  bool operator()(const int64& a, const uint64&b) const {
-    return a >= 0 && static_cast<uint64>(a) == b;
+  bool operator()(const int64_t& a, const uint64_t&b) const {
+    return a >= 0 && static_cast<uint64_t>(a) == b;
   }
-  bool operator()(const uint32& a, const int32&b) const {
-    return b >= 0 && a == static_cast<uint32>(b);
+  bool operator()(const uint32_t& a, const int32_t&b) const {
+    return b >= 0 && a == static_cast<uint32_t>(b);
   }
-  bool operator()(const uint32& a, const int64&b) const {
-    return b >= 0 && a == static_cast<uint64>(b);
+  bool operator()(const uint32_t& a, const int64_t&b) const {
+    return b >= 0 && a == static_cast<uint64_t>(b);
   }
-  bool operator()(const uint64& a, const int32&b) const {
-    return b >= 0 && a == static_cast<uint32>(b);
+  bool operator()(const uint64_t& a, const int32_t&b) const {
+    return b >= 0 && a == static_cast<uint32_t>(b);
   }
-  bool operator()(const uint64& a, const int64&b) const {
-    return b >= 0 && a == static_cast<uint64>(b);
+  bool operator()(const uint64_t& a, const int64_t&b) const {
+    return b >= 0 && a == static_cast<uint64_t>(b);
   }
 };
 
@@ -243,29 +243,29 @@ struct Less {
 
   // Specializations to resolve signed-vs-unsigned.
 
-  bool operator()(const int32& a, const uint32&b) const {
-    return a < 0 || static_cast<uint32>(a) < b;
+  bool operator()(const int32_t& a, const uint32_t&b) const {
+    return a < 0 || static_cast<uint32_t>(a) < b;
   }
-  bool operator()(const int32& a, const uint64&b) const {
-    return a < 0 || static_cast<uint32>(a) < b;
+  bool operator()(const int32_t& a, const uint64_t&b) const {
+    return a < 0 || static_cast<uint32_t>(a) < b;
   }
-  bool operator()(const int64& a, const uint32&b) const {
-    return a < 0 || static_cast<uint64>(a) < b;
+  bool operator()(const int64_t& a, const uint32_t&b) const {
+    return a < 0 || static_cast<uint64_t>(a) < b;
   }
-  bool operator()(const int64& a, const uint64&b) const {
-    return a < 0 || static_cast<uint64>(a) < b;
+  bool operator()(const int64_t& a, const uint64_t&b) const {
+    return a < 0 || static_cast<uint64_t>(a) < b;
   }
-  bool operator()(const uint32& a, const int32&b) const {
-    return b >= 0 && a < static_cast<uint32>(b);
+  bool operator()(const uint32_t& a, const int32_t&b) const {
+    return b >= 0 && a < static_cast<uint32_t>(b);
   }
-  bool operator()(const uint32& a, const int64&b) const {
-    return b >= 0 && a < static_cast<uint32>(b);
+  bool operator()(const uint32_t& a, const int64_t&b) const {
+    return b >= 0 && a < static_cast<uint32_t>(b);
   }
-  bool operator()(const uint64& a, const int32&b) const {
-    return b >= 0 && a < static_cast<uint32>(b);
+  bool operator()(const uint64_t& a, const int32_t&b) const {
+    return b >= 0 && a < static_cast<uint32_t>(b);
   }
-  bool operator()(const uint64& a, const int64&b) const {
-    return b >= 0 && a < static_cast<uint64>(b);
+  bool operator()(const uint64_t& a, const int64_t&b) const {
+    return b >= 0 && a < static_cast<uint64_t>(b);
   }
 };
 
@@ -302,19 +302,19 @@ struct Hash {
     std::hash<typename std::conditional<
            std::is_enum<T>::value,
            typename std::conditional<
-               sizeof(T) <= sizeof(int32),
-               int32,
-               int64>::type,
+               sizeof(T) <= sizeof(int32_t),
+               int32_t,
+               int64_t>::type,
            T>::type> hasher;
     return hasher(v);
   }
   size_t operator()(const float& v) const {
-    std::hash<int32> hasher;
-    return hasher(*reinterpret_cast<const int32*>(&v));
+    std::hash<int32_t> hasher;
+    return hasher(*reinterpret_cast<const int32_t*>(&v));
   }
   size_t operator()(const double& v) const {
-    std::hash<int64> hasher;
-    return hasher(*reinterpret_cast<const int64*>(&v));
+    std::hash<int64_t> hasher;
+    return hasher(*reinterpret_cast<const int64_t*>(&v));
   }
   size_t operator()(const bool& v) const {
     // Arbitrary relative primes.

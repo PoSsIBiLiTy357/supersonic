@@ -43,7 +43,7 @@ class ScanViewOperation : public BasicOperation {
  public:
   ScanViewOperation(const View& view,
                     const size_t row_count,
-                    const int64* selection_vector,
+                    const int64_t* selection_vector,
                     size_t buffer_row_capacity)
       : BasicOperation(),
         view_(view),
@@ -80,7 +80,7 @@ class ScanViewOperation : public BasicOperation {
   size_t row_count_;
   // The selection vector. The i-th row of the output is equal to the
   // selection_vector_[i]-th row of the input view.
-  const int64* selection_vector_;
+  const int64_t* selection_vector_;
   // The buffer capacity we expect from the created cursor (this is the
   // maximum size of a returned block).
   size_t buffer_row_capacity_;

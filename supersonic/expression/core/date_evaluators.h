@@ -32,122 +32,122 @@ class Arena;
 
 namespace operators {
 
-static const int64 kMillion = 1000000LL;
+static const int64_t kMillion = 1000000LL;
 
 // Returns a datetime from a unix timestamp.
 // We store the datetime as timestamps already, only calculated in microseconds,
 // not seconds.
 struct FromUnixTime {
-  int64 operator()(const int64 arg) const { return arg * kMillion; }
+  int64_t operator()(const int64_t arg) const { return arg * kMillion; }
 };
 
 // Returns unix timestamp from datetime.
 // We store the datetime as timestamps already, only calculated in microseconds,
 // not seconds.
 struct UnixTimestamp {
-  int64 operator()(const int64 arg) const { return arg / kMillion; }
+  int64_t operator()(const int64_t arg) const { return arg / kMillion; }
 };
 
 struct MakeDate {
-  int64 operator()(const int64 year, const int64 month, const int64 day);
+  int64_t operator()(const int64_t year, const int64_t month, const int64_t day);
 };
 
 struct Year {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct YearLocal {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct Quarter {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct QuarterLocal {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct Month {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct MonthLocal {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct Day {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct DayLocal {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct Weekday {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct WeekdayLocal {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct YearDay {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct YearDayLocal {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct Hour {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct HourLocal {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct Minute {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct MinuteLocal {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct Second {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct Microsecond {
-  int32 operator()(const int64 datetime);
+  int32_t operator()(const int64_t datetime);
 };
 
 struct AddMinutes {
-  int64 operator()(const int64 datetime, const int64 number_of_minutes) {
+  int64_t operator()(const int64_t datetime, const int64_t number_of_minutes) {
     return datetime + number_of_minutes * 60LL * kMillion;
   }
 };
 
 struct AddDays {
-  int64 operator()(const int64 datetime, const int64 number_of_days) {
+  int64_t operator()(const int64_t datetime, const int64_t number_of_days) {
     return datetime + number_of_days * 24LL * 3600LL * kMillion;
   }
 };
 
 struct AddMonths {
-  int64 operator()(const int64 datetime, const int64 number_of_months);
+  int64_t operator()(const int64_t datetime, const int64_t number_of_months);
 };
 
 // Note - this is not INT64-compliant.
 struct DateFormat {
-  StringPiece operator()(int64 datetime, const StringPiece& format,
+  StringPiece operator()(int64_t datetime, const StringPiece& format,
                          Arena* arena);
 };
 
 struct DateFormatLocal {
-  StringPiece operator()(int64 datetime, const StringPiece& format,
+  StringPiece operator()(int64_t datetime, const StringPiece& format,
                          Arena* arena);
 };
 
@@ -156,11 +156,11 @@ namespace failers {
 
 // Returns the number of rows where the MakeDate function fails.
 struct MakeDateFailer {
-  int operator()(const int64* left_data,
+  int operator()(const int64_t* left_data,
                  bool_const_ptr left_is_null,
-                 const int64* middle_data,
+                 const int64_t* middle_data,
                  bool_const_ptr middle_is_null,
-                 const int64* right_data,
+                 const int64_t* right_data,
                  bool_const_ptr right_is_null,
                  size_t row_count);
 };

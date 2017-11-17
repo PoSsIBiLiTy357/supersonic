@@ -40,18 +40,18 @@ class OperationBenchmarkListener {
   virtual ~OperationBenchmarkListener() {}
 
   // Called when benchmark is started. current_time is in microseconds.
-  virtual void OnBenchmarkStarted(uint64 current_time) = 0;
+  virtual void OnBenchmarkStarted(uint64_t current_time) = 0;
 
   // Called when Operation has finished creating the cursor.
-  virtual void OnCreateFinished(uint64 current_time) = 0;
+  virtual void OnCreateFinished(uint64_t current_time) = 0;
 
   // Reports benchmark result. All times are in microseconds:
-  virtual void OnBenchmarkFinished(uint64 current_time,
-                                   uint64 num_rows_generated,
-                                   uint64 processing_time,
-                                   uint64 paused_time,
-                                   uint64 user_time,
-                                   uint64 system_time) = 0;
+  virtual void OnBenchmarkFinished(uint64_t current_time,
+                                   uint64_t num_rows_generated,
+                                   uint64_t processing_time,
+                                   uint64_t paused_time,
+                                   uint64_t user_time,
+                                   uint64_t system_time) = 0;
 };
 
 // Wrapper around an Operation measuring its performance. Takes ownership of
@@ -139,17 +139,17 @@ class Timer {
     state_ = STOPPED;
   }
 
-  int64 start_time() const { return start_time_; }
-  int64 stop_time() const { return stop_time_; }
+  int64_t start_time() const { return start_time_; }
+  int64_t stop_time() const { return stop_time_; }
 
-  int64 elapsed_time() const { return stop_time() - start_time(); }
-  int64 active_wall_time() const { return timer_.GetInUsec(); }
-  int64 paused_time() const { return elapsed_time() - active_wall_time(); }
+  int64_t elapsed_time() const { return stop_time() - start_time(); }
+  int64_t active_wall_time() const { return timer_.GetInUsec(); }
+  int64_t paused_time() const { return elapsed_time() - active_wall_time(); }
 
-  int64 active_user_time() const { return user_timer_.Get() * 1E6; }
-  int64 active_system_time() const { return system_timer_.Get() * 1E6; }
+  int64_t active_user_time() const { return user_timer_.Get() * 1E6; }
+  int64_t active_system_time() const { return system_timer_.Get() * 1E6; }
 
-  int64 GetSystemTime() const {
+  int64_t GetSystemTime() const {
     return GetCurrentTimeMicros();
   }
 
@@ -165,8 +165,8 @@ class Timer {
 
   State state_;
   // Times are in microseconds since the Epoch.
-  int64 start_time_;
-  int64 stop_time_;
+  int64_t start_time_;
+  int64_t stop_time_;
   WallTimer timer_;
 
 

@@ -302,7 +302,7 @@ struct ColumnUnaryComputer<OPERATOR_PARSE_STRING_QUIET, STRING,
     typename operators::TypedParseString<output_type> parse_operator(
         output->content().attribute());
     // Failure is a dummy variable, ignored, as this is a quiet operator.
-    uint32 failure;
+    uint32_t failure;
     if (!SelectivityIsGreaterThan(
             skip_vector, row_count,
             UnaryExpressionTraits<

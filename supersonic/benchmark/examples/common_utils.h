@@ -39,7 +39,7 @@ void BenchmarkOperation(unique_ptr<Operation> operation,
 
 // Utility function returning the number of days since epoch from an input date
 // string. The string must be in year-month-day format.
-int32 EpochDaysFromStringDate(const string& date_string);
+int32_t EpochDaysFromStringDate(const string& date_string);
 
 }  // namespace supersonic
 

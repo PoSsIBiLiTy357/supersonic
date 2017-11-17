@@ -144,7 +144,7 @@ void TestEvaluationForAlignedResizedBlock(const Block& input_block,
       ReplicateBlock(input_block, size, aligning_allocator.get()));
   // Check if columns are nicely aligned.
   for (int i = 0; i < block->column_count(); ++i) {
-    CHECK_EQ(0, reinterpret_cast<uint64>(block->column(i).data().raw()) % 16);
+    CHECK_EQ(0, reinterpret_cast<uint64_t>(block->column(i).data().raw()) % 16);
   }
   CHECK_EQ(size, block->row_capacity());
   const TupleSchema& schema = block->view().schema();

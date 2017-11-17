@@ -73,7 +73,7 @@ TEST_F(TerminalExpressionTest, SequenceProgresses) {
 
   const View& result = DefaultEvaluate(sequence.get(), input());
   bool_const_ptr is_null = result.column(0).is_null();
-  const int64* data = result.column(0).typed_data<INT64>();
+  const int64_t* data = result.column(0).typed_data<INT64>();
   EXPECT_EQ(bool_ptr(NULL), is_null);
   for (int i = 0; i < 5; ++i) {
     EXPECT_EQ(i, data[i]);
@@ -89,7 +89,7 @@ TEST_F(TerminalExpressionTest, RandInt32WithMTRandom) {
 
   const View& result = DefaultEvaluate(random.get(), input());
   const bool* is_null = result.column(0).is_null();
-  const int32* data = result.column(0).typed_data<INT32>();
+  const int32_t* data = result.column(0).typed_data<INT32>();
   EXPECT_EQ(NULL, is_null);
   for (int i = 0; i < 5; ++i) {
     EXPECT_EQ(gen->Rand32(), data[i]);
@@ -104,7 +104,7 @@ TEST_F(TerminalExpressionTest, ConstInt32) {
       values->result_schema());
   const View& result = DefaultEvaluate(values.get(), input());
   EXPECT_TRUE(result.column(0).is_null() == NULL);
-  const int32* data = result.column(0).typed_data<INT32>();
+  const int32_t* data = result.column(0).typed_data<INT32>();
   for (int i = 0; i < 5; ++i) {
     EXPECT_EQ(100, data[i]);
   }

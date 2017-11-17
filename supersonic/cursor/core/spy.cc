@@ -38,7 +38,7 @@ namespace supersonic {
 
 namespace {
 
-const int64 kNumNanosPerMilli = kNumMicrosPerMilli * 1000;
+const int64_t kNumNanosPerMilli = kNumMicrosPerMilli * 1000;
 
 class SpyCursor : public BasicCursor {
  public:
@@ -185,7 +185,7 @@ class PrintSpyListener : public SpyListener {
   virtual void AfterNext(const string& id,
                          rowcount_t max_row_count,
                          const ResultView& result_view,
-                         int64 time_nanos) {
+                         int64_t time_nanos) {
     double time_ms = time_nanos / static_cast<double>(kNumNanosPerMilli);
     std::cout << "Next(" << max_row_count << ") on " << id
               << " result in " << time_ms << " ms:";

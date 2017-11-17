@@ -25,8 +25,6 @@
 #include <algorithm>
 #include "supersonic/utils/std_namespace.h"
 
-#include "supersonic/utils/mathlimits.h"
-
 #include "supersonic/base/memory/arena.h"
 
 namespace supersonic {
@@ -37,7 +35,7 @@ namespace operators {
 // from the vector primitive or evaluation routine if the flag is set (and
 // obviously return from this function when we set the flag).
 struct Format {
-  StringPiece operator()(double number, int32 precision, Arena* arena) {
+  StringPiece operator()(double number, int32_t precision, Arena* arena) {
     double number_copy = number;
     // We need to precalculate the size of the resulting string, to allocate
     // the right amount of memory. This is:
@@ -85,8 +83,8 @@ struct Ceil {
 };
 
 struct CeilToInt {
-  int64 operator()(double arg) { return static_cast<int64>(ceil(arg)); }
-  int64 operator()(float arg) { return static_cast<int64>(ceil(arg)); }
+  int64_t operator()(double arg) { return static_cast<int64_t>(ceil(arg)); }
+  int64_t operator()(float arg) { return static_cast<int64_t>(ceil(arg)); }
 };
 
 struct Exp {
@@ -98,8 +96,8 @@ struct Floor {
 };
 
 struct FloorToInt {
-  int64 operator()(double arg) { return static_cast<int64>(floor(arg)); }
-  int64 operator()(float arg) { return static_cast<int64>(floor(arg)); }
+  int64_t operator()(double arg) { return static_cast<int64_t>(floor(arg)); }
+  int64_t operator()(float arg) { return static_cast<int64_t>(floor(arg)); }
 };
 
 struct Round {
@@ -110,8 +108,8 @@ struct Round {
 // The native RoundToInt is not used because of b/518396.
 // TODO(ptab): Reenable it (in BoundRoundToInt) when the b/518396 is fixed.
 struct RoundToInt {
-  int64 operator()(float arg) { return llroundf(arg); }
-  int64 operator()(double arg) { return llround(arg); }
+  int64_t operator()(float arg) { return llroundf(arg); }
+  int64_t operator()(double arg) { return llround(arg); }
 };
 
 struct RoundWithMultiplier {
@@ -125,8 +123,8 @@ struct Trunc {
 };
 
 struct Abs {
-  uint32 operator()(int32 arg) { return (arg < 0) ? -arg : arg; }
-  uint64 operator()(int64 arg) { return (arg < 0) ? -arg : arg; }
+  uint32_t operator()(int32_t arg) { return (arg < 0) ? -arg : arg; }
+  uint64_t operator()(int64_t arg) { return (arg < 0) ? -arg : arg; }
   float  operator()(float arg) { return (arg < 0) ? -arg : arg; }
   double operator()(double arg) { return (arg < 0) ? -arg : arg; }
 };

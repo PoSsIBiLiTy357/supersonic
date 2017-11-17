@@ -42,19 +42,19 @@ FailureOrOwned<BoundExpression> BoundSequence(BufferAllocator* allocator,
                                               rowcount_t max_row_count);
 
 // Typed constants.
-FailureOrOwned<BoundExpression> BoundConstInt32(const int32& value,
+FailureOrOwned<BoundExpression> BoundConstInt32(const int32_t& value,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundConstInt64(const int64& value,
+FailureOrOwned<BoundExpression> BoundConstInt64(const int64_t& value,
                                                 BufferAllocator* allocator,
                                                 rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundConstUInt32(const uint32& value,
+FailureOrOwned<BoundExpression> BoundConstUInt32(const uint32_t& value,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundConstUInt64(const uint64& value,
+FailureOrOwned<BoundExpression> BoundConstUInt64(const uint64_t& value,
                                                  BufferAllocator* allocator,
                                                  rowcount_t max_row_count);
 
@@ -70,11 +70,11 @@ FailureOrOwned<BoundExpression> BoundConstBool(const bool& value,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundConstDate(const int32& value,
+FailureOrOwned<BoundExpression> BoundConstDate(const int32_t& value,
                                                BufferAllocator* allocator,
                                                rowcount_t max_row_count);
 
-FailureOrOwned<BoundExpression> BoundConstDateTime(const int64& value,
+FailureOrOwned<BoundExpression> BoundConstDateTime(const int64_t& value,
                                                    BufferAllocator* allocator,
                                                    rowcount_t max_row_count);
 

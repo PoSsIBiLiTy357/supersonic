@@ -66,7 +66,7 @@ TEST_F(ScanViewTest, ScanViewScansView) {
 
 TEST_F(ScanViewTest, ScanViewScansWithSelection) {
   OperationTest test;
-  int64 selection_vector[6] = {0LL, 1LL, 0LL, 3LL, 0LL, 1LL};
+  int64_t selection_vector[6] = {0LL, 1LL, 0LL, 3LL, 0LL, 1LL};
   test.SetExpectedResult(TestDataBuilder<INT32, INT64>()
                          .AddRow(1, 1LL)
                          .AddRow(8, 9LL)
@@ -102,7 +102,7 @@ TEST_F(ScanViewTest, ScanViewOperationFunctionality) {
 }
 
 TEST_F(ScanViewTest, ScanViewWithSelectionOperationFunctionality) {
-  int64 selection_vector[6] = {0LL, 1LL, 0LL, 3LL, 0LL, 1LL};
+  int64_t selection_vector[6] = {0LL, 1LL, 0LL, 3LL, 0LL, 1LL};
   std::unique_ptr<Operation> scan(ScanViewWithSelection(
       view(), 6 /* row count */, selection_vector, 4 /* buffer size */));
   // Debug string testing.

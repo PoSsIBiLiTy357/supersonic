@@ -44,22 +44,22 @@ namespace supersonic {
 
 // Specializations of PrintTyped.
 
-template<> void PrintTyped<INT32>(const int32& value, string* const target) {
+template<> void PrintTyped<INT32>(const int32_t& value, string* const target) {
   char buffer[kFastToBufferSize];
   target->append(FastInt32ToBuffer(value, buffer));
 }
 
-template<> void PrintTyped<UINT32>(const uint32& value, string* const target) {
+template<> void PrintTyped<UINT32>(const uint32_t& value, string* const target) {
   char buffer[kFastToBufferSize];
   target->append(FastUInt32ToBuffer(value, buffer));
 }
 
-template<> void PrintTyped<INT64>(const int64& value, string* const target) {
+template<> void PrintTyped<INT64>(const int64_t& value, string* const target) {
   char buffer[kFastToBufferSize];
   target->append(FastInt64ToBuffer(value, buffer));
 }
 
-template<> void PrintTyped<UINT64>(const uint64& value, string* const target) {
+template<> void PrintTyped<UINT64>(const uint64_t& value, string* const target) {
   char buffer[kFastToBufferSize];
   target->append(FastUInt64ToBuffer(value, buffer));
 }
@@ -76,7 +76,7 @@ template<> void PrintTyped<BOOL>(const bool& value, string* const target) {
   target->append((value) ? "TRUE" : "FALSE");
 }
 
-template<> void PrintTyped<ENUM>(const int32& value, string* const target) {
+template<> void PrintTyped<ENUM>(const int32_t& value, string* const target) {
   // NOTE: usually, this default won't be used; the higher-level function
   // (e.g. ViewPrinter) will handle ENUMs in a special way.
   return PrintTyped<INT32>(value, target);
@@ -89,7 +89,7 @@ template<> void PrintTyped<STRING>(const StringPiece& value,
 
 // TODO(user): Support for the entire int64 datetime range, print
 // microseconds as well.
-template<> void PrintTyped<DATETIME>(const int64& value, string* const target) {
+template<> void PrintTyped<DATETIME>(const int64_t& value, string* const target) {
   const time_t time = value / 1000000;
   const size_t previous_size = target->size();
   // Show in UTC.
@@ -101,7 +101,7 @@ template<> void PrintTyped<DATETIME>(const int64& value, string* const target) {
 }
 
 // TODO(user): Support for the entire int32 date range.
-template<> void PrintTyped<DATE>(const int32& value, string* const target) {
+template<> void PrintTyped<DATE>(const int32_t& value, string* const target) {
   const time_t time = value * (24 * 3600);
   const size_t previous_size = target->size();
   // Show in UTC.
@@ -151,19 +151,19 @@ AttributePrinter GetDefaultPrinterFn(DataType type) {
 
 // Specializations of ParseTyped.
 
-template<> bool ParseTyped<INT32>(const char* value, int32* target) {
+template<> bool ParseTyped<INT32>(const char* value, int32_t* target) {
   return safe_strto32(value, target);
 }
 
-template<> bool ParseTyped<UINT32>(const char* value, uint32* target) {
+template<> bool ParseTyped<UINT32>(const char* value, uint32_t* target) {
   return safe_strtou32(value, target);
 }
 
-template<> bool ParseTyped<INT64>(const char* value, int64* target) {
+template<> bool ParseTyped<INT64>(const char* value, int64_t* target) {
   return safe_strto64(value, target);
 }
 
-template<> bool ParseTyped<UINT64>(const char* value, uint64* target) {
+template<> bool ParseTyped<UINT64>(const char* value, uint64_t* target) {
   return safe_strtou64(value, target);
 }
 
@@ -211,7 +211,7 @@ template<> bool ParseTyped<BOOL>(const char* value, bool* target) {
 // at either ends.
 bool ParseDateTime(const string& value,
                    const string& format,
-                   int64* const target) {
+                   int64_t* const target) {
   WallTime time = 0;
   if (!WallTime_Parse_Timezone(value.c_str(),
                                format.c_str(),
@@ -224,8 +224,8 @@ bool ParseDateTime(const string& value,
     return false;
   }
   const double time_microseconds = floor(time * 1e6 + .5);
-  if (time_microseconds >= numeric_limits<int64>::min() &&
-      time_microseconds <= numeric_limits<int64>::max()) {
+  if (time_microseconds >= numeric_limits<int64_t>::min() &&
+      time_microseconds <= numeric_limits<int64_t>::max()) {
     *target = time_microseconds;
     return true;
   } else {
@@ -234,17 +234,17 @@ bool ParseDateTime(const string& value,
 }
 
 template<>
-bool ParseTyped<DATETIME>(const char* value, int64* target) {
+bool ParseTyped<DATETIME>(const char* value, int64_t* target) {
   return ParseDateTime(value, kDefaultDateTimeParseFormat, target);
 }
 
 // TODO(user): Test it after ParseDateTime is fixed (see TODOs above).
 template<>
-bool ParseTyped<DATE>(const char* value, int32* target) {
-  int64 time;
+bool ParseTyped<DATE>(const char* value, int32_t* target) {
+  int64_t time;
   if (ParseDateTime(value, kDefaultDateParseFormat, &time)) {
     // The divisor is > 2^32, so the result won't overflow int32.
-    static const int64 microseconds_per_day = 24LL * 3600LL * 1000000LL;
+    static const int64_t microseconds_per_day = 24LL * 3600LL * 1000000LL;
     if (time >= 0) {
       *target = time / microseconds_per_day;
     } else {

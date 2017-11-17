@@ -119,16 +119,16 @@ unique_ptr<const Expression> ConstDateTime(const StringPiece& value) {
   return ParseStringNulling(DATETIME, ConstString(value));
 }
 
-unique_ptr<const Expression> ConstDateTimeFromMicrosecondsSinceEpoch(const int64& value) {
+unique_ptr<const Expression> ConstDateTimeFromMicrosecondsSinceEpoch(const int64_t& value) {
   return ConstDateTime(value);
 }
 
 unique_ptr<const Expression> ConstDateTimeFromSecondsSinceEpoch(const double& value) {
-  return ConstDateTime(static_cast<int64>(value * 1000000.));
+  return ConstDateTime(static_cast<int64_t>(value * 1000000.));
 }
 
 unique_ptr<const Expression> Now() {
-  return ConstDateTime(static_cast<int64>(WallTime_Now() * 1000000.));
+  return ConstDateTime(static_cast<int64_t>(WallTime_Now() * 1000000.));
 }
 
 unique_ptr<const Expression> UnixTimestamp(unique_ptr<const Expression> datetime) {

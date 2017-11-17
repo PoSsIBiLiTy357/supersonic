@@ -118,19 +118,19 @@ unique_ptr<const Expression> RandInt32() {
   return RandInt32(make_unique<MTRandom>());
 }
 
-unique_ptr<const Expression> ConstInt32(const int32& value) {
+unique_ptr<const Expression> ConstInt32(const int32_t& value) {
   return make_unique<ConstExpression<INT32>>(value);
 }
 
-unique_ptr<const Expression> ConstInt64(const int64& value) {
+unique_ptr<const Expression> ConstInt64(const int64_t& value) {
   return make_unique<ConstExpression<INT64>>(value);
 }
 
-unique_ptr<const Expression> ConstUint32(const uint32& value) {
+unique_ptr<const Expression> ConstUint32(const uint32_t& value) {
   return make_unique<ConstExpression<UINT32>>(value);
 }
 
-unique_ptr<const Expression> ConstUint64(const uint64& value) {
+unique_ptr<const Expression> ConstUint64(const uint64_t& value) {
   return make_unique<ConstExpression<UINT64>>(value);
 }
 
@@ -146,11 +146,11 @@ unique_ptr<const Expression> ConstBool(const bool& value) {
   return make_unique<ConstExpression<BOOL>>(value);
 }
 
-unique_ptr<const Expression> ConstDate(const int32& value) {
+unique_ptr<const Expression> ConstDate(const int32_t& value) {
   return make_unique<ConstExpression<DATE>>(value);
 }
 
-unique_ptr<const Expression> ConstDateTime(const int64& value) {
+unique_ptr<const Expression> ConstDateTime(const int64_t& value) {
   return make_unique<ConstExpression<DATETIME>>(value);
 }
 

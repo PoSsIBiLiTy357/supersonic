@@ -121,7 +121,7 @@ struct DirectRowSourceReader {
 struct RowSourceAdapter {
   // Creates an adapter representing offset-th row in the specified view.
   // The view is kept by reference; it must outlive the adapter.
-  RowSourceAdapter(const View& view, const int64 offset)
+  RowSourceAdapter(const View& view, const int64_t offset)
       : view(view),
         offset(offset) {}
 
@@ -153,7 +153,7 @@ struct RowSourceAdapter {
   }
 
   const View& view;
-  const int64 offset;
+  const int64_t offset;
 };
 
 // Default, stateless writer, conforming to the RowWriter contract. Its
@@ -205,7 +205,7 @@ struct DirectRowSourceWriter {
 // An adapter for writing a single row into a block. Conforms to the 'RowSink'
 // template contract (see above).
 struct RowSinkAdapter {
-  RowSinkAdapter(Block* block, const int64 offset)
+  RowSinkAdapter(Block* block, const int64_t offset)
       : block(block),
         offset(offset) {}
 
@@ -245,7 +245,7 @@ struct RowSinkAdapter {
   }
 
   Block* block;
-  const int64 offset;
+  const int64_t offset;
 };
 
 }  // namespace supersonic

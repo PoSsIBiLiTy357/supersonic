@@ -50,7 +50,7 @@ class StatsListener : public SpyListener {
   virtual void AfterNext(const string& id,
                          rowcount_t max_row_count,
                          const ResultView& result,
-                         int64 time_cycles) {
+                         int64_t time_cycles) {
     ++next_call_count_;
     if (result.has_data()) {
       if (include_rows_in_representation_) {

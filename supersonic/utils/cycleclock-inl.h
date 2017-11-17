@@ -67,8 +67,8 @@ inline int64 CycleClock::Now() {
 
 // ----------------------------------------------------------------
 #elif defined(__x86_64__) || defined(__amd64__)
-inline int64 CycleClock::Now() {
-  uint64 low, high;
+inline int64_t CycleClock::Now() {
+  uint64_t low, high;
   __asm__ volatile("rdtsc" : "=a" (low), "=d" (high));
   return (high << 32) | low;
 }
@@ -78,12 +78,12 @@ inline int64 CycleClock::Now() {
 #define SPR_TB 268
 #define SPR_TBU 269
 inline int64 CycleClock::Now() {
-  uint64 time_base_value;
+  uint64_t time_base_value;
   if (sizeof(void*) == 8) {
     // On PowerPC64, time base can be read with one SPR read.
     asm volatile("mfspr %0, %1" : "=r" (time_base_value) : "i"(SPR_TB));
   } else {
-    uint32 tbl, tbu0, tbu1;
+    uint32_t tbl, tbu0, tbu1;
     asm volatile (" mfspr %0, %3\n"
                   " mfspr %1, %4\n"
                   " mfspr %2, %3\n" :
@@ -91,10 +91,10 @@ inline int64 CycleClock::Now() {
                   "i"(SPR_TBU), "i"(SPR_TB));
     // If there is a carry into the upper half, it is okay to return
     // (tbu1, 0) since it must be between the 2 TBU reads.
-    tbl &= -static_cast<uint32>(tbu0 == tbu1);
+    tbl &= -static_cast<uint32_t>(tbu0 == tbu1);
     // high 32 bits in tbu1; low 32 bits in tbl  (tbu0 is garbage)
     time_base_value =
-        (static_cast<uint64>(tbu1) << 32) | static_cast<uint64>(tbl);
+        (static_cast<uint64_t>(tbu1) << 32) | static_cast<uint64_t>(tbl);
   }
   return static_cast<int64>(time_base_value);
 }
@@ -135,7 +135,7 @@ inline int64 CycleClock::Now() {
 // declarations of some other intrinsics, breaking compilation.
 // Therefore, we simply declare __rdtsc ourselves. See also
 // http://connect.microsoft.com/VisualStudio/feedback/details/262047
-extern "C" uint64 __rdtsc();
+extern "C" uint64_t __rdtsc();
 #pragma intrinsic(__rdtsc)
 inline int64 CycleClock::Now() {
   return __rdtsc();

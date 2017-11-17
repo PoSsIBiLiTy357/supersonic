@@ -48,7 +48,7 @@
 //
 // Supported types:
 //   * StringPiece, string, const char* (NULL is equivalent to "")
-//   * int32, int64, uint32, uint64
+//   * int32, int64, uint32_t, uint64_t
 //   * float, double
 //   * bool (Printed as "true" or "false")
 //   * pointer types other than char* (Printed as "0x<lower case hex string>",

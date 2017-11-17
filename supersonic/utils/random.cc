@@ -29,15 +29,15 @@ using std::make_unique;
 
 // The golden values used in MT
 static const int kMT_M      = 397;
-static const uint32 kUMask  = 0x80000000;
-static const uint32 kLMask  = 0x7fffffff;
-static const uint32 kMatrix[] =  { 0x0, 0x9908b0df };
+static const uint32_t kUMask  = 0x80000000;
+static const uint32_t kLMask  = 0x7fffffff;
+static const uint32_t kMatrix[] =  { 0x0, 0x9908b0df };
 
 const int MTRandom::kMTNumWords;
 
 // Utility method to generate a weak seed. Return value is the
 // number of bytes written to buffer. (Always less than or equal to length.)
-static int WeakSeed(uint8* buffer, int bufferlen) {
+static int WeakSeed(uint8_t* buffer, int bufferlen) {
   int offset = 0;
   char * seed_buffer = reinterpret_cast<char*>(buffer);
   // TID. (Probably only 16 bits)
@@ -73,7 +73,7 @@ static int WeakSeed(uint8* buffer, int bufferlen) {
 }
 
 // This implements step 2 and the right half of step 3.
-static inline uint32 twist(uint32 a, uint32 b) {
+static inline uint32_t twist(uint32_t a, uint32_t b) {
   // y <- (x[i] & U) | (x[i+1] & L)
   // y1 <- XOR (y>>1)
   // return y1
@@ -81,13 +81,13 @@ static inline uint32 twist(uint32 a, uint32 b) {
          kMatrix[(b & 0x01)];
 }
 
-static inline uint32 mix30(uint32 a) {
+static inline uint32_t mix30(uint32_t a) {
   // Mix the high bits back in with the low bits.
   return a ^ (a >> 30);
 }
 
 double RandomBase::RandDouble() {
-  return static_cast<double>(Rand32()) / std::numeric_limits<uint32>::max();
+  return static_cast<double>(Rand32()) / std::numeric_limits<uint32_t>::max();
 }
 
 // Implements all of step 2 and step 3.
@@ -97,7 +97,7 @@ void MTRandom::Cycle() {
   // Use two for loops + residual to avoid the mod operation. The second loop
   // uses a negative index (BACK) to reference the beginning of the array.
   const int BACK = -(kMTNumWords - kMT_M);
-  uint32* mt = context_.buffer;
+  uint32_t* mt = context_.buffer;
   for (; mt < context_.buffer + (kMTNumWords - kMT_M); mt++) {
     mt[0] = mt[kMT_M] ^ twist(mt[0], mt[1]);
   }
@@ -109,14 +109,14 @@ void MTRandom::Cycle() {
 }
 
 // Raw copy into the mt array.
-void MTRandom::InitRaw(const uint32* seed, int num_words) {
+void MTRandom::InitRaw(const uint32_t* seed, int num_words) {
   CHECK_EQ(num_words, kMTNumWords)
     << ": InitRaw num_words mismatch.";
   memcpy(context_.buffer, seed, kMTNumWords * sizeof(*seed));
   context_.randcnt = kMTNumWords;
 }
 
-void MTRandom::InitSeed(uint32 seed) {
+void MTRandom::InitSeed(uint32_t seed) {
   // The original version of initialize is based on Knuth, Vol 2., 3rd ed.
   // p. 102-106. Linear congruential generator:  x1 = ( x0 * A ) % M.
   // A = 69069, M = 2^32
@@ -130,7 +130,7 @@ void MTRandom::InitSeed(uint32 seed) {
   // We use a variant of the second, with the parameters:
   // M = 2^32, A = 1664525
   context_.pool = 0;
-  uint32* mt = context_.buffer;
+  uint32_t* mt = context_.buffer;
   mt[0] = seed;
   for (int i = 1; i < kMTNumWords; ++i) {
     mt[i] = 1664525 * mix30(mt[i-1]) + i;
@@ -139,10 +139,10 @@ void MTRandom::InitSeed(uint32 seed) {
 }
 
 // Array initialization is identical to the Matsumoto version.
-void MTRandom::InitArray(const uint32* seed, const int seed_length) {
+void MTRandom::InitArray(const uint32_t* seed, const int seed_length) {
   CHECK_GT(seed_length, 0);
   context_.pool = 0;
-  uint32* mt = context_.buffer;
+  uint32_t* mt = context_.buffer;
 
   // Initial linear congruential generator, using parameters
   // M = 2^32, A = 1812433253UL
@@ -178,8 +178,8 @@ void MTRandom::InitArray(const uint32* seed, const int seed_length) {
 }
 
 // Peel off bytes one at a time from the pool.  If the
-// byte pool is empty, fetch another uint32.
-uint8  MTRandom::Rand8() {
+// byte pool is empty, fetch another uint32_t.
+uint8_t  MTRandom::Rand8() {
   if (context_.poolsize == 0) {
     context_.pool = MTRandom::Rand32();
     context_.poolsize = 3;
@@ -190,17 +190,17 @@ uint8  MTRandom::Rand8() {
   return context_.pool & 0x000000ff;
 }
 
-uint16 MTRandom::Rand16() {
-  uint16 rv = MTRandom::Rand8();
+uint16_t MTRandom::Rand16() {
+  uint16_t rv = MTRandom::Rand8();
   return (rv << 8) | MTRandom::Rand8();
 }
 
-uint32 MTRandom::Rand32() {
+uint32_t MTRandom::Rand32() {
   if (context_.randcnt >= kMTNumWords) {
     Cycle();
   }
   // implements step 5.
-  uint32 y = context_.buffer[context_.randcnt++];
+  uint32_t y = context_.buffer[context_.randcnt++];
   y ^= (y >> 11);
   y ^= (y << 7)  & 0x9d2c5680;
   y ^= (y << 15) & 0xefc60000;
@@ -208,12 +208,12 @@ uint32 MTRandom::Rand32() {
   return y;
 }
 
-int32 MTRandom::Next() {
+int32_t MTRandom::Next() {
   return Rand32();
 }
 
-uint64 MTRandom::Rand64() {
-  uint64 rv = MTRandom::Rand32();
+uint64_t MTRandom::Rand64() {
+  uint64_t rv = MTRandom::Rand32();
   return (rv << 32) | MTRandom::Rand32();
 }
 
@@ -221,22 +221,22 @@ uint64 MTRandom::Rand64() {
 //
 // Everything below here is framework code.
 
-MTRandom::MTRandom(uint32 seed) {
+MTRandom::MTRandom(uint32_t seed) {
   Reset(seed);
 }
 
-// Seed MTRandom using an array of uint32.
-MTRandom::MTRandom(const uint32* seed, int num_words) {
+// Seed MTRandom using an array of uint32_t.
+MTRandom::MTRandom(const uint32_t* seed, int num_words) {
   Reset(seed, num_words);
 }
 
 MTRandom::MTRandom() {
   memset(&context_, 0, sizeof(MTContext));
-  uint32 buffer[32];
+  uint32_t buffer[32];
   memset(buffer, 0, sizeof(buffer));
-  int len = WeakSeed(reinterpret_cast<uint8*>(buffer),
+  int len = WeakSeed(reinterpret_cast<uint8_t*>(buffer),
                      sizeof(buffer));
-  InitArray(buffer, (len + sizeof(uint32) - 1)/ sizeof(uint32));
+  InitArray(buffer, (len + sizeof(uint32_t) - 1)/ sizeof(uint32_t));
 }
 
 // Scrub the memory and delete.
@@ -250,12 +250,12 @@ unique_ptr<RandomBase> MTRandom::Clone() const {
   return twin;
 }
 
-void MTRandom::Reset(uint32 seed) {
+void MTRandom::Reset(uint32_t seed) {
   memset(&context_, 0, sizeof(MTContext));
   InitSeed(seed);
 }
 
-void MTRandom::Reset(const uint32* seed, int num_words) {
+void MTRandom::Reset(const uint32_t* seed, int num_words) {
   CHECK_EQ(num_words, kMTNumWords)
     << ": MTRandom must be initialized with a buffer of size " << kMTNumWords;
 

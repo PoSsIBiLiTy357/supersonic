@@ -71,16 +71,16 @@ TEST_F(HybridAggregateLargeTest, LargeInputWithManyDistinctKeys) {
   TestDataBuilder<INT32, INT32> input_builder;
   TestDataBuilder<INT32, INT32, UINT64> expected_result_builder;
   MTRandom random(0);
-  map<int32, set<int32> > values_for_key;
-  map<int32, int32> sum_for_key;
+  map<int32_t, set<int32_t> > values_for_key;
+  map<int32_t, int32_t> sum_for_key;
   for (int i = 0; i < input_size; ++i) {
-    int32 key = random.Rand32() % 20000;
-    int32 value = random.Rand32() % 1000;
+    int32_t key = random.Rand32() % 20000;
+    int32_t value = random.Rand32() % 1000;
     input_builder.AddRow(key, value);
     values_for_key[key].insert(value);
     sum_for_key[key] += value;
   }
-  for (map<int32, set<int32> >::const_iterator mi = values_for_key.begin();
+  for (map<int32_t, set<int32_t> >::const_iterator mi = values_for_key.begin();
        mi != values_for_key.end(); ++mi) {
     expected_result_builder.AddRow(mi->first,
                                    sum_for_key[mi->first],

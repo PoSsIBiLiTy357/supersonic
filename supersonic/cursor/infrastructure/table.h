@@ -186,7 +186,7 @@ class TableRowAppender {
         reader_(reader),
         copier_(table->schema(), deep_copy) {}
   bool AppendRow(const typename RowReader::ValueType& row) {
-    int64 row_id = table_->AddRow();
+    int64_t row_id = table_->AddRow();
     if (row_id < 0) return false;
     DirectRowSourceWriter<RowSinkAdapter> writer;
     RowSinkAdapter sink(table_->block(), row_id);
@@ -235,15 +235,15 @@ class TableRowWriter {
     return *this;
   }
 
-  TableRowWriter& Int32(int32 value)    { return Set<INT32>(value); }
-  TableRowWriter& Int64(int64 value)    { return Set<INT64>(value); }
-  TableRowWriter& Uint32(uint32 value)  { return Set<UINT32>(value); }
-  TableRowWriter& Uint64(uint64 value)  { return Set<UINT64>(value); }
+  TableRowWriter& Int32(int32_t value)    { return Set<INT32>(value); }
+  TableRowWriter& Int64(int64_t value)    { return Set<INT64>(value); }
+  TableRowWriter& Uint32(uint32_t value)  { return Set<UINT32>(value); }
+  TableRowWriter& Uint64(uint64_t value)  { return Set<UINT64>(value); }
   TableRowWriter& Float(float value)    { return Set<FLOAT>(value); }
   TableRowWriter& Double(double value)  { return Set<DOUBLE>(value); }
   TableRowWriter& Bool(bool value)      { return Set<BOOL>(value); }
-  TableRowWriter& Date(int32 value)     { return Set<DATE>(value); }
-  TableRowWriter& Datetime(int64 value) { return Set<DATETIME>(value); }
+  TableRowWriter& Date(int32_t value)     { return Set<DATE>(value); }
+  TableRowWriter& Datetime(int64_t value) { return Set<DATETIME>(value); }
 
   TableRowWriter& String(const StringPiece& value) {
     return Set<STRING>(value);

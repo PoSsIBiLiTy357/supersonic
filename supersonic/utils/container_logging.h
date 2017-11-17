@@ -75,13 +75,13 @@ struct LogLegacyBase : public LogBase {
 // LogShort uses [] braces and separates items with comma-spaces.  For
 // example "[1, 2, 3]".
 struct LogShort : public internal::LogShortBase {
-  int64 MaxElements() const { return kint64max; }
+  int64_t MaxElements() const { return INT64_MAX; }
 };
 
 // LogShortUpTo100 formats the same as LogShort but prints no more
 // than 100 elements.
 struct LogShortUpTo100 : public internal::LogShortBase {
-  int64 MaxElements() const { return 100; }
+  int64_t MaxElements() const { return 100; }
 };
 
 // LogMultiline uses [] braces and separates items with
@@ -91,22 +91,22 @@ struct LogShortUpTo100 : public internal::LogShortBase {
 // 3
 // ]".
 struct LogMultiline : public internal::LogMultilineBase {
-  int64 MaxElements() const { return kint64max; }
+  int64_t MaxElements() const { return INT64_MAX; }
 };
 
 // LogMultilineUpTo100 formats the same as LogMultiline but
 // prints no more than 100 elements.
 struct LogMultilineUpTo100 : public internal::LogMultilineBase {
-  int64 MaxElements() const { return 100; }
+  int64_t MaxElements() const { return 100; }
 };
 
 // The legacy behavior of LogSequence() does not use braces and
 // separates items with spaces.  For example "1 2 3".
 struct LogLegacyUpTo100 : public internal::LogLegacyBase {
-  int64 MaxElements() const { return 100; }
+  int64_t MaxElements() const { return 100; }
 };
 struct LogLegacy : public internal::LogLegacyBase {
-  int64 MaxElements() const { return kint64max; }
+  int64_t MaxElements() const { return INT64_MAX; }
 };
 
 // The default policy for new code.

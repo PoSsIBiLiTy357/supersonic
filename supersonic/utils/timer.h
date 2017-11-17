@@ -35,8 +35,8 @@ inline static double toSeconds(const bt::nanosecond_type& nano) {
 }
 
 // Converts time from boost nanoseconds into int64 microsecond format.
-inline static int64 toUSeconds(const bt::nanosecond_type& nano) {
-  return static_cast<int64>(nano / 1e3);
+inline static int64_t toUSeconds(const bt::nanosecond_type& nano) {
+  return static_cast<int64_t>(nano / 1e3);
 }
 
 // Abstract base class for lightweight timers defined below, ensures that
@@ -58,8 +58,8 @@ class TimerBase {
   virtual void Restart();
 
   virtual double Get() const ABSTRACT;        // get the value in seconds
-  virtual int64 GetInUsec() const ABSTRACT;   // get the value in microseconds
-  virtual int64 GetInNanos() const ABSTRACT;   // get the value in cycles
+  virtual int64_t GetInUsec() const ABSTRACT;   // get the value in microseconds
+  virtual int64_t GetInNanos() const ABSTRACT;   // get the value in cycles
 
  protected:
   // Underlying boost timer.
@@ -106,19 +106,19 @@ inline void TimerBase::Restart() {
 class WallTimer : public TimerBase {
  public:
   virtual double Get() const;
-  virtual int64 GetInUsec() const;
-  virtual int64 GetInNanos() const;
+  virtual int64_t GetInUsec() const;
+  virtual int64_t GetInNanos() const;
 };
 
 inline double WallTimer::Get() const {
   return toSeconds(timer_.elapsed().wall);
 }
 
-inline int64 WallTimer::GetInUsec() const {
+inline int64_t WallTimer::GetInUsec() const {
   return toUSeconds(timer_.elapsed().wall);
 }
 
-inline int64 WallTimer::GetInNanos() const {
+inline int64_t WallTimer::GetInNanos() const {
   return timer_.elapsed().wall;
 }
 
@@ -127,19 +127,19 @@ inline int64 WallTimer::GetInNanos() const {
 class UserTimer : public TimerBase {
  public:
   virtual double Get() const;
-  virtual int64 GetInUsec() const;
-  virtual int64 GetInNanos() const;
+  virtual int64_t GetInUsec() const;
+  virtual int64_t GetInNanos() const;
 };
 
 inline double UserTimer::Get() const {
   return toSeconds(timer_.elapsed().user);
 }
 
-inline int64 UserTimer::GetInUsec() const {
+inline int64_t UserTimer::GetInUsec() const {
   return toUSeconds(timer_.elapsed().user);
 }
 
-inline int64 UserTimer::GetInNanos() const {
+inline int64_t UserTimer::GetInNanos() const {
   return timer_.elapsed().user;
 }
 
@@ -148,19 +148,19 @@ inline int64 UserTimer::GetInNanos() const {
 class SystemTimer : public TimerBase {
  public:
   virtual double Get() const;
-  virtual int64 GetInUsec() const;
-  virtual int64 GetInNanos() const;
+  virtual int64_t GetInUsec() const;
+  virtual int64_t GetInNanos() const;
 };
 
 inline double SystemTimer::Get() const {
   return toSeconds(timer_.elapsed().system);
 }
 
-inline int64 SystemTimer::GetInUsec() const {
+inline int64_t SystemTimer::GetInUsec() const {
   return toUSeconds(timer_.elapsed().system);
 }
 
-inline int64 SystemTimer::GetInNanos() const {
+inline int64_t SystemTimer::GetInNanos() const {
   return timer_.elapsed().system;
 }
 

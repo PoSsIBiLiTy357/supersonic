@@ -10,7 +10,7 @@
 
 namespace supersonic {
 
-static const int32 kNumAttributes = 100000;
+static const int32_t kNumAttributes = 100000;
 
 TEST(TupleSchemaTest, BigSchema) {
   TupleSchema schema;

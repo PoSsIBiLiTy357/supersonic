@@ -68,12 +68,12 @@ File* TempFile::Create(const char *directory_prefix) {
 static inline void TempFilenameInDir(const char *directory_prefix,
                                      string *filename) {
   pthread_t tid = pthread_self();
-  int32 pid = static_cast<int32>(getpid());
-  int64 now = CycleClock::Now();
-  int64 now_usec = GetCurrentTimeMicros();
+  int32_t pid = static_cast<int32_t>(getpid());
+  int64_t now = CycleClock::Now();
+  int64_t now_usec = GetCurrentTimeMicros();
   *filename = File::JoinPath(
       directory_prefix,
-      StringPrintf("tempfile-%" GPRIxPTHREAD "-%d-%llx-%llx",
+      StringPrintf("tempfile-%" GPRIxPTHREAD "-%d-%" PRId64 "-%" PRId64,
                    PRINTABLE_PTHREAD(tid), pid, now, now_usec));
 }
 

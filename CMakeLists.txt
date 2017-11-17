@@ -88,7 +88,6 @@ add_library(supersonic
     supersonic/utils/bits.cc
     supersonic/utils/demangle.cc
     supersonic/utils/int128.cc
-    supersonic/utils/mathlimits.cc
     supersonic/utils/strtoint.cc
     supersonic/utils/stringprintf.cc
     supersonic/utils/hash/hash.cc
@@ -215,7 +214,6 @@ set(HEADERS_SUPERSONIC
     supersonic/utils/macros.h
     supersonic/utils/manual_constructor.h
     supersonic/utils/map_util.h
-    supersonic/utils/mathlimits.h
     supersonic/utils/paranoid.h
     supersonic/utils/pointer_vector.h
     supersonic/utils/port.h

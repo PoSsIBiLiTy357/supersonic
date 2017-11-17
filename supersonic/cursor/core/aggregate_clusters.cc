@@ -562,7 +562,7 @@ class AggregateClustersOperation : public BasicOperation {
   AggregateClustersOperation(
       unique_ptr<const SingleSourceProjector> clustered_by_columns,
       unique_ptr<const AggregationSpecification> aggregation_specification,
-      int64 block_size,
+      int64_t block_size,
       unique_ptr<Operation> child)
       : BasicOperation(std::move(child)),
         group_by_(std::move(clustered_by_columns)),

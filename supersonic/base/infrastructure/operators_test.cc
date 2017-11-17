@@ -20,21 +20,21 @@
 
 namespace supersonic {
 
-static const int32 kInt32_3 = 3;
-static const int32 kInt32_5 = 5;
-static const int32 kInt32_Neg_5 = -5;
+static const int32_t kInt32_3 = 3;
+static const int32_t kInt32_5 = 5;
+static const int32_t kInt32_Neg_5 = -5;
 
-static const int64 kInt64_3 = 3;
-static const int64 kInt64_5 = 5;
-static const int64 kInt64_Neg_5 = -5;
+static const int64_t kInt64_3 = 3;
+static const int64_t kInt64_5 = 5;
+static const int64_t kInt64_Neg_5 = -5;
 
-static const uint32 kUInt32_3 = 3;
-static const uint32 kUInt32_5 = 5;
-static const uint32 kUInt32_Neg_5 = static_cast<uint32>(-5);
+static const uint32_t kUInt32_3 = 3;
+static const uint32_t kUInt32_5 = 5;
+static const uint32_t kUInt32_Neg_5 = static_cast<uint32_t>(-5);
 
-static const uint64 kUInt64_3 = 3;
-static const uint64 kUInt64_5 = 5;
-static const uint64 kUInt64_Neg_5 = static_cast<uint64>(-5);
+static const uint64_t kUInt64_3 = 3;
+static const uint64_t kUInt64_5 = 5;
+static const uint64_t kUInt64_Neg_5 = static_cast<uint64_t>(-5);
 
 class EqualTest : public testing::Test {};
 

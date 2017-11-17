@@ -290,12 +290,12 @@ TEST(CastExpressionTest, ProjectingCast) {
   TestEvaluation(BlockBuilder<INT32, UINT32>()
       .AddRow(1,  1)
       .AddRow(13, 13)
-      .AddRow(-1, static_cast<uint32>(-1))
+      .AddRow(-1, static_cast<uint32_t>(-1))
       .Build(), &Cast<UINT32, false>);
 
   TestEvaluation(BlockBuilder<UINT64, INT64>()
       .AddRow(1LL,                          1LL)
-      .AddRow(static_cast<uint64>(-19LL),  -19LL)
+      .AddRow(static_cast<uint64_t>(-19LL),  -19LL)
       .AddRow(1234567LL,                    1234567LL)
       .Build(), &Cast<INT64, true>);
 }
@@ -328,7 +328,7 @@ TEST(CastExpressionTest, StandardCast) {
 
   TestEvaluation(BlockBuilder<UINT64, UINT32>()
       .AddRow(1234LL, 1234)
-      .AddRow(static_cast<uint64>(-1LL), static_cast<uint32>(-1LL))
+      .AddRow(static_cast<uint64_t>(-1LL), static_cast<uint32_t>(-1LL))
       .AddRow(0LL,    0)
       .Build(), &Cast<UINT32, false>);
 }

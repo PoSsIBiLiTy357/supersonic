@@ -95,7 +95,7 @@ class DOTDrawer {
   string benchmark_name_;
 
   // Simple counter used for generating unique node names.
-  uint32 node_counter_;
+  uint32_t node_counter_;
 
   // Initially empty string used as a buffer for the generated DOT code.
   string generated_graph_code_;

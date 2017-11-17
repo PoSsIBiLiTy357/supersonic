@@ -39,11 +39,11 @@ class HumanReadableNumBytes {
   // e.g. 1000000 -> "976.6K".
   //  Note that calling these two functions in succession isn't a
   //  noop, since ToString() may round.
-  static bool ToInt64(const string &str, int64 *num_bytes);
-  static string ToString(int64 num_bytes);
+  static bool ToInt64(const string &str, int64_t *num_bytes);
+  static string ToString(int64_t num_bytes);
   // Like ToString but without rounding.  For example 1025 would return
   // "1025B" rather than "1.0K".  Uses the largest common denominator.
-  static string ToStringWithoutRounding(int64 num_bytes);
+  static string ToStringWithoutRounding(int64_t num_bytes);
 
   static bool ToDouble(const string &str, double *num_bytes);
   // Function overloading this with a function that takes an int64 is just
@@ -97,11 +97,11 @@ class HumanReadableInt {
   // Similar to HumanReadableNumBytes::ToInt64(), but uses decimal
   // rather than binary expansions - so M = 1 million, B = 1 billion,
   // etc. Numbers beyond 1T are expressed as "3E14" etc.
-  static string ToString(int64 value);
+  static string ToString(int64_t value);
 
   // Reverses ToString(). Note that calling these two functions in
   // succession isn't a noop, since ToString() may round.
-  static bool ToInt64(const string &str, int64 *value);
+  static bool ToInt64(const string &str, int64_t *value);
 
  private:
   DISALLOW_IMPLICIT_CONSTRUCTORS(HumanReadableInt);
@@ -110,7 +110,7 @@ class HumanReadableInt {
 class HumanReadableNum {
  public:
   // Same as HumanReadableInt::ToString().
-  static string ToString(int64 value);
+  static string ToString(int64_t value);
 
   // Similar to HumanReadableInt::ToString(), but prints 2 decimal
   // places for numbers with absolute value < 10.0 and 1 decimal place

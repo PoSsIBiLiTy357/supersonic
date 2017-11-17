@@ -7,7 +7,7 @@
 //
 // A fast, bit-vector map for 8-bit unsigned characters.
 //
-// Internally stores 256 bits in an array of 8 uint32s.
+// Internally stores 256 bits in an array of 8 uint32_ts.
 // See changelist history for micro-optimization attempts.
 // Does quick bit-flicking to lookup needed characters.
 //
@@ -24,10 +24,10 @@
 
 class Charmap {
  public:
-  // Initializes with given uint32 values.  For instance, the first
+  // Initializes with given uint32_t values.  For instance, the first
   // variable contains bits for values 0x1F (US) down to 0x00 (NUL).
-  Charmap(uint32 b0, uint32 b1, uint32 b2, uint32 b3,
-          uint32 b4, uint32 b5, uint32 b6, uint32 b7) {
+  Charmap(uint32_t b0, uint32_t b1, uint32_t b2, uint32_t b3,
+          uint32_t b4, uint32_t b5, uint32_t b6, uint32_t b7) {
     m_[0] = b0;
     m_[1] = b1;
     m_[2] = b2;
@@ -72,7 +72,7 @@ class Charmap {
   }
 
  protected:
-  uint32 m_[8];
+  uint32_t m_[8];
 
   void Init(const char* str, int len) {
     memset(&m_, 0, sizeof m_);
