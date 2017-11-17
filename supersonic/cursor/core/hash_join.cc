@@ -380,7 +380,7 @@ HashJoinCursor::HashJoinCursor(
 
   DCHECK_EQ(2, result_projector.source_count());
   DCHECK(result_projector.source_schema(0).EqualByType(lhs_->schema()));
-  DCHECK(result_projector.source_schema(1).EqualByType(rhs_->schema()));
+  DCHECK(result_projector.source_schema(1).EqualByType(rhs_builder_->schema()));
 
   SetUpFinalResultProjector(join_type, result_projector);
 }
