@@ -79,8 +79,8 @@ class AbstractUnaryExpression : public UnaryExpression {
 template<OperatorId op, DataType from_type, DataType to_type>
 class TypedUnaryExpression : public AbstractUnaryExpression<op> {
  public:
-  explicit TypedUnaryExpression(const Expression* const argument) :
-    AbstractUnaryExpression<op>(argument) {}
+  explicit TypedUnaryExpression(unique_ptr<const Expression> argument) :
+    AbstractUnaryExpression<op>(std::move(argument)) {}
 
  private:
   virtual FailureOrOwned<BoundExpression> CreateBoundUnaryExpression(
@@ -102,8 +102,8 @@ class TypedUnaryExpression : public AbstractUnaryExpression<op> {
 template<OperatorId op>
 class SignedUnaryExpression : public AbstractUnaryExpression<op> {
  public:
-  explicit SignedUnaryExpression(const Expression* const child)
-      : AbstractUnaryExpression<op>(child) {}
+  explicit SignedUnaryExpression(unique_ptr<const Expression> child)
+      : AbstractUnaryExpression<op>(std::move(child)) {}
 
  private:
   virtual FailureOrOwned<BoundExpression> CreateBoundUnaryExpression(
@@ -121,7 +121,7 @@ class SignedUnaryExpression : public AbstractUnaryExpression<op> {
 template<OperatorId op>
 class IntegerCheckUnaryExpression : public AbstractUnaryExpression<op> {
  public:
-  explicit IntegerCheckUnaryExpression(const Expression* const child)
+  explicit IntegerCheckUnaryExpression(unique_ptr<const Expression> child)
       : AbstractUnaryExpression<op>(child) {}
 
  private:
@@ -140,7 +140,7 @@ class IntegerCheckUnaryExpression : public AbstractUnaryExpression<op> {
 template<OperatorId op, DataType to_type>
 class NumericToTemplateUnaryExpression : public AbstractUnaryExpression<op> {
  public:
-  explicit NumericToTemplateUnaryExpression(const Expression* const child)
+  explicit NumericToTemplateUnaryExpression(unique_ptr<const Expression> child)
       : AbstractUnaryExpression<op>(child) {}
 
  private:
@@ -264,9 +264,9 @@ class TypedBinaryExpression : public AbstractBinaryExpression<op> {
 template<OperatorId op>
 class EqualTypesBinaryExpression : public AbstractBinaryExpression<op> {
  public:
-  EqualTypesBinaryExpression(const Expression* const left,
-                             const Expression* const right) :
-    AbstractBinaryExpression<op>(left, right) {}
+  EqualTypesBinaryExpression(unique_ptr<const Expression> left,
+                             unique_ptr<const Expression> right) :
+    AbstractBinaryExpression<op>(std::move(left), std::move(right)) {}
 
  private:
   virtual FailureOrOwned<BoundExpression> CreateBoundBinaryExpression(
@@ -288,9 +288,9 @@ class EqualTypesBinaryExpression : public AbstractBinaryExpression<op> {
 template<OperatorId op>
 class NumericBinaryExpression : public AbstractBinaryExpression<op> {
  public:
-  NumericBinaryExpression(const Expression* const left,
-                          const Expression* const right) :
-    AbstractBinaryExpression<op>(left, right) {}
+  NumericBinaryExpression(unique_ptr<const Expression> left,
+                          unique_ptr<const Expression> right) :
+    AbstractBinaryExpression<op>(std::move(left), std::move(right)) {}
 
  private:
   virtual FailureOrOwned<BoundExpression> CreateBoundBinaryExpression(
@@ -311,9 +311,9 @@ class NumericBinaryExpression : public AbstractBinaryExpression<op> {
 template<OperatorId op>
 class IntegerBinaryExpression : public AbstractBinaryExpression<op> {
  public:
-  IntegerBinaryExpression(const Expression* const left,
-                          const Expression* const right) :
-    AbstractBinaryExpression<op>(left, right) {}
+  IntegerBinaryExpression(unique_ptr<const Expression> left,
+                          unique_ptr<const Expression> right) :
+    AbstractBinaryExpression<op>(std::move(left), std::move(right)) {}
 
  private:
   virtual FailureOrOwned<BoundExpression> CreateBoundBinaryExpression(
@@ -336,10 +336,10 @@ template<OperatorId op, DataType left_type, DataType middle_type,
          DataType right_type, DataType to_type>
 class TypedTernaryExpression : public TernaryExpression {
  public:
-  TypedTernaryExpression(const Expression* const left,
-                         const Expression* const middle,
-                         const Expression* const right)
-    : TernaryExpression(left, middle, right) {}
+  TypedTernaryExpression(unique_ptr<const Expression> left,
+                         unique_ptr<const Expression> middle,
+                         unique_ptr<const Expression> right)
+    : TernaryExpression(std::move(left), std::move(middle), std::move(right)) {}
 
   virtual string ToString(bool verbose) const {
     return TernaryExpressionTraits<op>::FormatDescription(
