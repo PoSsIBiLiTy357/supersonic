@@ -88,6 +88,7 @@ namespace common {
 //  ...
 
 struct VoidPropagator {};
+template<typename Result> struct RValuePropagator;
 template<typename Result> struct ReferencePropagator;
 template<typename Result> struct UniquePtrPropagator;
 template<typename Result> struct ConstReferencePropagator;
@@ -280,6 +281,11 @@ class FailureOr : public FailureOrVoid<Exception> {
   template<typename ObservedException>
   FailureOr(const FailurePropagator<ObservedException>& failure)       // NOLINT
       : FailureOrVoid<Exception>(failure) {}
+
+  template<typename ObservedResult>
+  FailureOr(RValuePropagator<ObservedResult>&& result)         // NOLINT
+      : FailureOrVoid<Exception>(Success()),
+        result_(std::move(result.result)) {}
 
   template<typename ObservedResult>
   FailureOr(const ReferencePropagator<ObservedResult>& result)         // NOLINT
@@ -488,6 +494,12 @@ struct FailurePropagator {
 };
 
 template<typename Result>
+struct RValuePropagator {
+  explicit RValuePropagator(Result&& result) : result(std::move(result)) {}  // NOLINT
+  Result result;
+};
+
+template<typename Result>
 struct ReferencePropagator {
   explicit ReferencePropagator(Result& result) : result(result) {}  // NOLINT
   Result& result;
@@ -522,6 +534,14 @@ inline VoidPropagator Success() { return VoidPropagator(); }
 template<typename Result>
 ReferencePropagator<Result> Success(Result& result) {  // NOLINT
   return ReferencePropagator<Result>(result);
+}
+
+template <
+    typename Result,
+    typename = std::enable_if_t<std::is_move_constructible<Result>::value>,
+    typename = std::enable_if_t<!std::is_pointer<Result>::value>>
+RValuePropagator<Result> Success(Result&& result) {
+  return RValuePropagator<Result>(std::move(result));
 }
 
 template<typename Result>

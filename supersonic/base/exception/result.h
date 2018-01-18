@@ -19,6 +19,8 @@
 #ifndef SUPERSONIC_BASE_EXCEPTION_RESULT_H_
 #define SUPERSONIC_BASE_EXCEPTION_RESULT_H_
 
+#include <type_traits>
+
 #include "supersonic/utils/exception/coowned_pointer.h"
 #include "supersonic/utils/exception/failureor.h"
 #include "supersonic/base/exception/exception.h"
@@ -60,6 +62,11 @@ class FailureOr : public common::FailureOr<T, Exception> {
  public:
   FailureOr(const common::FailurePropagator<Exception>& failure)       // NOLINT
       : common::FailureOr<T, Exception>(failure) {}
+
+  template<typename ObservedResult>
+  FailureOr(
+      common::RValuePropagator<ObservedResult>&& result)       // NOLINT
+      : common::FailureOr<T, Exception>(std::move(result)) {}
 
   template<typename ObservedResult>
   FailureOr(
