@@ -48,3 +48,6 @@ gtest/
 # Protobuf generated files
 *.pb.h
 *.pb.cc
+
+.vscode
+.idea
