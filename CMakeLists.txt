@@ -18,6 +18,12 @@ find_package(GFlags REQUIRED)
 find_package(Glog REQUIRED)
 find_package(Sanitizers)
 
+message(STATUS "Protobuf_LIBRARIES = ${Protobuf_LIBRARIES}")
+message(STATUS "GFLAGS_LIBRARIES = ${GFLAGS_LIBRARIES}")
+message(STATUS "GLOG_LIBRARIES = ${GLOG_LIBRARIES}")
+message(STATUS "Boost_SYSTEM_LIBRARIES = ${Boost_SYSTEM_LIBRARIES}")
+message(STATUS "Boost_TIMER_LIBRARIES = ${Boost_TIMER_LIBRARIES}")
+
 include(InstallHeaders)
 
 include(ExternalProject)
@@ -73,6 +79,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}
     ${PROTO_OUT_PATH}
     ${PROTOBUF_INCLUDE_DIRS}
+    ${GLOG_INCLUDE_DIR}
 )
 
 # Main supersonic library

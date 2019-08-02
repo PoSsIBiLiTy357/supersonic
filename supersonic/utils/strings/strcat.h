@@ -57,6 +57,11 @@ struct AlphaNum {
   AlphaNum(uint64_t u64)  // NOLINT(runtime/explicit)
       : piece(digits, FastUInt64ToBufferLeft(u64, digits) - &digits[0]) {}
 
+#if __APPLE__
+  AlphaNum(size_t u64)  // NOLINT(runtime/explicit)
+      : piece(digits, FastUInt64ToBufferLeft(uint64_t(u64), digits) - &digits[0]) {}
+#endif
+
   AlphaNum(float f)  // NOLINT(runtime/explicit)
     : piece(digits, strlen(FloatToBuffer(f, digits))) {}
   AlphaNum(double f)  // NOLINT(runtime/explicit)

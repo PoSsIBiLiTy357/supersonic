@@ -467,6 +467,13 @@ inline string SimpleItoa(uint64_t i) {
   return string(buf, FastUInt64ToBufferLeft(i, buf));
 }
 
+#ifdef __APPLE__
+inline string SimpleItoa(size_t i) {
+  char buf[32];  // Longest is 18446744073709551615
+  return string(buf, FastUInt64ToBufferLeft(uint64_t(i), buf));
+}
+#endif
+
 // SimpleAtoi converts a string to an integer.
 // Uses safe_strto?() for actual parsing, so strict checking is
 // applied, which is to say, the string must be a base-10 integer, optionally

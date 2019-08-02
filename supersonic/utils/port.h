@@ -250,7 +250,7 @@ class AssignAttributeStartEnd {
     // Find out what dynamic library name is defined in
     for (int i = _dyld_image_count() - 1; i >= 0; --i) {
       const mach_header* hdr = _dyld_get_image_header(i);
-      uint32_t_t len;
+      uint32_t len;
       *pstart = getsectdatafromheader(hdr, "__DATA", name, &len);
       if (*pstart) {   // NULL if not defined in this dynamic library
         *pstart += _dyld_get_image_vmaddr_slide(i);   // correct for reloc
